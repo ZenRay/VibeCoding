@@ -2,7 +2,7 @@ import { Ticket } from '@/types/ticket'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'
 import { useToast } from './ui/toast'
-import { Edit2, Trash2 } from 'lucide-react'
+import { Edit2, Trash2, RotateCcw } from 'lucide-react'
 
 interface TicketListItemProps {
   ticket: Ticket
@@ -33,6 +33,32 @@ export function TicketListItem({
     }
   }
 
+  const handleRestore = async () => {
+    try {
+      await ticketService.restoreTicket(ticket.id)
+      addToast('success', 'Ticket 已恢复')
+      onUpdate()
+    } catch (error) {
+      console.error('恢复失败:', error)
+      addToast('error', '恢复失败，请重试')
+    }
+  }
+
+  const handlePermanentDelete = async () => {
+    // 二次确认
+    if (!confirm('⚠️ 警告：此操作将永久删除 Ticket，无法恢复！\n\n确定要继续吗？')) return
+    if (!confirm('⚠️ 最后确认：永久删除后将无法恢复！\n\n确定要永久删除吗？')) return
+
+    try {
+      await ticketService.deleteTicket(ticket.id, true)
+      addToast('success', 'Ticket 已永久删除')
+      onUpdate()
+    } catch (error) {
+      console.error('永久删除失败:', error)
+      addToast('error', '永久删除失败，请重试')
+    }
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const year = date.getFullYear()
@@ -56,7 +82,6 @@ export function TicketListItem({
         type="checkbox"
         checked={selected}
         onChange={e => onSelect(ticket.id, e.target.checked)}
-        disabled={isDeleted}
         className="mt-1 h-4 w-4 rounded border-gray-300"
       />
 
@@ -71,13 +96,14 @@ export function TicketListItem({
             {ticket.title}
           </h3>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!isDeleted && (
+            {!isDeleted ? (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => onEdit(ticket)}
+                  title="编辑"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -86,6 +112,28 @@ export function TicketListItem({
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive"
                   onClick={handleDelete}
+                  title="删除"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                  onClick={handleRestore}
+                  title="恢复"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={handlePermanentDelete}
+                  title="永久删除"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
