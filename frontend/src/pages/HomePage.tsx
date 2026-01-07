@@ -151,10 +151,25 @@ function HomePage() {
     {
       key: 'Escape',
       callback: () => {
-        setTicketDialogOpen(false)
-        setTagDialogOpen(false)
+        // 如果搜索框聚焦，先清除搜索或失焦
+        const activeElement = document.activeElement as HTMLElement
+        if (activeElement?.tagName === 'INPUT') {
+          const inputElement = activeElement as HTMLInputElement
+          if (inputElement.value) {
+            // 有内容，先清除
+            inputElement.value = ''
+            setSearchQuery('')
+          } else {
+            // 无内容，失焦
+            inputElement.blur()
+          }
+        } else {
+          // 否则关闭对话框
+          setTicketDialogOpen(false)
+          setTagDialogOpen(false)
+        }
       },
-      description: '关闭对话框',
+      description: '清除搜索/关闭对话框',
     },
   ])
 

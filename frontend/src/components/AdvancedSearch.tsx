@@ -67,13 +67,25 @@ export function AdvancedSearch({
             type="text"
             placeholder={
               searchScope === 'title'
-                ? '搜索 Ticket 标题...'
-                : '搜索标题和描述...'
+                ? '搜索 Ticket 标题... (Esc 清除)'
+                : '搜索标题和描述... (Esc 清除)'
             }
             value={localSearchQuery}
             onChange={e => setLocalSearchQuery(e.target.value)}
             onFocus={() => setShowHistory(searchHistory.length > 0)}
             onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                if (localSearchQuery) {
+                  // 有内容，清除
+                  handleClearSearch()
+                } else {
+                  // 无内容，失焦
+                  e.currentTarget.blur()
+                }
+                e.stopPropagation()
+              }
+            }}
             className="pl-10 pr-20"
           />
           <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex gap-1">
