@@ -22,84 +22,56 @@ cd env
 
 详细说明请查看：[快速开始指南](./specs/0006-quick-start.md)
 
-### 代码检查方式（三选一）
+### 代码质量检查（提交前必做）
 
-#### 方式 1：Docker 检查（推荐）⭐⭐⭐⭐⭐
+**所有检查都在 Docker 环境中运行，确保与 CI 环境 100% 一致。**
 
-**适用场景**：本地 Node/Python 版本不匹配，或希望与 CI 环境 100% 一致
-
-```bash
-# 方案 A：在运行中的容器内检查（最快）
-./scripts/docker-exec-check.sh
-
-# 方案 B：使用临时容器检查（独立运行）
-./scripts/docker-check.sh
-```
-
-**优势：**
-- ✅ 环境 100% 一致（Python 3.12 + Node 20）
-- ✅ 无需本地安装任何工具
-- ✅ 自动修复格式问题
-- ✅ 本地通过 = CI 必通过
-
-#### 方式 2：本地检查
-
-**适用场景**：本地环境正确（Python 3.12 + Node 14+）
+#### 方式 1：在运行中的容器内检查（推荐）⭐⭐⭐⭐⭐
 
 ```bash
-# 检查所有
-./scripts/check-local.sh all
-
-# 只检查后端/前端
-./scripts/check-local.sh backend
-./scripts/check-local.sh frontend
+cd env && ./check-running.sh
 ```
 
-#### 方式 3：手动检查
+**优势：** 最快，复用已启动的容器，自动修复格式问题
+
+#### 方式 2：使用临时容器检查
 
 ```bash
-# 后端
-cd backend
-black . && isort . && ruff check --fix . && pytest
-
-# 前端（需要 Node 14+）
-cd frontend
-npx prettier --write "src/**/*.{ts,tsx,css}"
-npm run lint && npm run type-check
+cd env && ./check.sh
 ```
+
+**优势：** 独立运行，不依赖服务状态
 
 ---
 
-### 快速修复脚本
-
-```bash
-# 一键修复所有格式问题
-bash 一键修复.sh
-
-# 使用 Docker 修复前端格式
-bash fix_prettier_docker.sh
-```
-
----
-
-### 完整开发流程（Docker 方式）
+### 完整开发流程
 
 ```bash
 # 1. 启动开发环境
-cd env && ./start.sh && cd ..
+cd env && ./start.sh
 
-# 2. 修改代码（本地编辑器）
+# 2. 修改代码（本地编辑器，支持热重载）
 
-# 3. 提交前检查
-./scripts/docker-exec-check.sh
+# 3. 实时预览
+#    前端: http://localhost:5173
+#    后端: http://localhost:8000/docs
 
-# 4. 提交推送
+# 4. 提交前检查（在 Docker 中）
+./check-running.sh
+
+# 5. 如有问题会自动修复，重新检查
+./check-running.sh
+
+# 6. 提交推送
+cd ..
 git add -A
 git commit -m "feat: 你的功能"
 git push origin main
+
+# 7. GitHub Actions 自动验证（应该全部通过✅）
 ```
 
-详细文档：[Docker 工作流程](./DOCKER_WORKFLOW.md)
+详细文档：[env/WORKFLOW.md](./env/WORKFLOW.md)
 
 ## 📋 项目结构
 
@@ -173,28 +145,48 @@ Week1/
 - ⚪ 阶段 6：测试与优化
 - ⚪ 阶段 7：部署与上线
 
-## 🔧 开发
+## 🔧 开发工具
 
-### 安装 Pre-commit Hooks
+### 容器内开发
 
+所有开发和测试都在 Docker 容器内进行：
+
+**后端开发**：
 ```bash
-pip install pre-commit
-pre-commit install
+# 进入后端容器
+docker exec -it project-alpha-backend bash
+
+# 在容器内
+source .venv/bin/activate
+pytest -v              # 运行测试
+black .                # 格式化
+ruff check --fix .     # 代码检查
 ```
 
-### 运行测试
-
-**后端测试**：
+**前端开发**：
 ```bash
-cd backend
-pytest
+# 进入前端容器
+docker exec -it project-alpha-frontend sh
+
+# 在容器内
+npm run lint           # ESLint 检查
+npm run type-check     # TypeScript 检查
+npx prettier --write "src/**/*.{ts,tsx,css}"  # 格式化
 ```
 
-**前端类型检查**：
+### 数据库管理
+
+**PgAdmin（图形界面）**：
 ```bash
-cd frontend
-npm run type-check
-npm run lint
+docker-compose --profile tools up -d pgadmin
+# 访问 http://localhost:5050
+# 用户名：admin@example.com
+# 密码：admin123
+```
+
+**命令行**：
+```bash
+docker exec -it project-alpha-db psql -U ticketuser -d ticketdb
 ```
 
 ## 📝 许可证

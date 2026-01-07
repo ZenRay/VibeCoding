@@ -1,3 +1,6 @@
+# Docker Compose 开发环境配置（增强版）
+# 包含代码质量检查和测试工具
+
 version: '3.8'
 
 services:
@@ -24,7 +27,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI 后端服务
+  # FastAPI 后端服务（开发模式 + 代码质量工具）
   backend:
     build:
       context: ../backend
@@ -37,13 +40,11 @@ services:
       API_V1_PREFIX: /api/v1
       CORS_ORIGINS: http://localhost:5173,http://localhost:3000
       LOG_LEVEL: info
-      POSTGRES_PASSWORD: ticketpass123
     ports:
       - "8000:8000"
     volumes:
       - ../backend:/app
-      - /app/__pycache__
-      - /app/.venv  # 避免覆盖容器内的虚拟环境
+      - backend_venv:/app/.venv  # 持久化虚拟环境
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,14 +66,37 @@ services:
       - "5173:5173"
     volumes:
       - ../frontend:/app
-      - /app/node_modules
+      - frontend_node_modules:/app/node_modules  # 持久化 node_modules
     depends_on:
       - backend
     networks:
       - project-alpha-network
     command: npm run dev -- --host 0.0.0.0
 
-  # PgAdmin（可选，用于数据库管理）
+  # 代码质量检查服务（按需启动）
+  code-check:
+    image: python:3.12-slim
+    container_name: project-alpha-code-check
+    volumes:
+      - ../backend:/app/backend
+      - ../frontend:/app/frontend
+    working_dir: /app
+    networks:
+      - project-alpha-network
+    profiles:
+      - check
+    command: >
+      bash -c "
+        echo '🔍 代码质量检查...' &&
+        cd backend &&
+        pip install -q black isort ruff pytest pytest-cov &&
+        black --check . &&
+        isort --check-only . &&
+        ruff check . &&
+        pytest --cov=app --cov-report=term
+      "
+
+  # PgAdmin（可选）
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: project-alpha-pgadmin
@@ -90,12 +114,16 @@ services:
     networks:
       - project-alpha-network
     profiles:
-      - tools  # 使用 --profile tools 启动
+      - tools
 
 volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  backend_venv:
+    driver: local
+  frontend_node_modules:
     driver: local
 
 networks:
