@@ -22,29 +22,84 @@ cd env
 
 详细说明请查看：[快速开始指南](./specs/0006-quick-start.md)
 
-### 本地代码检查（提交前必做）
+### 代码检查方式（三选一）
 
-在提交代码前，运行本地检查确保代码质量：
+#### 方式 1：Docker 检查（推荐）⭐⭐⭐⭐⭐
+
+**适用场景**：本地 Node/Python 版本不匹配，或希望与 CI 环境 100% 一致
 
 ```bash
-# 检查所有（后端 + 前端）
-./scripts/check-local.sh all
+# 方案 A：在运行中的容器内检查（最快）
+./scripts/docker-exec-check.sh
 
-# 只检查后端
-./scripts/check-local.sh backend
-
-# 只检查前端
-./scripts/check-local.sh frontend
-
-# 检查并自动提交（如果检查通过）
-./scripts/check-and-commit.sh "你的提交信息"
+# 方案 B：使用临时容器检查（独立运行）
+./scripts/docker-check.sh
 ```
 
-**检查内容包括：**
-- ✅ 后端：Black 格式化、isort 导入排序、Ruff 代码检查、mypy 类型检查、pytest 测试
-- ✅ 前端：ESLint、Prettier 格式化、TypeScript 类型检查、构建检查
+**优势：**
+- ✅ 环境 100% 一致（Python 3.12 + Node 20）
+- ✅ 无需本地安装任何工具
+- ✅ 自动修复格式问题
+- ✅ 本地通过 = CI 必通过
 
-如果检查失败，脚本会自动尝试修复（如格式化），然后需要重新运行检查。
+#### 方式 2：本地检查
+
+**适用场景**：本地环境正确（Python 3.12 + Node 14+）
+
+```bash
+# 检查所有
+./scripts/check-local.sh all
+
+# 只检查后端/前端
+./scripts/check-local.sh backend
+./scripts/check-local.sh frontend
+```
+
+#### 方式 3：手动检查
+
+```bash
+# 后端
+cd backend
+black . && isort . && ruff check --fix . && pytest
+
+# 前端（需要 Node 14+）
+cd frontend
+npx prettier --write "src/**/*.{ts,tsx,css}"
+npm run lint && npm run type-check
+```
+
+---
+
+### 快速修复脚本
+
+```bash
+# 一键修复所有格式问题
+bash 一键修复.sh
+
+# 使用 Docker 修复前端格式
+bash fix_prettier_docker.sh
+```
+
+---
+
+### 完整开发流程（Docker 方式）
+
+```bash
+# 1. 启动开发环境
+cd env && ./start.sh && cd ..
+
+# 2. 修改代码（本地编辑器）
+
+# 3. 提交前检查
+./scripts/docker-exec-check.sh
+
+# 4. 提交推送
+git add -A
+git commit -m "feat: 你的功能"
+git push origin main
+```
+
+详细文档：[Docker 工作流程](./DOCKER_WORKFLOW.md)
 
 ## 📋 项目结构
 
