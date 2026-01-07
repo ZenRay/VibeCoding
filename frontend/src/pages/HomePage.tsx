@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTickets } from '@/hooks/useTickets'
 import { useTags } from '@/hooks/useTags'
 import { useKeyboard } from '@/hooks/useKeyboard'
@@ -12,13 +13,14 @@ import { Pagination } from '@/components/ui/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Plus, Tag as TagIcon, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Tag as TagIcon, Search, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { Ticket } from '@/types/ticket'
 import { Tag } from '@/types/tag'
 import { TicketQueryParams } from '@/types/ticket'
 import { ticketService } from '@/services/ticketService'
 
 function HomePage() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
 
   // 搜索和过滤状态
@@ -183,6 +185,14 @@ function HomePage() {
 
             {/* 右侧：操作按钮 */}
             <div className="flex items-center gap-2">
+              <Button
+                onClick={() => navigate('/trash')}
+                variant="outline"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                回收站
+              </Button>
               <Button onClick={handleCreateTag} variant="outline" size="sm">
                 <TagIcon className="w-4 h-4 mr-2" />
                 管理标签

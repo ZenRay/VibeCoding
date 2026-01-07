@@ -10,6 +10,7 @@ import {
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+import { useToast } from './ui/toast'
 import { Ticket, CreateTicketRequest, UpdateTicketRequest } from '@/types/ticket'
 import { Tag } from '@/types/tag'
 import { ticketService } from '@/services/ticketService'
@@ -23,6 +24,7 @@ interface TicketDialogProps {
 }
 
 export function TicketDialog({ open, onOpenChange, ticket, tags, onSuccess }: TicketDialogProps) {
+  const { addToast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
@@ -78,7 +80,7 @@ export function TicketDialog({ open, onOpenChange, ticket, tags, onSuccess }: Ti
       onOpenChange(false)
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      addToast('error', '保存失败，请重试')
     } finally {
       setLoading(false)
     }

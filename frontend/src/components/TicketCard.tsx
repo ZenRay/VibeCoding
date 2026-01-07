@@ -2,6 +2,7 @@ import { Ticket } from '@/types/ticket'
 import { Card, CardContent, CardFooter } from './ui/card'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'
+import { useToast } from './ui/toast'
 import { CheckCircle2, Circle, Trash2, Edit2, RotateCcw } from 'lucide-react'
 
 interface TicketCardProps {
@@ -11,13 +12,16 @@ interface TicketCardProps {
 }
 
 export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
+  const { addToast } = useToast()
+  
   const handleToggleStatus = async () => {
     try {
       await ticketService.toggleTicketStatus(ticket.id)
+      addToast('success', ticket.status === 'completed' ? '已标记为未完成' : '已标记为完成')
       onUpdate()
     } catch (error) {
       console.error('切换状态失败:', error)
-      alert('切换状态失败，请重试')
+      addToast('error', '切换状态失败，请重试')
     }
   }
 
@@ -25,20 +29,22 @@ export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
     if (!confirm('确定要删除这个 Ticket 吗？')) return
     try {
       await ticketService.deleteTicket(ticket.id, false)
+      addToast('success', 'Ticket 已删除')
       onUpdate()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      addToast('error', '删除失败，请重试')
     }
   }
 
   const handleRestore = async () => {
     try {
       await ticketService.restoreTicket(ticket.id)
+      addToast('success', 'Ticket 已恢复')
       onUpdate()
     } catch (error) {
       console.error('恢复失败:', error)
-      alert('恢复失败，请重试')
+      addToast('error', '恢复失败，请重试')
     }
   }
 

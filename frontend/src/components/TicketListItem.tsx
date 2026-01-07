@@ -1,6 +1,7 @@
 import { Ticket } from '@/types/ticket'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'
+import { useToast } from './ui/toast'
 import { Edit2, Trash2 } from 'lucide-react'
 
 interface TicketListItemProps {
@@ -18,14 +19,17 @@ export function TicketListItem({
   onUpdate,
   onEdit,
 }: TicketListItemProps) {
+  const { addToast } = useToast()
+  
   const handleDelete = async () => {
     if (!confirm('确定要删除这个 Ticket 吗？')) return
     try {
       await ticketService.deleteTicket(ticket.id, false)
+      addToast('success', 'Ticket 已删除')
       onUpdate()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      addToast('error', '删除失败，请重试')
     }
   }
 

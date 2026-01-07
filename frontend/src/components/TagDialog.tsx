@@ -10,6 +10,7 @@ import {
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+import { useToast } from './ui/toast'
 import { Tag, CreateTagRequest, UpdateTagRequest } from '@/types/tag'
 import { tagService } from '@/services/tagService'
 
@@ -21,6 +22,7 @@ interface TagDialogProps {
 }
 
 export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps) {
+  const { addToast } = useToast()
   const [name, setName] = useState('')
   const [color, setColor] = useState('#6B7280')
   const [loading, setLoading] = useState(false)
@@ -79,7 +81,7 @@ export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps
       ) {
         message = (error as { message: string }).message
       }
-      alert(message)
+      addToast('error', message)
     } finally {
       setLoading(false)
     }
