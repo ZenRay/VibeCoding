@@ -1,5 +1,8 @@
 """pytest 配置和 fixtures"""
 
+import os
+import tempfile
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -12,8 +15,14 @@ from app.main import app
 # 导入所有模型以确保它们被注册到 Base.metadata
 from app.models import Tag, Ticket, TicketTag  # noqa: F401
 
-# 测试数据库 URL（使用内存数据库 SQLite）
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+# 测试数据库 URL（使用文件数据库，避免内存数据库的连接问题）
+# 使用固定路径，确保所有连接使用同一个数据库
+_temp_db_path = os.path.join(tempfile.gettempdir(), "test_ticket_db.db")
+# 如果文件存在，先删除
+if os.path.exists(_temp_db_path):
+    os.remove(_temp_db_path)
+
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{_temp_db_path}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -28,18 +37,32 @@ def set_sqlite_pragma(dbapi_conn, connection_record):
     cursor.close()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def setup_database():
+    """在每个测试前创建表，测试后清理数据"""
+    # 确保模型已导入并注册到 Base.metadata
+    # 创建所有表（如果不存在）
+    Base.metadata.create_all(bind=engine)
+    yield
+    # 清理所有数据但保留表结构（更快）
+    with engine.connect() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
+        conn.commit()
+
+
 @pytest.fixture(scope="function")
 def db():
     """创建测试数据库会话"""
-    # 创建所有表
-    Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
         yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
-        # 清理表
-        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
