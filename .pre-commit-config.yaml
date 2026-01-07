@@ -1,0 +1,111 @@
+# Pre-commit hooks 配置
+# 安装: pip install pre-commit
+# 安装 hooks: pre-commit install
+# 运行: pre-commit run --all-files
+
+repos:
+  # 通用文件检查
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']  # 允许自定义 YAML 标签
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Python 代码格式化 - Black
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3.12
+        files: ^backend/
+        args: ['--line-length=100']
+
+  # Python 导入排序 - isort
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        files: ^backend/
+        args: ['--profile', 'black', '--line-length=100']
+
+  # Python 代码检查 - Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        files: ^backend/
+        args: ['--fix', '--exit-non-zero-on-fix']
+
+  # Python 类型检查 - mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        files: ^backend/
+        additional_dependencies: [
+          'types-all',
+          'pydantic>=2.5.3',
+          'sqlalchemy>=2.0.25',
+          'fastapi>=0.109.0',
+        ]
+        args: ['--ignore-missing-imports', '--no-strict-optional']
+
+  # 前端代码格式化 - Prettier
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: ^frontend/
+        types: [file]
+        types_or: [javascript, jsx, ts, tsx, json, css, scss, markdown, yaml, yml]
+        exclude: '\.(min\.js|min\.css)$'
+
+  # 前端代码检查 - ESLint
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.56.0
+    hooks:
+      - id: eslint
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.56.0
+          - '@typescript-eslint/eslint-plugin@^6.19.0'
+          - '@typescript-eslint/parser@^6.19.0'
+          - 'eslint-plugin-react-hooks@^4.6.0'
+          - 'eslint-plugin-react-refresh@^0.4.5'
+        args: ['--fix', '--max-warnings=0']
+
+  # Markdown 文件检查
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+        exclude: '^specs/'
+
+  # Dockerfile 检查
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        files: ^env/.*Dockerfile.*$
+
+  # YAML 文件检查（包括 docker-compose.yml）
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: ['-d', '{extends: default, rules: {line-length: {max: 120}}}']
+        files: ^env/.*\.(yml|yaml)$
