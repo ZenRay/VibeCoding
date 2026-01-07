@@ -62,17 +62,22 @@ export function TagDialog({
       } else if (
         typeof error === 'object' &&
         error !== null &&
-        'error' in error &&
-        typeof (error as { error?: { message?: string } }).error === 'object' &&
-        (error as { error?: { message?: string } }).error !== null
+        'error' in error
       ) {
-        const errorObj = (error as { error: { message?: string } }).error
-        message = errorObj.message || message
+        const errorWithError = error as { error?: { message?: string } }
+        if (
+          errorWithError.error &&
+          typeof errorWithError.error === 'object' &&
+          'message' in errorWithError.error &&
+          typeof errorWithError.error.message === 'string'
+        ) {
+          message = errorWithError.error.message
+        }
       } else if (
         typeof error === 'object' &&
         error !== null &&
         'message' in error &&
-        typeof (error as { message?: unknown }).message === 'string'
+        typeof (error as { message: unknown }).message === 'string'
       ) {
         message = (error as { message: string }).message
       }
