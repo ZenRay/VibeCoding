@@ -1,5 +1,5 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 
 interface RadioGroupContextValue {
   value?: string
@@ -26,7 +26,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
     )
   }
 )
-RadioGroup.displayName = "RadioGroup"
+RadioGroup.displayName = 'RadioGroup'
 
 interface RadioGroupItemProps extends React.InputHTMLAttributes<HTMLInputElement> {
   value: string
@@ -46,7 +46,7 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
         checked={isChecked}
         onChange={() => context.onValueChange?.(value)}
         className={cn(
-          "h-4 w-4 border border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2",
+          'h-4 w-4 border border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2',
           className
         )}
         {...props}
@@ -54,6 +54,6 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
     )
   }
 )
-RadioGroupItem.displayName = "RadioGroupItem"
+RadioGroupItem.displayName = 'RadioGroupItem'
 
 export { RadioGroup, RadioGroupItem }
