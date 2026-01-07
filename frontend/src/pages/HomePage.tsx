@@ -23,6 +23,7 @@ function HomePage() {
   const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | 'title'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<number>>(new Set())
+  const [includeDeleted, setIncludeDeleted] = useState(false)
 
   // 构建查询参数
   const ticketQueryParams: TicketQueryParams = useMemo(() => {
@@ -44,8 +45,12 @@ function HomePage() {
     params.sort_by = sortBy
     params.sort_order = sortOrder
 
+    if (includeDeleted) {
+      params.include_deleted = true
+    }
+
     return params
-  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder])
+  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder, includeDeleted])
 
   const { tickets, loading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTickets(ticketQueryParams)
   const { tags, loading: tagsLoading, error: tagsError, refetch: refetchTags } = useTags()
@@ -126,6 +131,8 @@ function HomePage() {
         selectedTagIds={selectedTagIds}
         onTagFilterChange={setSelectedTagIds}
         tags={tags}
+        includeDeleted={includeDeleted}
+        onIncludeDeletedChange={setIncludeDeleted}
       />
 
       {/* 主内容区域 */}

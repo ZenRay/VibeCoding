@@ -9,6 +9,8 @@ interface SidebarProps {
   selectedTagIds: number[]
   onTagFilterChange: (tagIds: number[]) => void
   tags: Tag[]
+  includeDeleted: boolean
+  onIncludeDeletedChange: (include: boolean) => void
 }
 
 export function Sidebar({
@@ -17,6 +19,8 @@ export function Sidebar({
   selectedTagIds,
   onTagFilterChange,
   tags,
+  includeDeleted,
+  onIncludeDeletedChange,
 }: SidebarProps) {
   const toggleTag = (tagId: number) => {
     if (selectedTagIds.includes(tagId)) {
@@ -99,6 +103,26 @@ export function Sidebar({
               </button>
             ))
           )}
+        </div>
+      </div>
+
+      {/* 显示选项 */}
+      <div>
+        <Label className="text-sm font-semibold mb-3 block">显示选项</Label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="include-deleted"
+            checked={includeDeleted}
+            onChange={(e) => onIncludeDeletedChange(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          <Label
+            htmlFor="include-deleted"
+            className="cursor-pointer text-sm"
+          >
+            显示已删除的 Ticket
+          </Label>
         </div>
       </div>
     </div>
