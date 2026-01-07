@@ -17,7 +17,11 @@
 3. 测试文件统一存放到 `../tests` 中，该目录中的内容不需要git管理
 
 ## Progress Management
-### Git Management
+1. 对于不同阶段的管理统一使用 `../specs/spec-progess.md` 进行管理
+2. 重要的更新，需要及时更新 `../specs/spec-progess.md` 文档
+
+
+## Git Management
 1. 进行 Git 提交时，使用 pre-commit 检查
 2. push 代码到 GitHub 时，使用 action 的能力
 
