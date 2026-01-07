@@ -1,53 +1,204 @@
 # Project Alpha 快速开始指南
 
-**文档版本**: v1.0  
+**文档版本**: v2.0  
 **创建时间**: 2026-01-08  
 **最后更新**: 2026-01-08
 
-## 🚀 方式 1：Docker（推荐，最简单）
+**🎯 3 分钟即可开始开发！**
 
-### 一键启动
+---
+
+## 📋 前置要求
+
+- ✅ Docker Desktop 已安装并运行
+- ✅ Git 已配置
+- ✅ 代码编辑器（VS Code 推荐）
+
+**仅此而已！** 无需安装 Node.js、Python 或 PostgreSQL。
+
+---
+
+## 🚀 三步开始
+
+### 第一步：启动服务（30 秒）
 
 ```bash
-# 进入 env 目录
 cd env
-
-# 启动所有服务
 ./start.sh
 ```
 
-就这么简单！所有服务会自动启动：
-- ✅ PostgreSQL 数据库
-- ✅ FastAPI 后端（自动运行数据库迁移）
-- ✅ React 前端
-- ✅ 代码热重载支持
+等待服务启动，看到：
+```
+✅ 所有服务已启动
+前端: http://localhost:5173
+后端: http://localhost:8000/docs
+```
 
-### 访问应用
+### 第二步：开始开发（立即）
 
-启动后访问：
-- **前端页面**: http://localhost:5173
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **健康检查**: http://localhost:8000/health
+在编辑器中打开项目：
+- 修改 `backend/` → 后端自动重载
+- 修改 `frontend/` → 前端自动刷新
 
-### 停止服务
+**实时预览**：
+- 🌐 前端：http://localhost:5173
+- 🔌 后端 API：http://localhost:8000/docs
+- 📊 数据库管理：http://localhost:5050 (可选)
+
+### 第三步：提交代码（1 分钟）
 
 ```bash
 cd env
-./stop.sh
+./check-running.sh  # 自动检查和修复
+
+cd ..
+git add -A
+git commit -m "feat: 你的功能"
+git push origin main
 ```
+
+**就这么简单！** ✨
+
+---
+
+## 📖 常用命令
+
+```bash
+# 启动服务
+cd env && ./start.sh
+
+# 检查代码（提交前必做）
+cd env && ./check-running.sh
+
+# 停止服务
+cd env && ./stop.sh
+
+# 查看日志
+docker-compose -f env/docker-compose.yml logs -f backend
+docker-compose -f env/docker-compose.yml logs -f frontend
+```
+
+---
+
+## 🛠️ 进阶操作
 
 ### 查看日志
 
 ```bash
 cd env
-docker compose logs -f backend
-docker compose logs -f frontend
+docker-compose logs -f backend  # 后端日志
+docker-compose logs -f frontend # 前端日志
+docker-compose logs -f postgres # 数据库日志
+```
+
+### 进入容器
+
+```bash
+# 后端容器（调试）
+docker exec -it project-alpha-backend bash
+source .venv/bin/activate
+pytest -v
+
+# 前端容器
+docker exec -it project-alpha-frontend sh
+npm run lint
+
+# 数据库容器
+docker exec -it project-alpha-db psql -U ticketuser -d ticketdb
+```
+
+### 重启服务
+
+```bash
+cd env
+docker-compose restart backend
+docker-compose restart frontend
+
+# 重建并重启
+docker-compose up -d --build backend
 ```
 
 ---
 
-## 🛠️ 方式 2：本地开发
+## 🐛 遇到问题？
+
+### 服务无法启动
+
+```bash
+cd env
+docker-compose logs backend  # 查看错误日志
+docker-compose down && docker-compose up -d --build  # 重建
+```
+
+### 端口被占用
+
+修改 `env/docker-compose.yml` 中的端口：
+```yaml
+ports:
+  - "8001:8000"  # 改为其他端口
+```
+
+### 依赖安装失败
+
+```bash
+cd env
+docker-compose down -v  # 清理 volume
+docker-compose up -d --build  # 重建
+```
+
+### 更多问题
+
+查看 [0009-troubleshooting.md](./0009-troubleshooting.md)
+
+---
+
+## 🎯 开发提示
+
+### DO（应该做）✅
+
+- ✅ 提交前运行 `cd env && ./check-running.sh`
+- ✅ 在 Docker 容器内测试（环境一致）
+- ✅ 查看日志排查问题
+- ✅ 定期 `git pull` 同步代码
+
+### DON'T（不要做）❌
+
+- ❌ 在宿主机安装 Node/Python（使用 Docker）
+- ❌ 手动调整格式化输出（让工具处理）
+- ❌ 跳过代码检查直接提交（会导致 CI 失败）
+- ❌ 忽略 TypeScript 错误
+
+---
+
+## 📚 学习资源
+
+### 必读文档
+
+1. [Docker 开发环境](./0010-docker-development.md) - 完整指南
+2. [代码质量规范](./0011-code-quality.md) - 代码规范
+3. [快速参考](../env/快速参考.md) - 常用命令
+
+### 技术文档
+
+- [数据库设计](./0012-database-design.md) - 后端开发
+- [前端架构](./0013-frontend-architecture.md) - 前端开发
+- [经验教训](./0014-lessons-learned.md) - 最佳实践
+
+### 完整索引
+
+查看 [specs/README.md](./README.md)
+
+---
+
+## 🎉 开始享受开发吧！
+
+有问题随时查看文档，或提交 Issue。
+
+**Happy Coding!** 🚀
+
+---
+
+## 🛠️ 备选方式：本地开发（不推荐）
 
 ### 后端设置
 

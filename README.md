@@ -240,8 +240,9 @@ MIT License
 ---
 
 **项目地址**: https://github.com/ZenRay/VibeCoding  
+**快速开始**: [specs/0006-quick-start.md](./specs/0006-quick-start.md)  
 **文档索引**: [specs/README.md](./specs/README.md)  
-**开发总结**: [本次开发总结.md](./本次开发总结.md)
+**开发总结**: [specs/0015-project-summary.md](./specs/0015-project-summary.md)
 
 ---
 

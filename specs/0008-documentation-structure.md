@@ -32,6 +32,7 @@
 - ✅ `specs/0012-database-design.md` - 数据库设计和迁移指南
 - ✅ `specs/0013-frontend-architecture.md` - 前端架构设计
 - ✅ `specs/0014-lessons-learned.md` - 经验教训和最佳实践
+- ✅ `specs/0015-project-summary.md` - 项目开发总结和成果
 
 ### env 目录
 
