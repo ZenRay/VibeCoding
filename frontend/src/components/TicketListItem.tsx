@@ -49,16 +49,16 @@ export function TicketListItem({
     >
       {/* 复选框 */}
       <input
-        type='checkbox'
+        type="checkbox"
         checked={selected}
-        onChange={(e) => onSelect(ticket.id, e.target.checked)}
+        onChange={e => onSelect(ticket.id, e.target.checked)}
         disabled={isDeleted}
-        className='mt-1 h-4 w-4 rounded border-gray-300'
+        className="mt-1 h-4 w-4 rounded border-gray-300"
       />
 
       {/* 内容区域 */}
-      <div className='flex-1 min-w-0'>
-        <div className='flex items-start justify-between gap-4 mb-1'>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4 mb-1">
           <h3
             className={`text-base font-medium ${
               isDeleted ? 'line-through text-muted-foreground' : ''
@@ -66,24 +66,24 @@ export function TicketListItem({
           >
             {ticket.title}
           </h3>
-          <div className='flex items-center gap-2 flex-shrink-0'>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {!isDeleted && (
               <>
                 <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-8 w-8'
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={() => onEdit(ticket)}
                 >
-                  <Edit2 className='h-4 w-4' />
+                  <Edit2 className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-8 w-8 text-destructive hover:text-destructive'
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
                   onClick={handleDelete}
                 >
-                  <Trash2 className='h-4 w-4' />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </>
             )}
@@ -91,23 +91,19 @@ export function TicketListItem({
         </div>
 
         {ticket.description && (
-          <p
-            className={`text-sm text-muted-foreground mb-2 ${
-              isDeleted ? 'line-through' : ''
-            }`}
-          >
+          <p className={`text-sm text-muted-foreground mb-2 ${isDeleted ? 'line-through' : ''}`}>
             {ticket.description}
           </p>
         )}
 
-        <div className='flex items-center gap-4 text-xs text-muted-foreground'>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>创建于 {formatDate(ticket.created_at)}</span>
           {ticket.tags.length > 0 && (
-            <div className='flex items-center gap-2'>
-              {ticket.tags.map((tag) => (
+            <div className="flex items-center gap-2">
+              {ticket.tags.map(tag => (
                 <span
                   key={tag.id}
-                  className='px-2 py-0.5 rounded text-xs'
+                  className="px-2 py-0.5 rounded text-xs"
                   style={{
                     backgroundColor: tag.color + '20',
                     color: tag.color,

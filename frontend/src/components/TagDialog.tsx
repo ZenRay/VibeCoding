@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from './ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -13,12 +20,7 @@ interface TagDialogProps {
   onSuccess: () => void
 }
 
-export function TagDialog({
-  open,
-  onOpenChange,
-  tag,
-  onSuccess,
-}: TagDialogProps) {
+export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps) {
   const [name, setName] = useState('')
   const [color, setColor] = useState('#6B7280')
   const [loading, setLoading] = useState(false)
@@ -59,11 +61,7 @@ export function TagDialog({
       let message = '保存失败，请重试'
       if (error instanceof Error) {
         message = error.message
-      } else if (
-        typeof error === 'object' &&
-        error !== null &&
-        'error' in error
-      ) {
+      } else if (typeof error === 'object' && error !== null && 'error' in error) {
         const errorWithError = error as { error?: { message?: string } }
         if (
           errorWithError.error &&
@@ -102,51 +100,47 @@ export function TagDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{tag ? '编辑标签' : '创建标签'}</DialogTitle>
-          <DialogDescription>
-            {tag ? '修改标签信息' : '创建新标签'}
-          </DialogDescription>
+          <DialogDescription>{tag ? '修改标签信息' : '创建新标签'}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='tag-name'>名称 *</Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tag-name">名称 *</Label>
             <Input
-              id='tag-name'
+              id="tag-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder='输入标签名称'
+              onChange={e => setName(e.target.value)}
+              placeholder="输入标签名称"
               required
               maxLength={50}
             />
-            <p className='text-xs text-muted-foreground'>
-              注意：英文字符会自动转换为大写
-            </p>
+            <p className="text-xs text-muted-foreground">注意：英文字符会自动转换为大写</p>
           </div>
 
-          <div className='space-y-2'>
-            <Label htmlFor='tag-color'>颜色 *</Label>
-            <div className='flex gap-2 items-center'>
+          <div className="space-y-2">
+            <Label htmlFor="tag-color">颜色 *</Label>
+            <div className="flex gap-2 items-center">
               <Input
-                id='tag-color'
-                type='color'
+                id="tag-color"
+                type="color"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className='w-20 h-10'
+                onChange={e => setColor(e.target.value)}
+                className="w-20 h-10"
               />
               <Input
-                type='text'
+                type="text"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
-                placeholder='#6B7280'
+                onChange={e => setColor(e.target.value)}
+                placeholder="#6B7280"
                 pattern="^#[0-9A-Fa-f]{6}$"
                 maxLength={7}
               />
             </div>
-            <div className='flex gap-2 flex-wrap'>
-              {presetColors.map((presetColor) => (
+            <div className="flex gap-2 flex-wrap">
+              {presetColors.map(presetColor => (
                 <button
                   key={presetColor}
-                  type='button'
+                  type="button"
                   onClick={() => setColor(presetColor)}
                   className={`w-8 h-8 rounded-full border-2 ${
                     color === presetColor ? 'border-foreground scale-110' : 'border-transparent'
@@ -158,16 +152,16 @@ export function TagDialog({
             </div>
           </div>
 
-          <div className='flex justify-end gap-2 pt-4'>
+          <div className="flex justify-end gap-2 pt-4">
             <Button
-              type='button'
-              variant='outline'
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               取消
             </Button>
-            <Button type='submit' disabled={loading || !name.trim()}>
+            <Button type="submit" disabled={loading || !name.trim()}>
               {loading ? '保存中...' : tag ? '更新' : '创建'}
             </Button>
           </div>

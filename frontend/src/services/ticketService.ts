@@ -79,9 +79,7 @@ export const ticketService = {
    * 从 Ticket 移除标签
    */
   async removeTag(ticketId: number, tagId: number): Promise<Ticket> {
-    const response = await api.delete<Ticket>(
-      `/tickets/${ticketId}/tags/${tagId}`
-    )
+    const response = await api.delete<Ticket>(`/tickets/${ticketId}/tags/${tagId}`)
     return response.data
   },
 }

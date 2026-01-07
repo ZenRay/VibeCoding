@@ -13,18 +13,18 @@ const api: AxiosInstance = axios.create({
 
 // 请求拦截器
 api.interceptors.request.use(
-  (config) => {
+  config => {
     // 可以在这里添加认证 token 等
     return config
   },
-  (error) => {
+  error => {
     return Promise.reject(error)
   }
 )
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response) => {
+  response => {
     return response
   },
   (error: AxiosError<ApiError>) => {

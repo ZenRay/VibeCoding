@@ -1,10 +1,5 @@
 import api from './api'
-import {
-  Tag,
-  CreateTagRequest,
-  UpdateTagRequest,
-  TagListResponse,
-} from '@/types/tag'
+import { Tag, CreateTagRequest, UpdateTagRequest, TagListResponse } from '@/types/tag'
 
 export interface TagQueryParams {
   sort_by?: 'name' | 'created_at' | 'usage_count'

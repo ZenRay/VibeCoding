@@ -43,21 +43,21 @@ const defaultFilters: FilterState = {
   sortOrder: 'desc',
 }
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>(set => ({
   // 初始状态
   tickets: [],
   tags: [],
   filters: defaultFilters,
 
   // 设置 Tickets
-  setTickets: (tickets) => set({ tickets }),
+  setTickets: tickets => set({ tickets }),
 
   // 设置 Tags
-  setTags: (tags) => set({ tags }),
+  setTags: tags => set({ tags }),
 
   // 设置过滤器
-  setFilters: (newFilters) =>
-    set((state) => ({
+  setFilters: newFilters =>
+    set(state => ({
       filters: { ...state.filters, ...newFilters },
     })),
 
@@ -65,42 +65,38 @@ export const useStore = create<AppState>((set) => ({
   resetFilters: () => set({ filters: defaultFilters }),
 
   // 添加 Ticket
-  addTicket: (ticket) =>
-    set((state) => ({
+  addTicket: ticket =>
+    set(state => ({
       tickets: [ticket, ...state.tickets],
     })),
 
   // 更新 Ticket
   updateTicket: (id, updates) =>
-    set((state) => ({
-      tickets: state.tickets.map((ticket) =>
-        ticket.id === id ? { ...ticket, ...updates } : ticket
-      ),
+    set(state => ({
+      tickets: state.tickets.map(ticket => (ticket.id === id ? { ...ticket, ...updates } : ticket)),
     })),
 
   // 删除 Ticket
-  removeTicket: (id) =>
-    set((state) => ({
-      tickets: state.tickets.filter((ticket) => ticket.id !== id),
+  removeTicket: id =>
+    set(state => ({
+      tickets: state.tickets.filter(ticket => ticket.id !== id),
     })),
 
   // 添加 Tag
-  addTag: (tag) =>
-    set((state) => ({
+  addTag: tag =>
+    set(state => ({
       tags: [...state.tags, tag],
     })),
 
   // 更新 Tag
   updateTag: (id, updates) =>
-    set((state) => ({
-      tags: state.tags.map((tag) =>
-        tag.id === id ? { ...tag, ...updates } : tag
-      ),
+    set(state => ({
+      tags: state.tags.map(tag => (tag.id === id ? { ...tag, ...updates } : tag)),
     })),
 
   // 删除 Tag
-  removeTag: (id) =>
-    set((state) => ({
-      tags: state.tags.filter((tag) => tag.id !== id),
+  removeTag: id =>
+    set(state => ({
+      tags: state.tags.filter(tag => tag.id !== id),
     })),
 }))

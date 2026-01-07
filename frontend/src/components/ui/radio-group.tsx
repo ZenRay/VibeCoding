@@ -17,11 +17,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   ({ className, value, onValueChange, ...props }, ref) => {
     return (
       <RadioGroupContext.Provider value={{ value, onValueChange }}>
-        <div
-          className={cn("space-y-2", className)}
-          ref={ref}
-          {...props}
-        />
+        <div className={cn('space-y-2', className)} ref={ref} {...props} />
       </RadioGroupContext.Provider>
     )
   }
@@ -39,7 +35,7 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
 
     return (
       <input
-        type='radio'
+        type="radio"
         ref={ref}
         id={id}
         value={value}

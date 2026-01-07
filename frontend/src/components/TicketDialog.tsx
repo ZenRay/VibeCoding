@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from './ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -15,13 +22,7 @@ interface TicketDialogProps {
   onSuccess: () => void
 }
 
-export function TicketDialog({
-  open,
-  onOpenChange,
-  ticket,
-  tags,
-  onSuccess,
-}: TicketDialogProps) {
+export function TicketDialog({ open, onOpenChange, ticket, tags, onSuccess }: TicketDialogProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
@@ -31,7 +32,7 @@ export function TicketDialog({
     if (ticket) {
       setTitle(ticket.title)
       setDescription(ticket.description || '')
-      setSelectedTagIds(ticket.tags.map((t) => t.id))
+      setSelectedTagIds(ticket.tags.map(t => t.id))
     } else {
       setTitle('')
       setDescription('')
@@ -53,9 +54,9 @@ export function TicketDialog({
         await ticketService.updateTicket(ticket.id, updateData)
 
         // 更新标签
-        const currentTagIds = ticket.tags.map((t) => t.id)
-        const tagsToAdd = selectedTagIds.filter((id) => !currentTagIds.includes(id))
-        const tagsToRemove = currentTagIds.filter((id) => !selectedTagIds.includes(id))
+        const currentTagIds = ticket.tags.map(t => t.id)
+        const tagsToAdd = selectedTagIds.filter(id => !currentTagIds.includes(id))
+        const tagsToRemove = currentTagIds.filter(id => !selectedTagIds.includes(id))
 
         for (const tagId of tagsToAdd) {
           await ticketService.addTag(ticket.id, tagId)
@@ -84,57 +85,53 @@ export function TicketDialog({
   }
 
   const toggleTag = (tagId: number) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
-        ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
+    setSelectedTagIds(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
     )
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{ticket ? '编辑 Ticket' : '创建 Ticket'}</DialogTitle>
           <DialogDescription>
-            {ticket
-              ? '修改 Ticket 信息'
-              : '填写 Ticket 信息并选择标签'}
+            {ticket ? '修改 Ticket 信息' : '填写 Ticket 信息并选择标签'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='title'>标题 *</Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">标题 *</Label>
             <Input
-              id='title'
+              id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder='输入 Ticket 标题'
+              onChange={e => setTitle(e.target.value)}
+              placeholder="输入 Ticket 标题"
               required
               maxLength={200}
             />
           </div>
 
-          <div className='space-y-2'>
-            <Label htmlFor='description'>描述</Label>
+          <div className="space-y-2">
+            <Label htmlFor="description">描述</Label>
             <textarea
-              id='description'
+              id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder='输入 Ticket 描述（可选）'
-              className='flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+              onChange={e => setDescription(e.target.value)}
+              placeholder="输入 Ticket 描述（可选）"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               maxLength={5000}
             />
           </div>
 
-          <div className='space-y-2'>
+          <div className="space-y-2">
             <Label>标签</Label>
-            <div className='flex flex-wrap gap-2'>
-              {tags.map((tag) => (
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
                 <button
                   key={tag.id}
-                  type='button'
+                  type="button"
                   onClick={() => toggleTag(tag.id)}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     selectedTagIds.includes(tag.id)
@@ -142,9 +139,7 @@ export function TicketDialog({
                       : 'opacity-60 hover:opacity-100'
                   }`}
                   style={{
-                    backgroundColor: selectedTagIds.includes(tag.id)
-                      ? tag.color
-                      : tag.color + '20',
+                    backgroundColor: selectedTagIds.includes(tag.id) ? tag.color : tag.color + '20',
                     color: selectedTagIds.includes(tag.id) ? 'white' : tag.color,
                     border: `1px solid ${tag.color}`,
                   }}
@@ -153,21 +148,19 @@ export function TicketDialog({
                 </button>
               ))}
             </div>
-            {tags.length === 0 && (
-              <p className='text-sm text-muted-foreground'>暂无标签</p>
-            )}
+            {tags.length === 0 && <p className="text-sm text-muted-foreground">暂无标签</p>}
           </div>
 
-          <div className='flex justify-end gap-2 pt-4'>
+          <div className="flex justify-end gap-2 pt-4">
             <Button
-              type='button'
-              variant='outline'
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               取消
             </Button>
-            <Button type='submit' disabled={loading || !title.trim()}>
+            <Button type="submit" disabled={loading || !title.trim()}>
               {loading ? '保存中...' : ticket ? '更新' : '创建'}
             </Button>
           </div>
