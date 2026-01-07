@@ -161,18 +161,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Start services with docker-compose
+      - name: Start services with docker compose
         run: |
           cd env
-          docker-compose up -d
+          docker compose up -d
           # 等待服务启动
-          sleep 10
+          sleep 15
 
       - name: Check services health
         run: |
-          docker-compose -f env/docker-compose.yml ps
-          docker-compose -f env/docker-compose.yml logs backend
-          docker-compose -f env/docker-compose.yml logs frontend
+          docker compose -f env/docker-compose.yml ps
+          docker compose -f env/docker-compose.yml logs backend
+          docker compose -f env/docker-compose.yml logs frontend
 
       - name: Run integration tests in container
         run: |
@@ -192,5 +192,5 @@ jobs:
         if: always()
         run: |
           cd env
-          docker-compose logs
-          docker-compose down -v
+          docker compose logs
+          docker compose down -v
