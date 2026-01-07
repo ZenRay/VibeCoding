@@ -12,7 +12,6 @@ import { Plus, Tag as TagIcon, Search, ChevronUp, ChevronDown } from 'lucide-rea
 import { Ticket } from '@/types/ticket'
 import { Tag } from '@/types/tag'
 import { TicketQueryParams } from '@/types/ticket'
-import { tagService } from '@/services/tagService'
 import { ticketService } from '@/services/ticketService'
 
 function HomePage() {
@@ -53,7 +52,7 @@ function HomePage() {
   }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder, includeDeleted])
 
   const { tickets, loading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTickets(ticketQueryParams)
-  const { tags, loading: tagsLoading, error: tagsError, refetch: refetchTags } = useTags()
+  const { tags, refetch: refetchTags } = useTags()
 
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
@@ -72,11 +71,6 @@ function HomePage() {
 
   const handleCreateTag = () => {
     setEditingTag(null)
-    setTagDialogOpen(true)
-  }
-
-  const handleEditTag = (tag: Tag) => {
-    setEditingTag(tag)
     setTagDialogOpen(true)
   }
 
