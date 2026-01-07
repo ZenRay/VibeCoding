@@ -56,8 +56,26 @@ export function TagDialog({
       onOpenChange(false)
     } catch (error: unknown) {
       console.error('保存失败:', error)
-      const message =
-        error?.error?.message || error?.message || '保存失败，请重试'
+      let message = '保存失败，请重试'
+      if (error instanceof Error) {
+        message = error.message
+      } else if (
+        typeof error === 'object' &&
+        error !== null &&
+        'error' in error &&
+        typeof (error as { error?: { message?: string } }).error === 'object' &&
+        (error as { error?: { message?: string } }).error !== null
+      ) {
+        const errorObj = (error as { error: { message?: string } }).error
+        message = errorObj.message || message
+      } else if (
+        typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        typeof (error as { message?: unknown }).message === 'string'
+      ) {
+        message = (error as { message: string }).message
+      }
       alert(message)
     } finally {
       setLoading(false)
