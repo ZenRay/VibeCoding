@@ -19,33 +19,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 UV（优先使用 GitHub 镜像加速下载）
-# 使用 ghproxy.com 镜像下载 UV 二进制文件（推荐，速度更快）
-RUN UV_VERSION="0.5.0" && \
-    (curl -Lsf "https://ghproxy.com/https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/uv.tar.gz && \
-     tar -xzf /tmp/uv.tar.gz -C /tmp && \
-     mv /tmp/uv /usr/local/bin/uv && \
-     chmod +x /usr/local/bin/uv && \
-     rm /tmp/uv.tar.gz && \
-     echo "✅ UV installed from GitHub mirror") || \
-    (curl -LsSf https://astral.sh/uv/install.sh | sh && \
-     mv /root/.cargo/bin/uv /usr/local/bin/uv 2>/dev/null || true && \
-     echo "✅ UV installed from official source")
-
 # 设置 Python 版本
 ENV PYTHON_VERSION=3.12
 
-# 配置 pip 使用清华大学镜像源（备用方案）
+# 配置 pip 使用清华大学镜像源（加速 Python 包下载）
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ENV PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
-
-# 配置 UV 使用清华大学 PyPI 镜像源（加速 Python 包下载）
-ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 复制项目配置文件（包括 README.md，因为 pyproject.toml 引用了它）
 COPY pyproject.toml .
 COPY README.md .
-COPY uv.lock* ./
 
 # 创建虚拟环境并安装依赖
 # 先只安装依赖包，不安装项目本身（避免构建问题）
