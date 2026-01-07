@@ -1,6 +1,5 @@
 """Tag API 集成测试"""
 
-import pytest
 
 from app.models import Tag
 

@@ -1,20 +1,20 @@
 """Alembic 环境配置"""
 
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
-
 # 导入应用配置和模型
 import sys
+from logging.config import fileConfig
 from pathlib import Path
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import settings
 from app.database import Base
-from app.models import Ticket, Tag, TicketTag  # noqa: F401
+from app.models import Tag, Ticket, TicketTag  # noqa: F401
 
 # 这是 Alembic Config 对象，提供对 .ini 文件中值的访问
 config = context.config

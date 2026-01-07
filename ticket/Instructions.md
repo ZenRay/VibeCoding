@@ -13,6 +13,7 @@
 
 ## Document Mangement
 1. 非开发的内容不需要存放太冗余的代码
+2. 关于项目说明和项目进度的 md 文件在 `../specs` 中完成
 
 ### Git Management
 1. 进行 Git 提交时，使用 pre-commit 检查

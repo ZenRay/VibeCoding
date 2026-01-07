@@ -1,13 +1,7 @@
 """Pydantic 模式"""
 
-from app.schemas.ticket import (
-    Ticket,
-    TicketCreate,
-    TicketUpdate,
-    TicketList,
-    TicketQueryParams,
-)
-from app.schemas.tag import Tag, TagCreate, TagUpdate, TagList
+from app.schemas.tag import Tag, TagCreate, TagList, TagUpdate
+from app.schemas.ticket import Ticket, TicketCreate, TicketList, TicketQueryParams, TicketUpdate
 
 __all__ = [
     "Ticket",

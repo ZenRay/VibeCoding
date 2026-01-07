@@ -1,8 +1,9 @@
 """应用配置管理"""
 
-from pydantic_settings import BaseSettings
+from typing import Union
+
 from pydantic import field_validator
-from typing import List, Union
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     # CORS 配置（支持逗号分隔的字符串或列表）
-    cors_origins: Union[str, List[str]] = "http://localhost:5173,http://localhost:3000"
+    cors_origins: Union[str, list[str]] = "http://localhost:5173,http://localhost:3000"
 
     # 日志配置
     log_level: str = "info"

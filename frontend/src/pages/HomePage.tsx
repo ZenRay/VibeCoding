@@ -27,29 +27,29 @@ function HomePage() {
   // 构建查询参数
   const ticketQueryParams: TicketQueryParams = useMemo(() => {
     const params: TicketQueryParams = {}
-    
+
     if (searchQuery.trim()) {
       params.search = searchQuery.trim()
     }
-    
+
     if (statusFilter !== 'all') {
       params.status = statusFilter
     }
-    
+
     if (selectedTagIds.length > 0) {
       params.tag_ids = selectedTagIds
       params.tag_filter = 'and'
     }
-    
+
     params.sort_by = sortBy
     params.sort_order = sortOrder
-    
+
     return params
   }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder])
 
   const { tickets, loading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTickets(ticketQueryParams)
   const { tags, loading: tagsLoading, error: tagsError, refetch: refetchTags } = useTags()
-  
+
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
   const [tagDialogOpen, setTagDialogOpen] = useState(false)
@@ -98,7 +98,7 @@ function HomePage() {
   const handleBatchDelete = async () => {
     if (selectedTicketIds.size === 0) return
     if (!confirm(`确定要删除选中的 ${selectedTicketIds.size} 个 Ticket 吗？`)) return
-    
+
     try {
       await Promise.all(
         Array.from(selectedTicketIds).map((id) =>

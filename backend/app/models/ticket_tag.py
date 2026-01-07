@@ -1,6 +1,6 @@
 """TicketTag 关联模型"""
 
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, PrimaryKeyConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, PrimaryKeyConstraint
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -16,9 +16,7 @@ class TicketTag(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # 联合主键
-    __table_args__ = (
-        PrimaryKeyConstraint("ticket_id", "tag_id"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("ticket_id", "tag_id"),)
 
     def __repr__(self) -> str:
         return f"<TicketTag(ticket_id={self.ticket_id}, tag_id={self.tag_id})>"

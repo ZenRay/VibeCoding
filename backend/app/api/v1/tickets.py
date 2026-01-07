@@ -1,17 +1,12 @@
 """Ticket API 路由"""
 
-from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, Path, Body, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.ticket import (
-    Ticket,
-    TicketCreate,
-    TicketUpdate,
-    TicketList,
-    TicketQueryParams,
-)
+from app.schemas.ticket import Ticket, TicketCreate, TicketList, TicketQueryParams, TicketUpdate
 from app.services.ticket_service import TicketService
 from app.utils.exceptions import BaseAPIException
 
@@ -92,9 +87,7 @@ async def get_tickets(
         try:
             tag_id_list = [int(id.strip()) for id in tag_ids.split(",")]
         except ValueError:
-            raise HTTPException(
-                status_code=400, detail="tag_ids 格式错误，应为逗号分隔的数字"
-            )
+            raise HTTPException(status_code=400, detail="tag_ids 格式错误，应为逗号分隔的数字")
 
     # 构建查询参数
     params = TicketQueryParams(

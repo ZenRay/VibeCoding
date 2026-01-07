@@ -1,8 +1,8 @@
 """Tag 模型"""
 
-from sqlalchemy import Column, Integer, String, DateTime, CheckConstraint
-from sqlalchemy.sql import func
+from sqlalchemy import CheckConstraint, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from app.database import Base
 
@@ -21,9 +21,7 @@ class Tag(Base):
     tickets = relationship("Ticket", secondary="ticket_tags", back_populates="tags")
 
     # 约束
-    __table_args__ = (
-        CheckConstraint("color ~ '^#[0-9A-Fa-f]{6}$'", name="color_format"),
-    )
+    __table_args__ = (CheckConstraint("color ~ '^#[0-9A-Fa-f]{6}$'", name="color_format"),)
 
     def __repr__(self) -> str:
         return f"<Tag(id={self.id}, name='{self.name}', color='{self.color}')>"

@@ -13,16 +13,16 @@ dependencies = [
     # Web 框架
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
-    
+
     # 数据库
     "sqlalchemy>=2.0.25",
     "psycopg2-binary>=2.9.9",
     "alembic>=1.13.1",
-    
+
     # 数据验证
     "pydantic>=2.5.3",
     "pydantic-settings>=2.1.0",
-    
+
     # 工具库
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.6",
@@ -35,13 +35,13 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "httpx>=0.25.0",
-    
+
     # 代码质量
     "black>=23.0.0",
     "isort>=5.12.0",
     "ruff>=0.1.0",
     "mypy>=1.7.0",
-    
+
     # 其他开发工具
     "ipython>=8.17.0",
 ]
@@ -87,8 +87,12 @@ select = [
     "UP",
 ]
 ignore = [
-    "E501",
-    "B008",
+    "E501",  # 行长度（由 Black 处理）
+    "B008",  # 函数参数默认值
+    "E402",  # 模块级导入不在顶部（Alembic 需要）
+    "B904",  # except 子句中的 raise（FastAPI 异常处理模式）
+    "UP007", # 使用 X | Y 类型注解（Python 3.10+，但保持兼容性）
+    "F841",  # 未使用的变量（测试代码中）
 ]
 
 [tool.ruff.per-file-ignores]

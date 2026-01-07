@@ -1,14 +1,13 @@
 """Ticket 业务逻辑服务"""
 
 from datetime import datetime
-from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
-from app.models import Ticket, Tag, TicketTag
-from app.schemas.ticket import TicketCreate, TicketUpdate, TicketQueryParams
+from sqlalchemy.orm import Session
+
+from app.models import Tag, Ticket, TicketTag
+from app.schemas.ticket import TicketCreate, TicketQueryParams, TicketUpdate
 from app.utils.exceptions import NotFoundError, ValidationError
-from app.utils.pagination import paginate, PaginatedResult
+from app.utils.pagination import PaginatedResult, paginate
 
 
 class TicketService:
@@ -45,16 +44,14 @@ class TicketService:
         if params.tag_ids:
             if params.tag_filter == "or":
                 # OR 逻辑：包含任一标签
-                query = query.join(TicketTag).filter(
-                    TicketTag.tag_id.in_(params.tag_ids)
-                ).distinct()
+                query = (
+                    query.join(TicketTag).filter(TicketTag.tag_id.in_(params.tag_ids)).distinct()
+                )
             else:
                 # AND 逻辑：包含所有标签（默认）
                 for tag_id in params.tag_ids:
                     subquery = (
-                        db.query(TicketTag.ticket_id)
-                        .filter(TicketTag.tag_id == tag_id)
-                        .subquery()
+                        db.query(TicketTag.ticket_id).filter(TicketTag.tag_id == tag_id).subquery()
                     )
                     query = query.filter(Ticket.id.in_(subquery))
 
@@ -181,10 +178,14 @@ class TicketService:
         Raises:
             NotFoundError: Ticket 不存在
         """
-        ticket = db.query(Ticket).filter(
-            Ticket.id == ticket_id,
-            Ticket.deleted_at.is_(None),
-        ).first()
+        ticket = (
+            db.query(Ticket)
+            .filter(
+                Ticket.id == ticket_id,
+                Ticket.deleted_at.is_(None),
+            )
+            .first()
+        )
 
         if not ticket:
             raise NotFoundError(f"Ticket ID {ticket_id} 不存在")
@@ -281,10 +282,14 @@ class TicketService:
         Raises:
             NotFoundError: Ticket 不存在
         """
-        ticket = db.query(Ticket).filter(
-            Ticket.id == ticket_id,
-            Ticket.deleted_at.is_(None),
-        ).first()
+        ticket = (
+            db.query(Ticket)
+            .filter(
+                Ticket.id == ticket_id,
+                Ticket.deleted_at.is_(None),
+            )
+            .first()
+        )
 
         if not ticket:
             raise NotFoundError(f"Ticket ID {ticket_id} 不存在")
@@ -324,10 +329,14 @@ class TicketService:
         from app.utils.exceptions import ConflictError
 
         # 验证 Ticket 存在
-        ticket = db.query(Ticket).filter(
-            Ticket.id == ticket_id,
-            Ticket.deleted_at.is_(None),
-        ).first()
+        ticket = (
+            db.query(Ticket)
+            .filter(
+                Ticket.id == ticket_id,
+                Ticket.deleted_at.is_(None),
+            )
+            .first()
+        )
 
         if not ticket:
             raise NotFoundError(f"Ticket ID {ticket_id} 不存在")
@@ -379,10 +388,14 @@ class TicketService:
             NotFoundError: Ticket、Tag 或关联不存在
         """
         # 验证 Ticket 存在
-        ticket = db.query(Ticket).filter(
-            Ticket.id == ticket_id,
-            Ticket.deleted_at.is_(None),
-        ).first()
+        ticket = (
+            db.query(Ticket)
+            .filter(
+                Ticket.id == ticket_id,
+                Ticket.deleted_at.is_(None),
+            )
+            .first()
+        )
 
         if not ticket:
             raise NotFoundError(f"Ticket ID {ticket_id} 不存在")

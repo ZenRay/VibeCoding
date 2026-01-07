@@ -1,6 +1,7 @@
 # Pre-commit 和 GitHub Actions 测试结果
 
-**测试时间**: 2026-01-08
+**测试时间**: 2026-01-08  
+**测试状态**: ✅ 已通过
 
 ## ✅ Pre-commit Hooks 测试
 
@@ -35,13 +36,14 @@
 
 ### 3. 暂时禁用的检查
 
-以下检查需要额外环境配置，已暂时禁用：
+以下检查需要额外环境配置，已暂时禁用（本地环境）：
 - ⚠️ mypy - Python 类型检查（需要额外依赖）
 - ⚠️ Prettier - 前端代码格式化（需要 Node.js 环境）
 - ⚠️ ESLint - 前端代码检查（需要 Node.js 环境）
+- ⚠️ markdownlint - Markdown 检查（需要 Node.js 环境）
 - ⚠️ hadolint - Dockerfile 检查（需要 Docker 环境）
 
-**注意**: 这些检查在 GitHub Actions 中会正常运行（CI 环境已配置好）。
+**注意**: 这些检查在 GitHub Actions 中会正常运行（CI 环境已配置好 Node.js 和 Docker）。
 
 ## ✅ GitHub Actions 测试
 

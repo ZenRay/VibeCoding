@@ -1,11 +1,12 @@
 """Tag API 路由"""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Path, Body, HTTPException
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.tag import Tag, TagCreate, TagUpdate, TagList
+from app.schemas.tag import Tag, TagCreate, TagList, TagUpdate
 from app.services.tag_service import TagService
 from app.utils.exceptions import BaseAPIException
 

@@ -1,7 +1,8 @@
 """Ticket 相关的 Pydantic 模式"""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from app.schemas.tag import Tag
@@ -11,13 +12,15 @@ class TicketBase(BaseModel):
     """Ticket 基础模式"""
 
     title: str = Field(..., max_length=200, description="Ticket 标题", example="实现用户认证功能")
-    description: Optional[str] = Field(None, max_length=5000, description="Ticket 详细描述", example="添加 JWT 认证机制")
+    description: Optional[str] = Field(
+        None, max_length=5000, description="Ticket 详细描述", example="添加 JWT 认证机制"
+    )
 
 
 class TicketCreate(TicketBase):
     """创建 Ticket 的请求模式"""
 
-    tag_ids: Optional[List[int]] = Field(None, description="关联的标签 ID 列表", example=[1, 2])
+    tag_ids: Optional[list[int]] = Field(None, description="关联的标签 ID 列表", example=[1, 2])
 
     class Config:
         json_schema_extra = {
@@ -49,7 +52,7 @@ class Ticket(TicketBase):
 
     id: int
     status: str = Field(..., description="Ticket 状态", example="pending")
-    tags: List[Tag] = Field(default_factory=list, description="关联的标签列表")
+    tags: list[Tag] = Field(default_factory=list, description="关联的标签列表")
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
@@ -81,7 +84,7 @@ class TicketQueryParams(BaseModel):
     status: str = "all"
     include_deleted: bool = False
     only_deleted: bool = False
-    tag_ids: Optional[List[int]] = None
+    tag_ids: Optional[list[int]] = None
     tag_filter: str = "and"
     search: Optional[str] = None
     sort_by: str = "created_at"
@@ -96,7 +99,7 @@ class TicketQueryParams(BaseModel):
 class TicketList(BaseModel):
     """Ticket 列表响应模式（含分页）"""
 
-    data: List[Ticket] = Field(..., description="Ticket 列表")
+    data: list[Ticket] = Field(..., description="Ticket 列表")
     pagination: dict = Field(..., description="分页信息")
 
     class Config:

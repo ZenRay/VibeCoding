@@ -83,11 +83,11 @@ try {
     'react-router-dom',
     'tailwindcss',
   ]
-  
+
   const missingDeps = requiredDeps.filter(
     (dep) => !packageJson.dependencies[dep] && !packageJson.devDependencies[dep]
   )
-  
+
   if (missingDeps.length === 0) {
     console.log('  ✅ 所有必需依赖已配置')
   } else {

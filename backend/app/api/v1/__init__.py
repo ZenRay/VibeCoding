@@ -16,7 +16,7 @@ api_router = APIRouter()
 async def api_v1_root():
     """
     API v1 根端点
-    
+
     返回 API 版本信息和主要端点列表
     """
     return JSONResponse(
@@ -56,7 +56,7 @@ async def api_v1_root():
 
 
 # 导入并注册各个路由模块
-from app.api.v1 import tickets, tags
+from app.api.v1 import tags, tickets
 
 api_router.include_router(tickets.router, tags=["Tickets"])
 api_router.include_router(tags.router, tags=["Tags"])

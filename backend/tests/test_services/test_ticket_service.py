@@ -1,12 +1,13 @@
 """Ticket Service 单元测试"""
 
-import pytest
 from datetime import datetime
 
+import pytest
+
+from app.models import Tag, Ticket
+from app.schemas.ticket import TicketCreate, TicketUpdate
 from app.services.ticket_service import TicketService
-from app.schemas.ticket import TicketCreate, TicketUpdate, TicketQueryParams
-from app.models import Ticket, Tag
-from app.utils.exceptions import NotFoundError, ValidationError
+from app.utils.exceptions import NotFoundError
 
 
 class TestTicketService:

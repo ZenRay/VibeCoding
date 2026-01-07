@@ -2,10 +2,10 @@
 
 import pytest
 
-from app.services.tag_service import TagService
-from app.schemas.tag import TagCreate, TagUpdate
 from app.models import Tag
-from app.utils.exceptions import NotFoundError, ConflictError
+from app.schemas.tag import TagCreate, TagUpdate
+from app.services.tag_service import TagService
+from app.utils.exceptions import ConflictError, NotFoundError
 
 
 class TestTagService:

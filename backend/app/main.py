@@ -4,9 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.config import settings
-from app.utils.exceptions import BaseAPIException, NotFoundError, ValidationError, ConflictError
 from app.api.v1 import api_router
+from app.config import settings
+from app.utils.exceptions import BaseAPIException, ConflictError, NotFoundError, ValidationError
 
 # 创建 FastAPI 应用实例
 app = FastAPI(
@@ -39,7 +39,7 @@ async def api_exception_handler(request: Request, exc: BaseAPIException):
         status_code = 400
     elif isinstance(exc, ConflictError):
         status_code = 409
-    
+
     return JSONResponse(
         status_code=status_code,
         content={

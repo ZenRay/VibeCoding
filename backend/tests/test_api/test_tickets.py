@@ -1,9 +1,7 @@
 """Ticket API 集成测试"""
 
-import pytest
-from datetime import datetime
 
-from app.models import Ticket, Tag
+from app.models import Tag, Ticket
 
 
 class TestTicketAPI:
@@ -129,7 +127,7 @@ class TestTicketAPI:
     def test_remove_tag_from_ticket(self, client, db):
         """测试从 Ticket 移除标签"""
         from app.services.ticket_service import TicketService
-        
+
         ticket = Ticket(title="测试", status="pending")
         tag = Tag(name="TO_REMOVE", color="#FF0000")
         db.add(ticket)

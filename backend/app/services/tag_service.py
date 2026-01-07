@@ -1,12 +1,13 @@
 """Tag 业务逻辑服务"""
 
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from typing import Optional
+
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.models import Tag, TicketTag
 from app.schemas.tag import TagCreate, TagUpdate
-from app.utils.exceptions import NotFoundError, ConflictError
+from app.utils.exceptions import ConflictError, NotFoundError
 
 
 class TagService:
@@ -17,7 +18,7 @@ class TagService:
         db: Session,
         sort_by: str = "name",
         sort_order: str = "asc",
-    ) -> List[Tag]:
+    ) -> list[Tag]:
         """
         获取标签列表（支持排序）
 
@@ -42,9 +43,7 @@ class TagService:
                 .group_by(TicketTag.tag_id)
                 .subquery()
             )
-            query = query.outerjoin(
-                subquery, Tag.id == subquery.c.tag_id
-            ).order_by(
+            query = query.outerjoin(subquery, Tag.id == subquery.c.tag_id).order_by(
                 func.coalesce(subquery.c.count, 0).desc()
                 if sort_order == "desc"
                 else func.coalesce(subquery.c.count, 0).asc()
@@ -97,9 +96,7 @@ class TagService:
 
         # 添加使用次数统计
         tag.ticket_count = (
-            db.query(func.count(TicketTag.ticket_id))
-            .filter(TicketTag.tag_id == tag_id)
-            .scalar()
+            db.query(func.count(TicketTag.ticket_id)).filter(TicketTag.tag_id == tag_id).scalar()
         )
 
         return tag
@@ -202,9 +199,7 @@ class TagService:
 
         # 添加使用次数统计
         tag.ticket_count = (
-            db.query(func.count(TicketTag.ticket_id))
-            .filter(TicketTag.tag_id == tag_id)
-            .scalar()
+            db.query(func.count(TicketTag.ticket_id)).filter(TicketTag.tag_id == tag_id).scalar()
         )
 
         return tag

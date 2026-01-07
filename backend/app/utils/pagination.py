@@ -1,8 +1,9 @@
 """分页工具函数"""
 
-from typing import TypeVar, Generic, List
-from sqlalchemy.orm import Query
 from math import ceil
+from typing import Generic, TypeVar
+
+from sqlalchemy.orm import Query
 
 T = TypeVar("T")
 
@@ -10,7 +11,7 @@ T = TypeVar("T")
 class PaginatedResult(Generic[T]):
     """分页结果"""
 
-    def __init__(self, items: List[T], total: int, page: int, page_size: int):
+    def __init__(self, items: list[T], total: int, page: int, page_size: int):
         self.items = items
         self.total = total
         self.page = page
@@ -30,7 +31,9 @@ class PaginatedResult(Generic[T]):
         }
 
 
-def paginate(query: Query, page: int = 1, page_size: int = 20, max_page_size: int = 100) -> PaginatedResult:
+def paginate(
+    query: Query, page: int = 1, page_size: int = 20, max_page_size: int = 100
+) -> PaginatedResult:
     """
     对查询结果进行分页
 

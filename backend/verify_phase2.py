@@ -5,14 +5,16 @@
 """
 
 import sys
-import requests
 from pathlib import Path
+
+import requests
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
 
 BASE_URL = "http://localhost:8000"
 API_BASE = f"{BASE_URL}/api/v1"
+
 
 def check_health():
     """检查健康检查端点"""
@@ -29,6 +31,7 @@ def check_health():
         print(f"  ❌ 无法连接到服务器: {e}")
         print("     请确保后端服务已启动: uvicorn app.main:app --reload")
         return False
+
 
 def check_api_docs():
     """检查 API 文档"""
@@ -63,17 +66,16 @@ def check_api_docs():
         print(f"  ❌ 检查 API 文档失败: {e}")
         return False
 
+
 def test_tag_api():
     """测试 Tag API"""
     print("\n🔍 测试 Tag API...")
-    
+
     try:
         # 创建标签
         print("  1. 创建标签...")
         response = requests.post(
-            f"{API_BASE}/tags",
-            json={"name": "verify_test", "color": "#FF0000"},
-            timeout=5
+            f"{API_BASE}/tags", json={"name": "verify_test", "color": "#FF0000"}, timeout=5
         )
         if response.status_code == 201:
             tag_data = response.json()
@@ -109,10 +111,11 @@ def test_tag_api():
         print(f"  ❌ Tag API 测试失败: {e}")
         return None
 
+
 def test_ticket_api(tag_id):
     """测试 Ticket API"""
     print("\n🔍 测试 Ticket API...")
-    
+
     try:
         # 创建 Ticket
         print("  1. 创建 Ticket...")
@@ -123,7 +126,7 @@ def test_ticket_api(tag_id):
                 "description": "用于验证 API 的测试 Ticket",
                 "tag_ids": [tag_id] if tag_id else None,
             },
-            timeout=5
+            timeout=5,
         )
         if response.status_code == 201:
             ticket_data = response.json()
@@ -156,9 +159,7 @@ def test_ticket_api(tag_id):
         # 更新 Ticket
         print("  4. 更新 Ticket...")
         response = requests.put(
-            f"{API_BASE}/tickets/{ticket_id}",
-            json={"title": "更新后的标题"},
-            timeout=5
+            f"{API_BASE}/tickets/{ticket_id}", json={"title": "更新后的标题"}, timeout=5
         )
         if response.status_code == 200:
             print("     ✅ 更新 Ticket 成功")
@@ -219,6 +220,7 @@ def test_ticket_api(tag_id):
         print(f"  ❌ Ticket API 测试失败: {e}")
         return False
 
+
 def main():
     """主函数"""
     print("=" * 60)
@@ -271,6 +273,7 @@ def main():
     print("=" * 60)
 
     return 0 if all_passed else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

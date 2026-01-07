@@ -1,7 +1,8 @@
 """Tag 相关的 Pydantic 模式"""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -67,7 +68,7 @@ class Tag(TagBase):
 class TagList(BaseModel):
     """Tag 列表响应模式"""
 
-    data: List[Tag] = Field(..., description="标签列表")
+    data: list[Tag] = Field(..., description="标签列表")
 
     class Config:
         json_schema_extra = {
