@@ -1,7 +1,6 @@
 """Tag 相关的 Pydantic 模式"""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -33,10 +32,8 @@ class TagCreate(TagBase):
 class TagUpdate(BaseModel):
     """更新 Tag 的请求模式"""
 
-    name: Optional[str] = Field(None, max_length=50, description="标签名称")
-    color: Optional[str] = Field(
-        None, pattern="^#[0-9A-Fa-f]{6}$", description="标签颜色（HEX 格式）"
-    )
+    name: str | None = Field(None, max_length=50, description="标签名称")
+    color: str | None = Field(None, pattern="^#[0-9A-Fa-f]{6}$", description="标签颜色（HEX 格式）")
 
     class Config:
         json_schema_extra = {
@@ -52,7 +49,7 @@ class Tag(TagBase):
 
     id: int
     created_at: datetime
-    ticket_count: Optional[int] = Field(None, description="使用该标签的 Ticket 数量")
+    ticket_count: int | None = Field(None, description="使用该标签的 Ticket 数量")
 
     class Config:
         from_attributes = True

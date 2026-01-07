@@ -1,6 +1,5 @@
 """Tag API 路由"""
 
-from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
@@ -22,12 +21,14 @@ router = APIRouter()
     tags=["Tags"],
 )
 async def get_tags(
-    sort_by: Optional[str] = Query(
+    sort_by: str
+    | None = Query(
         "name",
         description="排序字段：name（名称）、created_at（创建时间）、usage_count（使用次数）",
         example="name",
     ),
-    sort_order: Optional[str] = Query(
+    sort_order: str
+    | None = Query(
         "asc",
         description="排序顺序：asc（升序）或 desc（降序）",
         example="asc",

@@ -1,6 +1,5 @@
 """Tag 业务逻辑服务"""
 
-from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -105,7 +104,7 @@ class TagService:
     def get_tag_by_name(
         db: Session,
         name: str,
-    ) -> Optional[Tag]:
+    ) -> Tag | None:
         """
         根据名称查找标签（用于去重）
 
@@ -114,7 +113,7 @@ class TagService:
             name: 标签名称
 
         Returns:
-            Optional[Tag]: Tag 对象，如果不存在则返回 None
+            Tag | None: Tag 对象，如果不存在则返回 None
         """
         # 注意：数据库触发器会自动将名称转换为大写
         # 所以这里也需要转换为大写进行查询

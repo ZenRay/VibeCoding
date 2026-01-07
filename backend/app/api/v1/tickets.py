@@ -1,6 +1,5 @@
 """Ticket API 路由"""
 
-from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
@@ -22,7 +21,8 @@ router = APIRouter()
     tags=["Tickets"],
 )
 async def get_tickets(
-    status: Optional[str] = Query(
+    status: str
+    | None = Query(
         None,
         description="Ticket 状态过滤",
         example="pending",
@@ -35,27 +35,32 @@ async def get_tickets(
         False,
         description="仅显示已删除的 Ticket（回收站）",
     ),
-    tag_ids: Optional[str] = Query(
+    tag_ids: str
+    | None = Query(
         None,
         description="标签 ID 列表，逗号分隔",
         example="1,2,3",
     ),
-    tag_filter: Optional[str] = Query(
+    tag_filter: str
+    | None = Query(
         "and",
         description="标签过滤逻辑：and（同时包含所有标签）或 or（包含任一标签）",
         example="and",
     ),
-    search: Optional[str] = Query(
+    search: str
+    | None = Query(
         None,
         description="搜索关键词（搜索标题）",
         example="认证",
     ),
-    sort_by: Optional[str] = Query(
+    sort_by: str
+    | None = Query(
         "created_at",
         description="排序字段：created_at（创建时间）、updated_at（更新时间）、title（标题）",
         example="created_at",
     ),
-    sort_order: Optional[str] = Query(
+    sort_order: str
+    | None = Query(
         "desc",
         description="排序顺序：asc（升序）或 desc（降序）",
         example="desc",

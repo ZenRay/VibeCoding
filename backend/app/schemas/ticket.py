@@ -1,7 +1,6 @@
 """Ticket 相关的 Pydantic 模式"""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +11,7 @@ class TicketBase(BaseModel):
     """Ticket 基础模式"""
 
     title: str = Field(..., max_length=200, description="Ticket 标题", example="实现用户认证功能")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=5000, description="Ticket 详细描述", example="添加 JWT 认证机制"
     )
 
@@ -20,7 +19,7 @@ class TicketBase(BaseModel):
 class TicketCreate(TicketBase):
     """创建 Ticket 的请求模式"""
 
-    tag_ids: Optional[list[int]] = Field(None, description="关联的标签 ID 列表", example=[1, 2])
+    tag_ids: list[int] | None = Field(None, description="关联的标签 ID 列表", example=[1, 2])
 
     class Config:
         json_schema_extra = {
@@ -35,8 +34,8 @@ class TicketCreate(TicketBase):
 class TicketUpdate(BaseModel):
     """更新 Ticket 的请求模式"""
 
-    title: Optional[str] = Field(None, max_length=200, description="Ticket 标题")
-    description: Optional[str] = Field(None, max_length=5000, description="Ticket 详细描述")
+    title: str | None = Field(None, max_length=200, description="Ticket 标题")
+    description: str | None = Field(None, max_length=5000, description="Ticket 详细描述")
 
     class Config:
         json_schema_extra = {
@@ -55,8 +54,8 @@ class Ticket(TicketBase):
     tags: list[Tag] = Field(default_factory=list, description="关联的标签列表")
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = None
-    deleted_at: Optional[datetime] = None
+    completed_at: datetime | None = None
+    deleted_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -84,9 +83,9 @@ class TicketQueryParams(BaseModel):
     status: str = "all"
     include_deleted: bool = False
     only_deleted: bool = False
-    tag_ids: Optional[list[int]] = None
+    tag_ids: list[int] | None = None
     tag_filter: str = "and"
-    search: Optional[str] = None
+    search: str | None = None
     sort_by: str = "created_at"
     sort_order: str = "desc"
     page: int = 1

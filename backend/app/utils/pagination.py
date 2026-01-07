@@ -1,14 +1,14 @@
 """分页工具函数"""
 
 from math import ceil
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from sqlalchemy.orm import Query
 
 T = TypeVar("T")
 
 
-class PaginatedResult(Generic[T]):
+class PaginatedResult[T]:
     """分页结果"""
 
     def __init__(self, items: list[T], total: int, page: int, page_size: int):

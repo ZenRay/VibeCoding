@@ -1,6 +1,6 @@
 """响应工具函数"""
 
-from typing import Any, Optional
+from typing import Any
 
 
 def success_response(data: Any = None, message: str = "Success") -> dict:
@@ -20,7 +20,7 @@ def success_response(data: Any = None, message: str = "Success") -> dict:
     return response
 
 
-def error_response(code: str, message: str, details: Optional[dict] = None) -> dict:
+def error_response(code: str, message: str, details: dict | None = None) -> dict:
     """
     错误响应格式
 
