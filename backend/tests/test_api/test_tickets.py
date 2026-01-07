@@ -1,6 +1,5 @@
 """Ticket API 集成测试"""
 
-
 from app.models import Tag, Ticket
 
 
