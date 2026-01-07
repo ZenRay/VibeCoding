@@ -54,7 +54,7 @@ export function TagDialog({
 
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('保存失败:', error)
       const message =
         error?.error?.message || error?.message || '保存失败，请重试'

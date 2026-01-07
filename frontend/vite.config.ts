@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   // 在 Docker 环境中，使用 backend 服务名（同一网络）
   // 本地开发时使用 localhost
   const isDocker = process.env.VITE_DOCKER === 'true'

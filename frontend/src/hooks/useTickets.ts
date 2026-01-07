@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { ticketService } from '@/services/ticketService'
 import { Ticket, TicketQueryParams } from '@/types/ticket'
 import { useStore } from '@/store/useStore'
@@ -9,6 +9,12 @@ export function useTickets(params?: TicketQueryParams) {
   const [error, setError] = useState<Error | null>(null)
   const { setTickets: setStoreTickets } = useStore()
   const paramsRef = useRef(params)
+
+  // 将 tag_ids 数组转换为字符串，用于依赖比较
+  const tagIdsKey = useMemo(
+    () => params?.tag_ids?.join(',') ?? '',
+    [params?.tag_ids]
+  )
 
   // 更新 ref
   useEffect(() => {
@@ -37,7 +43,7 @@ export function useTickets(params?: TicketQueryParams) {
     params?.status,
     params?.include_deleted,
     params?.only_deleted,
-    params?.tag_ids?.join(','),
+    tagIdsKey,
     params?.tag_filter,
     params?.sort_by,
     params?.sort_order,
