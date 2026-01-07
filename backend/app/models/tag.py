@@ -4,7 +4,7 @@ from sqlalchemy import CheckConstraint, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.database import Base, engine
+from app.database import Base
 
 
 class Tag(Base):
@@ -20,18 +20,15 @@ class Tag(Base):
     # 关系
     tickets = relationship("Ticket", secondary="ticket_tags", back_populates="tags")
 
-    # 约束：根据数据库类型选择不同的约束
-    # PostgreSQL 使用正则表达式，SQLite 使用简单的字符串检查
-    if engine.dialect.name == "postgresql":
-        __table_args__ = (CheckConstraint("color ~ '^#[0-9A-Fa-f]{6}$'", name="color_format"),)
-    else:
-        # SQLite 兼容：检查颜色格式（以 # 开头，长度为 7，包含 6 个十六进制字符）
-        __table_args__ = (
-            CheckConstraint(
-                "color LIKE '#______' AND LENGTH(color) = 7",
-                name="color_format",
-            ),
-        )
+    # 使用 SQLite 兼容的约束（用于测试和开发）
+    # 在生产环境的 PostgreSQL 中，Alembic 迁移会使用正则表达式约束
+    # SQLite 不支持正则表达式，所以使用简单的字符串检查
+    __table_args__ = (
+        CheckConstraint(
+            "color LIKE '#______' AND LENGTH(color) = 7",
+            name="color_format",
+        ),
+    )
 
     def __repr__(self) -> str:
         return f"<Tag(id={self.id}, name='{self.name}', color='{self.color}')>"
