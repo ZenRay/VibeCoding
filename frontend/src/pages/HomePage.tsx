@@ -10,12 +10,11 @@ import { TicketDialog } from '@/components/TicketDialog'
 import { TagDialog } from '@/components/TagDialog'
 import { TicketListSkeleton } from '@/components/LoadingState'
 import { Pagination } from '@/components/ui/pagination'
+import { AdvancedSearch } from '@/components/AdvancedSearch'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Plus, Tag as TagIcon, Search, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
+import { Plus, Tag as TagIcon, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { Ticket } from '@/types/ticket'
-import { Tag } from '@/types/tag'
 import { TicketQueryParams } from '@/types/ticket'
 import { ticketService } from '@/services/ticketService'
 
@@ -25,6 +24,7 @@ function HomePage() {
 
   // 搜索和过滤状态
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchScope, setSearchScope] = useState<'title' | 'all'>('title')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | 'title'>('created_at')
@@ -204,17 +204,13 @@ function HomePage() {
             </div>
           </div>
 
-          {/* 搜索框 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="搜索 Ticket..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          {/* 高级搜索框 */}
+          <AdvancedSearch
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchScope={searchScope}
+            onSearchScopeChange={setSearchScope}
+          />
         </div>
 
         {/* 列表工具栏 */}
