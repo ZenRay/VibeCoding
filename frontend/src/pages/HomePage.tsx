@@ -47,7 +47,7 @@ function HomePage() {
     }
 
     if (selectedTagIds.length > 0) {
-      params.tag_ids = selectedTagIds
+      params.tag_ids = selectedTagIds.join(',')
       params.tag_filter = 'and'
     }
 

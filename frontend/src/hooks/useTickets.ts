@@ -10,8 +10,8 @@ export function useTickets(params?: TicketQueryParams) {
   const { setTickets: setStoreTickets } = useStore()
   const paramsRef = useRef(params)
 
-  // 将 tag_ids 数组转换为字符串，用于依赖比较
-  const tagIdsKey = useMemo(() => params?.tag_ids?.join(',') ?? '', [params?.tag_ids])
+  // tag_ids 已经是字符串，直接使用
+  const tagIdsKey = params?.tag_ids ?? ''
 
   // 更新 ref
   useEffect(() => {
