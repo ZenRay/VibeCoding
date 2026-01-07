@@ -67,9 +67,9 @@ RUN python -m venv .venv && \
 # 复制应用代码
 COPY . .
 
-# 复制启动脚本并设置权限（如果存在）
-COPY docker-entrypoint.sh /docker-entrypoint.sh 2>/dev/null || true
-RUN chmod +x /docker-entrypoint.sh 2>/dev/null || true
+# 复制启动脚本并设置权限
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # 暴露端口
 EXPOSE 8000
