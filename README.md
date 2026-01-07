@@ -22,6 +22,30 @@ cd env
 
 详细说明请查看：[快速开始指南](./specs/0006-quick-start.md)
 
+### 本地代码检查（提交前必做）
+
+在提交代码前，运行本地检查确保代码质量：
+
+```bash
+# 检查所有（后端 + 前端）
+./scripts/check-local.sh all
+
+# 只检查后端
+./scripts/check-local.sh backend
+
+# 只检查前端
+./scripts/check-local.sh frontend
+
+# 检查并自动提交（如果检查通过）
+./scripts/check-and-commit.sh "你的提交信息"
+```
+
+**检查内容包括：**
+- ✅ 后端：Black 格式化、isort 导入排序、Ruff 代码检查、mypy 类型检查、pytest 测试
+- ✅ 前端：ESLint、Prettier 格式化、TypeScript 类型检查、构建检查
+
+如果检查失败，脚本会自动尝试修复（如格式化），然后需要重新运行检查。
+
 ## 📋 项目结构
 
 ```
