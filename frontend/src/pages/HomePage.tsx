@@ -1,10 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTickets } from '@/hooks/useTickets'
 import { useTags } from '@/hooks/useTags'
+import { useKeyboard } from '@/hooks/useKeyboard'
+import { useToast } from '@/components/ui/toast'
 import { TicketListItem } from '@/components/TicketListItem'
 import { Sidebar } from '@/components/Sidebar'
 import { TicketDialog } from '@/components/TicketDialog'
 import { TagDialog } from '@/components/TagDialog'
+import { TicketListSkeleton } from '@/components/LoadingState'
+import { Pagination } from '@/components/ui/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -15,6 +19,8 @@ import { TicketQueryParams } from '@/types/ticket'
 import { ticketService } from '@/services/ticketService'
 
 function HomePage() {
+  const { addToast } = useToast()
+
   // 搜索和过滤状态
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
@@ -23,6 +29,10 @@ function HomePage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<number>>(new Set())
   const [includeDeleted, setIncludeDeleted] = useState(false)
+
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   // 构建查询参数
   const ticketQueryParams: TicketQueryParams = useMemo(() => {
@@ -48,8 +58,12 @@ function HomePage() {
       params.include_deleted = true
     }
 
+    // 分页参数
+    params.page = currentPage
+    params.page_size = pageSize
+
     return params
-  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder, includeDeleted])
+  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder, includeDeleted, currentPage, pageSize])
 
   const {
     tickets,
@@ -108,12 +122,39 @@ function HomePage() {
         Array.from(selectedTicketIds).map(id => ticketService.deleteTicket(id, false))
       )
       setSelectedTicketIds(new Set())
+      addToast('success', `成功删除 ${selectedTicketIds.size} 个 Ticket`)
       refetchTickets()
     } catch (error) {
       console.error('批量删除失败:', error)
-      alert('批量删除失败，请重试')
+      addToast('error', '批量删除失败，请重试')
     }
   }
+
+  // 键盘快捷键
+  useKeyboard([
+    {
+      key: 'n',
+      callback: handleCreateTicket,
+      description: '创建新 Ticket',
+    },
+    {
+      key: 'k',
+      ctrl: true,
+      meta: true,
+      callback: () => {
+        document.querySelector<HTMLInputElement>('input[type="text"]')?.focus()
+      },
+      description: '聚焦搜索框',
+    },
+    {
+      key: 'Escape',
+      callback: () => {
+        setTicketDialogOpen(false)
+        setTagDialogOpen(false)
+      },
+      description: '关闭对话框',
+    },
+  ])
 
   const toggleSortOrder = () => {
     setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
@@ -213,11 +254,7 @@ function HomePage() {
 
         {/* Ticket 列表 */}
         <div className="flex-1 overflow-y-auto">
-          {ticketsLoading && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">加载中...</p>
-            </div>
-          )}
+          {ticketsLoading && <TicketListSkeleton />}
           {ticketsError && <div className="p-4 text-red-500">错误: {ticketsError.message}</div>}
           {!ticketsLoading && !ticketsError && (
             <>
@@ -250,6 +287,22 @@ function HomePage() {
         </div>
       </div>
 
+        {/* 分页 */}
+        {tickets.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(tickets.length / pageSize)}
+            pageSize={pageSize}
+            totalItems={tickets.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={size => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
+        )}
+      </div>
+
       {/* Ticket 对话框 */}
       <TicketDialog
         open={ticketDialogOpen}
@@ -257,6 +310,7 @@ function HomePage() {
         ticket={editingTicket}
         tags={tags}
         onSuccess={() => {
+          addToast('success', editingTicket ? 'Ticket 更新成功' : 'Ticket 创建成功')
           refetchTickets()
           refetchTags()
         }}
@@ -268,6 +322,7 @@ function HomePage() {
         onOpenChange={setTagDialogOpen}
         tag={editingTag}
         onSuccess={() => {
+          addToast('success', editingTag ? '标签更新成功' : '标签创建成功')
           refetchTags()
           refetchTickets()
         }}
