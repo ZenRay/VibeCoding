@@ -39,7 +39,7 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
 
     return (
       <input
-        type="radio"
+        type='radio'
         ref={ref}
         id={id}
         value={value}

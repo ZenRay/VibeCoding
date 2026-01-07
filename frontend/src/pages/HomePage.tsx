@@ -117,7 +117,7 @@ function HomePage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className='flex h-screen bg-background'>
       {/* 左侧边栏 */}
       <Sidebar
         statusFilter={statusFilter}
@@ -130,57 +130,57 @@ function HomePage() {
       />
 
       {/* 主内容区域 */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className='flex-1 flex flex-col overflow-hidden'>
         {/* 顶部栏 */}
-        <div className="border-b bg-background p-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className='border-b bg-background p-4'>
+          <div className='flex items-center justify-between mb-4'>
             {/* 左侧：标题 */}
-            <h1 className="text-2xl font-bold text-primary">Project Alpha</h1>
+            <h1 className='text-2xl font-bold text-primary'>Project Alpha</h1>
 
             {/* 右侧：操作按钮 */}
-            <div className="flex items-center gap-2">
-              <Button onClick={handleCreateTag} variant="outline" size="sm">
-                <TagIcon className="w-4 h-4 mr-2" />
+            <div className='flex items-center gap-2'>
+              <Button onClick={handleCreateTag} variant='outline' size='sm'>
+                <TagIcon className='w-4 h-4 mr-2' />
                 管理标签
               </Button>
-              <Button onClick={handleCreateTicket} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={handleCreateTicket} size='sm'>
+                <Plus className='w-4 h-4 mr-2' />
                 新建 Ticket
               </Button>
             </div>
           </div>
 
           {/* 搜索框 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4' />
             <Input
-              type="text"
-              placeholder="搜索 Ticket..."
+              type='text'
+              placeholder='搜索 Ticket...'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className='pl-10'
             />
           </div>
         </div>
 
         {/* 列表工具栏 */}
-        <div className="border-b bg-background px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className='border-b bg-background px-4 py-2 flex items-center justify-between'>
+          <div className='flex items-center gap-4'>
             {selectedTicketIds.size > 0 ? (
               <>
-                <span className="text-sm text-muted-foreground">
+                <span className='text-sm text-muted-foreground'>
                   已选择 {selectedTicketIds.size} 项
                 </span>
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant='outline'
+                  size='sm'
                   onClick={handleBatchDelete}
                 >
                   批量删除
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => setSelectedTicketIds(new Set())}
                 >
                   取消选择
@@ -189,8 +189,8 @@ function HomePage() {
             ) : (
               <>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={handleSelectAll}
                 >
                   批量操作
@@ -200,51 +200,51 @@ function HomePage() {
           </div>
 
           {/* 排序 */}
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Select
               value={sortBy}
               onChange={(e) =>
                 setSortBy(e.target.value as 'created_at' | 'updated_at' | 'title')
               }
-              className="w-32"
+              className='w-32'
             >
-              <option value="created_at">创建时间</option>
-              <option value="updated_at">更新时间</option>
-              <option value="title">标题</option>
+              <option value='created_at'>创建时间</option>
+              <option value='updated_at'>更新时间</option>
+              <option value='title'>标题</option>
             </Select>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8'
               onClick={toggleSortOrder}
             >
               {sortOrder === 'asc' ? (
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp className='h-4 w-4' />
               ) : (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className='h-4 w-4' />
               )}
             </Button>
           </div>
         </div>
 
         {/* Ticket 列表 */}
-        <div className="flex-1 overflow-y-auto">
+        <div className='flex-1 overflow-y-auto'>
           {ticketsLoading && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">加载中...</p>
+            <div className='flex items-center justify-center h-full'>
+              <p className='text-muted-foreground'>加载中...</p>
             </div>
           )}
           {ticketsError && (
-            <div className="p-4 text-red-500">
+            <div className='p-4 text-red-500'>
               错误: {ticketsError.message}
             </div>
           )}
           {!ticketsLoading && !ticketsError && (
             <>
               {tickets.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <p className="text-muted-foreground mb-2">
+                <div className='flex items-center justify-center h-full'>
+                  <div className='text-center'>
+                    <p className='text-muted-foreground mb-2'>
                       {searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0
                         ? '没有找到匹配的 Ticket'
                         : '暂无 Ticket，点击"新建 Ticket"添加'}
@@ -252,7 +252,7 @@ function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className='divide-y'>
                   {tickets.map((ticket) => (
                     <TicketListItem
                       key={ticket.id}

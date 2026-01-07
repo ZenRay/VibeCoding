@@ -93,7 +93,7 @@ export function TicketDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>{ticket ? '编辑 Ticket' : '创建 Ticket'}</DialogTitle>
           <DialogDescription>
@@ -103,38 +103,38 @@ export function TicketDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">标题 *</Label>
+        <form onSubmit={handleSubmit} className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='title'>标题 *</Label>
             <Input
-              id="title"
+              id='title'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="输入 Ticket 标题"
+              placeholder='输入 Ticket 标题'
               required
               maxLength={200}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">描述</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='description'>描述</Label>
             <textarea
-              id="description"
+              id='description'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="输入 Ticket 描述（可选）"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder='输入 Ticket 描述（可选）'
+              className='flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
               maxLength={5000}
             />
           </div>
 
-          <div className="space-y-2">
+          <div className='space-y-2'>
             <Label>标签</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className='flex flex-wrap gap-2'>
               {tags.map((tag) => (
                 <button
                   key={tag.id}
-                  type="button"
+                  type='button'
                   onClick={() => toggleTag(tag.id)}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     selectedTagIds.includes(tag.id)
@@ -154,20 +154,20 @@ export function TicketDialog({
               ))}
             </div>
             {tags.length === 0 && (
-              <p className="text-sm text-muted-foreground">暂无标签</p>
+              <p className='text-sm text-muted-foreground'>暂无标签</p>
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className='flex justify-end gap-2 pt-4'>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               取消
             </Button>
-            <Button type="submit" disabled={loading || !title.trim()}>
+            <Button type='submit' disabled={loading || !title.trim()}>
               {loading ? '保存中...' : ticket ? '更新' : '创建'}
             </Button>
           </div>

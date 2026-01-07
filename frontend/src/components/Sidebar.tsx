@@ -30,15 +30,15 @@ export function Sidebar({
   }
 
   return (
-    <div className="w-64 border-r bg-background p-6 space-y-6">
+    <div className='w-64 border-r bg-background p-6 space-y-6'>
       {/* 状态过滤 */}
       <div>
-        <Label className="text-sm font-semibold mb-3 block">状态</Label>
+        <Label className='text-sm font-semibold mb-3 block'>状态</Label>
         <RadioGroup value={statusFilter} onValueChange={onStatusFilterChange as (value: string) => void}>
-          <div className="flex items-center space-x-2 mb-2">
-            <RadioGroupItem value="all" id="status-all" />
+          <div className='flex items-center space-x-2 mb-2'>
+            <RadioGroupItem value='all' id='status-all' />
             <Label
-              htmlFor="status-all"
+              htmlFor='status-all'
               className={`cursor-pointer ${
                 statusFilter === 'all' ? 'font-semibold text-primary' : ''
               }`}
@@ -46,10 +46,10 @@ export function Sidebar({
               全部
             </Label>
           </div>
-          <div className="flex items-center space-x-2 mb-2">
-            <RadioGroupItem value="pending" id="status-pending" />
+          <div className='flex items-center space-x-2 mb-2'>
+            <RadioGroupItem value='pending' id='status-pending' />
             <Label
-              htmlFor="status-pending"
+              htmlFor='status-pending'
               className={`cursor-pointer ${
                 statusFilter === 'pending' ? 'font-semibold text-primary' : ''
               }`}
@@ -57,10 +57,10 @@ export function Sidebar({
               待完成
             </Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="completed" id="status-completed" />
+          <div className='flex items-center space-x-2'>
+            <RadioGroupItem value='completed' id='status-completed' />
             <Label
-              htmlFor="status-completed"
+              htmlFor='status-completed'
               className={`cursor-pointer ${
                 statusFilter === 'completed' ? 'font-semibold text-primary' : ''
               }`}
@@ -73,15 +73,15 @@ export function Sidebar({
 
       {/* 标签过滤 */}
       <div>
-        <Label className="text-sm font-semibold mb-3 block">标签</Label>
-        <div className="space-y-2">
+        <Label className='text-sm font-semibold mb-3 block'>标签</Label>
+        <div className='space-y-2'>
           {tags.length === 0 ? (
-            <p className="text-sm text-muted-foreground">暂无标签</p>
+            <p className='text-sm text-muted-foreground'>暂无标签</p>
           ) : (
             tags.map((tag) => (
               <button
                 key={tag.id}
-                type="button"
+                type='button'
                 onClick={() => toggleTag(tag.id)}
                 className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-colors ${
                   selectedTagIds.includes(tag.id)
@@ -89,14 +89,14 @@ export function Sidebar({
                     : 'hover:bg-muted'
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className='w-3 h-3 rounded-full'
                     style={{ backgroundColor: tag.color }}
                   />
                   <span>{tag.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className='text-xs text-muted-foreground'>
                   {tag.ticket_count || 0}
                 </span>
               </button>
@@ -107,18 +107,18 @@ export function Sidebar({
 
       {/* 显示选项 */}
       <div>
-        <Label className="text-sm font-semibold mb-3 block">显示选项</Label>
-        <div className="flex items-center space-x-2">
+        <Label className='text-sm font-semibold mb-3 block'>显示选项</Label>
+        <div className='flex items-center space-x-2'>
           <input
-            type="checkbox"
-            id="include-deleted"
+            type='checkbox'
+            id='include-deleted'
             checked={includeDeleted}
             onChange={(e) => onIncludeDeletedChange(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
+            className='h-4 w-4 rounded border-gray-300'
           />
           <Label
-            htmlFor="include-deleted"
-            className="cursor-pointer text-sm"
+            htmlFor='include-deleted'
+            className='cursor-pointer text-sm'
           >
             显示已删除的 Ticket
           </Label>

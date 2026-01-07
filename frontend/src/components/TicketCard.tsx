@@ -52,8 +52,8 @@ export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
           : 'hover:shadow-md transition-shadow'
       }`}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-2">
+      <CardContent className='p-4'>
+        <div className='flex items-start justify-between mb-2'>
           <h3
             className={`text-lg font-semibold ${
               isDeleted ? 'line-through' : ''
@@ -83,11 +83,11 @@ export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
         )}
 
         {ticket.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className='flex flex-wrap gap-2 mb-3'>
             {ticket.tags.map((tag) => (
               <span
                 key={tag.id}
-                className="px-2 py-1 rounded text-xs font-medium"
+                className='px-2 py-1 rounded text-xs font-medium'
                 style={{
                   backgroundColor: tag.color + '20',
                   color: tag.color,
@@ -100,57 +100,57 @@ export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground">
+        <p className='text-xs text-muted-foreground'>
           创建时间: {new Date(ticket.created_at).toLocaleString('zh-CN')}
         </p>
       </CardContent>
 
       {!isDeleted && (
-        <CardFooter className="p-4 pt-0 flex gap-2">
+        <CardFooter className='p-4 pt-0 flex gap-2'>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={handleToggleStatus}
-            className="flex-1"
+            className='flex-1'
           >
             {ticket.status === 'completed' ? (
               <>
-                <Circle className="w-4 h-4 mr-1" />
+                <Circle className='w-4 h-4 mr-1' />
                 标记未完成
               </>
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4 mr-1" />
+                <CheckCircle2 className='w-4 h-4 mr-1' />
                 标记完成
               </>
             )}
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => onEdit(ticket)}
           >
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className='w-4 h-4' />
           </Button>
           <Button
-            variant="destructive"
-            size="sm"
+            variant='destructive'
+            size='sm'
             onClick={handleDelete}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className='w-4 h-4' />
           </Button>
         </CardFooter>
       )}
 
       {isDeleted && (
-        <CardFooter className="p-4 pt-0">
+        <CardFooter className='p-4 pt-0'>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={handleRestore}
-            className="w-full"
+            className='w-full'
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
+            <RotateCcw className='w-4 h-4 mr-2' />
             恢复
           </Button>
         </CardFooter>

@@ -107,46 +107,46 @@ export function TagDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="tag-name">名称 *</Label>
+        <form onSubmit={handleSubmit} className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='tag-name'>名称 *</Label>
             <Input
-              id="tag-name"
+              id='tag-name'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="输入标签名称"
+              placeholder='输入标签名称'
               required
               maxLength={50}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className='text-xs text-muted-foreground'>
               注意：英文字符会自动转换为大写
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tag-color">颜色 *</Label>
-            <div className="flex gap-2 items-center">
+          <div className='space-y-2'>
+            <Label htmlFor='tag-color'>颜色 *</Label>
+            <div className='flex gap-2 items-center'>
               <Input
-                id="tag-color"
-                type="color"
+                id='tag-color'
+                type='color'
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-20 h-10"
+                className='w-20 h-10'
               />
               <Input
-                type="text"
+                type='text'
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                placeholder="#6B7280"
+                placeholder='#6B7280'
                 pattern="^#[0-9A-Fa-f]{6}$"
                 maxLength={7}
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className='flex gap-2 flex-wrap'>
               {presetColors.map((presetColor) => (
                 <button
                   key={presetColor}
-                  type="button"
+                  type='button'
                   onClick={() => setColor(presetColor)}
                   className={`w-8 h-8 rounded-full border-2 ${
                     color === presetColor ? 'border-foreground scale-110' : 'border-transparent'
@@ -158,16 +158,16 @@ export function TagDialog({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className='flex justify-end gap-2 pt-4'>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               取消
             </Button>
-            <Button type="submit" disabled={loading || !name.trim()}>
+            <Button type='submit' disabled={loading || !name.trim()}>
               {loading ? '保存中...' : tag ? '更新' : '创建'}
             </Button>
           </div>
