@@ -71,6 +71,22 @@ def upgrade() -> None:
 
     # 创建 tags 表（如果不存在）
     if "tags" not in inspector.get_table_names():
+        # 根据数据库类型选择不同的 CHECK 约束
+        # PostgreSQL 支持正则表达式，SQLite 不支持
+        conn = op.get_bind()
+        dialect_name = conn.dialect.name
+
+        if dialect_name == "postgresql":
+            color_constraint = sa.CheckConstraint(
+                "color ~ '^#[0-9A-Fa-f]{6}$'", name="color_format"
+            )
+        else:
+            # SQLite 兼容：使用简单的字符串检查
+            color_constraint = sa.CheckConstraint(
+                "color LIKE '#______' AND LENGTH(color) = 7",
+                name="color_format",
+            )
+
         op.create_table(
             "tags",
             sa.Column("id", sa.Integer(), nullable=False),
@@ -84,7 +100,7 @@ def upgrade() -> None:
             ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("name"),
-            sa.CheckConstraint("color ~ '^#[0-9A-Fa-f]{6}$'", name="color_format"),
+            color_constraint,
         )
         op.create_index(op.f("ix_tags_id"), "tags", ["id"], unique=False)
         op.create_index(op.f("ix_tags_name"), "tags", ["name"], unique=False)
