@@ -24,6 +24,7 @@
 1. 使用 docker 生成一个合适的开发环境，如有必要可以使用 dockercompsoe 生成一个服务。Docker 的管理需要放在 ../env 中
 2. 声明清楚使用的技术栈及其需要的版本
 3. docker compose 的服务启动环境是在 2.x，因此需要注意是否应当使用 `docker-compose`命令还是 `docker compose`
+4. 需要注意检查一下 `docker` 中 `compose` 和 `dockerfile` 文件是否存在问题
 
 
 ## Progress
