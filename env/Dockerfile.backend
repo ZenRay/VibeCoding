@@ -1,0 +1,81 @@
+# 后端 Dockerfile (开发环境)
+# 已优化适配大陆网络环境，使用国内镜像源加速
+FROM python:3.12-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 配置 apt 使用阿里云镜像源（加速系统包安装）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    (echo "deb http://mirrors.aliyun.com/debian/ bookworm main" > /etc/apt/sources.list && \
+     echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main" >> /etc/apt/sources.list && \
+     echo "deb http://mirrors.aliyun.com/debian-security bookworm-security main" >> /etc/apt/sources.list) || true
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 UV（优先使用 GitHub 镜像加速下载）
+# 使用 ghproxy.com 镜像下载 UV 二进制文件（推荐，速度更快）
+RUN UV_VERSION="0.5.0" && \
+    (curl -Lsf "https://ghproxy.com/https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/uv.tar.gz && \
+     tar -xzf /tmp/uv.tar.gz -C /tmp && \
+     mv /tmp/uv /usr/local/bin/uv && \
+     chmod +x /usr/local/bin/uv && \
+     rm /tmp/uv.tar.gz && \
+     echo "✅ UV installed from GitHub mirror") || \
+    (curl -LsSf https://astral.sh/uv/install.sh | sh && \
+     mv /root/.cargo/bin/uv /usr/local/bin/uv 2>/dev/null || true && \
+     echo "✅ UV installed from official source")
+
+# 设置 Python 版本
+ENV PYTHON_VERSION=3.12
+
+# 配置 pip 使用清华大学镜像源（备用方案）
+ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+
+# 配置 UV 使用清华大学 PyPI 镜像源（加速 Python 包下载）
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 复制项目配置文件（包括 README.md，因为 pyproject.toml 引用了它）
+COPY pyproject.toml .
+COPY README.md .
+COPY uv.lock* ./
+
+# 创建虚拟环境并安装依赖
+# 先只安装依赖包，不安装项目本身（避免构建问题）
+RUN python -m venv .venv && \
+    . .venv/bin/activate && \
+    pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn --upgrade pip setuptools wheel && \
+    pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn \
+        "fastapi>=0.109.0" \
+        "uvicorn[standard]>=0.27.0" \
+        "sqlalchemy>=2.0.25" \
+        "psycopg2-binary>=2.9.9" \
+        "alembic>=1.13.1" \
+        "pydantic>=2.5.3" \
+        "pydantic-settings>=2.1.0" \
+        "python-dotenv>=1.0.0" \
+        "python-multipart>=0.0.6" && \
+    echo "✅ Dependencies installed"
+
+# 复制应用代码
+COPY . .
+
+# 复制启动脚本并设置权限（如果存在）
+COPY docker-entrypoint.sh /docker-entrypoint.sh 2>/dev/null || true
+RUN chmod +x /docker-entrypoint.sh 2>/dev/null || true
+
+# 暴露端口
+EXPOSE 8000
+
+# 设置入口点
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# 启动命令（开发模式，支持热重载）
+CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

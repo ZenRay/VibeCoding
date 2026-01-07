@@ -1,0 +1,26 @@
+# 前端 Dockerfile (开发环境)
+# 已优化适配大陆网络环境
+FROM node:20-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 配置 npm 使用国内镜像源（加速依赖安装）
+RUN npm config set registry https://registry.npmmirror.com && \
+    echo "✅ npm registry configured to npmmirror.com"
+
+# 复制 package.json 和 package-lock.json
+COPY package*.json ./
+
+# 安装依赖（如果没有 package-lock.json，使用 npm install）
+RUN npm install && \
+    echo "✅ Dependencies installed"
+
+# 复制应用代码
+COPY . .
+
+# 暴露端口
+EXPOSE 5173
+
+# 启动命令（开发模式，支持热重载）
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

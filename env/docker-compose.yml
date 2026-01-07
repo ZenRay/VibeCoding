@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:16-alpine
+    container_name: project-alpha-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: ticketuser
+      POSTGRES_PASSWORD: ticketpass123
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - project-alpha-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketuser -d ticketdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI 后端服务
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../env/Dockerfile.backend
+    container_name: project-alpha-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ticketuser:ticketpass123@postgres:5432/ticketdb
+      ENVIRONMENT: development
+      API_V1_PREFIX: /api/v1
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      LOG_LEVEL: info
+      POSTGRES_PASSWORD: ticketpass123
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+      - /app/__pycache__
+      - /app/.venv  # 避免覆盖容器内的虚拟环境
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - project-alpha-network
+    command: .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Vite 前端开发服务器
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../env/Dockerfile.frontend
+    container_name: project-alpha-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: /api/v1
+      VITE_DOCKER: 'true'
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - project-alpha-network
+    command: npm run dev -- --host 0.0.0.0
+
+  # PgAdmin（可选，用于数据库管理）
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: project-alpha-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - project-alpha-network
+    profiles:
+      - tools  # 使用 --profile tools 启动
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  project-alpha-network:
+    driver: bridge
