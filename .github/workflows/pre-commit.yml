@@ -2,8 +2,9 @@ name: Pre-commit
 
 on:
   pull_request:
-  push:
     branches: [main, develop]
+  # 注意：不在 push 时触发，避免与 ci.yml 重复检查
+  # ci.yml 已经包含了所有代码质量检查（Black、isort、Ruff、ESLint、Prettier 等）
 
 jobs:
   pre-commit:
