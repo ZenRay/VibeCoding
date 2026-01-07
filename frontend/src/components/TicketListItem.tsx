@@ -73,7 +73,7 @@ export function TicketListItem({
 
   return (
     <div
-      className={`flex items-start gap-4 p-4 border-b hover:bg-muted/50 transition-colors ${
+      className={`flex items-start gap-4 p-4 border-b hover:bg-muted/50 transition-all duration-200 animate-slide-in-up ${
         isDeleted ? 'opacity-60' : ''
       }`}
     >

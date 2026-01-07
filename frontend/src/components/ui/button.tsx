@@ -11,7 +11,14 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, ...props }, ref) => {
     return (
-      <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button 
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          'transition-all duration-200 active:scale-95'
+        )} 
+        ref={ref} 
+        {...props} 
+      />
     )
   }
 )

@@ -4,7 +4,11 @@ export function TicketListSkeleton() {
   return (
     <div className="space-y-2 p-4">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-start gap-4 p-4 border rounded-lg">
+        <div 
+          key={i} 
+          className="flex items-start gap-4 p-4 border rounded-lg animate-slide-in-up"
+          style={{ animationDelay: `${i * 0.05}s` }}
+        >
           <Skeleton className="h-4 w-4" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-5 w-3/4" />

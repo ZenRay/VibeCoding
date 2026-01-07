@@ -16,9 +16,12 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange?.(false)} />
-      <div className="relative z-50">{children}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+      <div 
+        className="fixed inset-0 bg-black/50 animate-fade-in" 
+        onClick={() => onOpenChange?.(false)} 
+      />
+      <div className="relative z-50 animate-scale-in">{children}</div>
     </div>
   )
 }

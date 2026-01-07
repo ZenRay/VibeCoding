@@ -135,9 +135,9 @@ export function TicketDialog({ open, onOpenChange, ticket, tags, onSuccess }: Ti
                   key={tag.id}
                   type="button"
                   onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 ${
                     selectedTagIds.includes(tag.id)
-                      ? 'ring-2 ring-offset-2'
+                      ? 'ring-2 ring-offset-2 scale-105'
                       : 'opacity-60 hover:opacity-100'
                   }`}
                   style={{

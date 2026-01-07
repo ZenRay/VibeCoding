@@ -30,7 +30,7 @@ export function Sidebar({
   }
 
   return (
-    <div className="w-64 border-r bg-background p-6 space-y-6">
+    <div className="w-64 border-r bg-background p-6 space-y-6 animate-slide-in-left">
       {/* 状态过滤 */}
       <div>
         <Label className="text-sm font-semibold mb-3 block">状态</Label>
@@ -86,7 +86,7 @@ export function Sidebar({
                 key={tag.id}
                 type="button"
                 onClick={() => toggleTag(tag.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-colors ${
+                className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-all duration-200 hover:translate-x-1 ${
                   selectedTagIds.includes(tag.id)
                     ? 'bg-primary/10 border border-primary'
                     : 'hover:bg-muted'
