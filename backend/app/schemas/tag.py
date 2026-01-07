@@ -34,7 +34,9 @@ class TagUpdate(BaseModel):
     """更新 Tag 的请求模式"""
 
     name: Optional[str] = Field(None, max_length=50, description="标签名称")
-    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$", description="标签颜色（HEX 格式）")
+    color: Optional[str] = Field(
+        None, pattern="^#[0-9A-Fa-f]{6}$", description="标签颜色（HEX 格式）"
+    )
 
     class Config:
         json_schema_extra = {
