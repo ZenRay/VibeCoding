@@ -12,6 +12,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# 注意：不忽略 frontend/src/lib/ 目录（用于工具函数）
+!/frontend/src/lib/
 parts/
 sdist/
 var/
