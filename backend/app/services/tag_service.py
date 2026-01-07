@@ -12,6 +12,26 @@ class TagService:
     """Tag 服务类"""
 
     @staticmethod
+    def _normalize_tag_name(name: str) -> str:
+        """
+        标准化标签名称：英文字符转大写
+
+        Args:
+            name: 原始标签名称
+
+        Returns:
+            str: 标准化后的标签名称
+        """
+        result = []
+        for char in name.strip():
+            # 如果是英文字母，转大写；否则保持原样
+            if char.isascii() and char.isalpha():
+                result.append(char.upper())
+            else:
+                result.append(char)
+        return "".join(result)
+
+    @staticmethod
     def get_tags(
         db: Session,
         sort_by: str = "name",
@@ -137,14 +157,17 @@ class TagService:
         Raises:
             ConflictError: 标签名称已存在
         """
-        # 检查标签是否已存在（数据库触发器会自动标准化名称）
-        existing_tag = TagService.get_tag_by_name(db, tag_data.name)
-        if existing_tag:
-            raise ConflictError(f"标签名称 '{tag_data.name}' 已存在")
+        # 标准化标签名称：英文转大写
+        normalized_name = TagService._normalize_tag_name(tag_data.name)
 
-        # 创建标签（触发器会自动标准化名称）
+        # 检查标签是否已存在
+        existing_tag = TagService.get_tag_by_name(db, normalized_name)
+        if existing_tag:
+            raise ConflictError(f"标签名称 '{normalized_name}' 已存在")
+
+        # 创建标签，使用标准化后的名称
         tag = Tag(
-            name=tag_data.name,
+            name=normalized_name,
             color=tag_data.color,
         )
         db.add(tag)
@@ -180,15 +203,16 @@ class TagService:
         if not tag:
             raise NotFoundError(f"标签 ID {tag_id} 不存在")
 
-        # 如果更新名称，检查是否冲突
-        if tag_data.name is not None and tag_data.name != tag.name:
-            existing_tag = TagService.get_tag_by_name(db, tag_data.name)
-            if existing_tag and existing_tag.id != tag_id:
-                raise ConflictError(f"标签名称 '{tag_data.name}' 已存在")
-
-        # 更新字段
+        # 如果更新名称，标准化并检查是否冲突
         if tag_data.name is not None:
-            tag.name = tag_data.name
+            normalized_name = TagService._normalize_tag_name(tag_data.name)
+            if normalized_name != tag.name:
+                existing_tag = TagService.get_tag_by_name(db, normalized_name)
+                if existing_tag and existing_tag.id != tag_id:
+                    raise ConflictError(f"标签名称 '{normalized_name}' 已存在")
+                tag.name = normalized_name
+
+        # 更新颜色
         if tag_data.color is not None:
             tag.color = tag_data.color
 
