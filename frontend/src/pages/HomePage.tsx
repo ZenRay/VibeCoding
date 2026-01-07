@@ -285,10 +285,9 @@ function HomePage() {
             </>
           )}
         </div>
-      </div>
 
         {/* 分页 */}
-        {tickets.length > 0 && (
+        {!ticketsLoading && !ticketsError && tickets.length > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(tickets.length / pageSize)}
