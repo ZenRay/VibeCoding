@@ -2,7 +2,7 @@ import { Ticket } from '@/types/ticket'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'
 import { useToast } from './ui/toast'
-import { Edit2, Trash2, RotateCcw } from 'lucide-react'
+import { Edit2, Trash2, RotateCcw, CheckCircle2, Circle } from 'lucide-react'
 
 interface TicketListItemProps {
   ticket: Ticket
@@ -21,6 +21,17 @@ export function TicketListItem({
 }: TicketListItemProps) {
   const { addToast } = useToast()
   
+  const handleToggleStatus = async () => {
+    try {
+      await ticketService.toggleTicketStatus(ticket.id)
+      addToast('success', ticket.status === 'completed' ? '已标记为未完成' : '已标记为完成')
+      onUpdate()
+    } catch (error) {
+      console.error('切换状态失败:', error)
+      addToast('error', '切换状态失败，请重试')
+    }
+  }
+
   const handleDelete = async () => {
     if (!confirm('确定要删除这个 Ticket 吗？')) return
     try {
@@ -88,13 +99,31 @@ export function TicketListItem({
       {/* 内容区域 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h3
-            className={`text-base font-medium ${
-              isDeleted ? 'line-through text-muted-foreground' : ''
-            }`}
-          >
-            {ticket.title}
-          </h3>
+          <div className="flex items-center gap-2 flex-1">
+            {/* 状态图标 */}
+            {!isDeleted && (
+              <button
+                onClick={handleToggleStatus}
+                className="flex-shrink-0 transition-colors"
+                title={ticket.status === 'completed' ? '标记为未完成' : '标记为完成'}
+              >
+                {ticket.status === 'completed' ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                )}
+              </button>
+            )}
+            
+            <h3
+              className={`text-base font-medium ${
+                isDeleted ? 'line-through text-muted-foreground' : ''
+              } ${ticket.status === 'completed' && !isDeleted ? 'line-through text-muted-foreground' : ''}`}
+            >
+              {ticket.title}
+            </h3>
+          </div>
+          
           <div className="flex items-center gap-2 flex-shrink-0">
             {!isDeleted ? (
               <>
@@ -149,7 +178,19 @@ export function TicketListItem({
         )}
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/* 状态标签 */}
+          <span
+            className={`px-2 py-0.5 rounded text-xs font-medium ${
+              ticket.status === 'completed'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-yellow-100 text-yellow-700'
+            }`}
+          >
+            {ticket.status === 'completed' ? '已完成' : '未完成'}
+          </span>
+          
           <span>创建于 {formatDate(ticket.created_at)}</span>
+          
           {ticket.tags.length > 0 && (
             <div className="flex items-center gap-2">
               {ticket.tags.map(tag => (
