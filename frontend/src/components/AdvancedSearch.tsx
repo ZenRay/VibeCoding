@@ -163,7 +163,12 @@ export function AdvancedSearch({
 
       {/* 搜索设置对话框 */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent>
+        <DialogContent onKeyDown={e => {
+          if (e.key === 'Escape') {
+            setShowSettings(false)
+            e.stopPropagation()
+          }
+        }}>
           <DialogHeader>
             <DialogTitle>搜索设置</DialogTitle>
           </DialogHeader>
@@ -202,6 +207,16 @@ export function AdvancedSearch({
               <p className="text-xs text-muted-foreground">
                 最多保存最近 10 条搜索记录
               </p>
+            </div>
+
+            {/* 底部按钮 */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setShowSettings(false)}
+              >
+                关闭
+              </Button>
             </div>
           </div>
         </DialogContent>

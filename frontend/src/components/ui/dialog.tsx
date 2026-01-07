@@ -15,6 +15,18 @@ interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
 const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   if (!open) return null
 
+  // 处理 ESC 键
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange?.(false)
+      }
+    }
+    
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onOpenChange])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
       <div 
