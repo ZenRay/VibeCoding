@@ -9,6 +9,9 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base, get_db
 from app.main import app
 
+# 导入所有模型以确保它们被注册到 Base.metadata
+from app.models import Tag, Ticket, TicketTag  # noqa: F401
+
 # 测试数据库 URL（使用内存数据库 SQLite）
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 

@@ -323,7 +323,7 @@ async def toggle_ticket_status(
 )
 async def add_tag_to_ticket(
     ticket_id: int = Path(..., description="Ticket ID", ge=1, example=1),
-    tag_id: int = Body(..., description="标签 ID", example=1),
+    tag_id: int = Body(..., embed=True, description="标签 ID", example=1),
     db: Session = Depends(get_db),
 ):
     """
