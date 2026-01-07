@@ -26,6 +26,12 @@
 - ✅ `specs/0006-quick-start.md` - 快速开始指南
 - ✅ `specs/0007-git-workflow.md` - Git 工作流和 CI/CD 指南
 - ✅ `specs/0008-documentation-structure.md` - 文档结构管理指南（本文档）
+- ✅ `specs/0009-troubleshooting.md` - 问题排查和解决方案
+- ✅ `specs/0010-docker-development.md` - Docker 开发环境完整指南
+- ✅ `specs/0011-code-quality.md` - 代码质量保证体系
+- ✅ `specs/0012-database-design.md` - 数据库设计和迁移指南
+- ✅ `specs/0013-frontend-architecture.md` - 前端架构设计
+- ✅ `specs/0014-lessons-learned.md` - 经验教训和最佳实践
 
 ### env 目录
 
@@ -193,22 +199,54 @@ Week1/
 
 ### 按用途查找
 
-- **了解项目需求**：`specs/0001-spec.md`
-- **查看实施计划**：`specs/0002-implementation-plan.md`
-- **了解功能特性**：`specs/0003-features.md`
-- **验证和测试**：`specs/0004-verification.md`、`specs/0005-testing.md`
-- **快速开始**：`specs/0006-quick-start.md`
-- **Git 工作流**：`specs/0007-git-workflow.md`
-- **文档结构**：`specs/0008-documentation-structure.md`（本文档）
+**项目规划**：
+- 需求和设计 → `0001-spec.md`
+- 实施计划 → `0002-implementation-plan.md`
 
-### 按类型查找
+**功能开发**：
+- 功能说明 → `0003-features.md`
+- 数据库设计 → `0012-database-design.md`
+- 前端架构 → `0013-frontend-architecture.md`
 
-- **需求文档**：0001-spec.md
-- **计划文档**：0002-implementation-plan.md
-- **功能文档**：0003-features.md
-- **操作文档**：0004-verification.md、0005-testing.md、0006-quick-start.md
-- **工作流文档**：0007-git-workflow.md
-- **管理文档**：0008-documentation-structure.md
+**开发环境**：
+- Docker 环境 → `0010-docker-development.md`
+- 快速开始 → `0006-quick-start.md`
+
+**质量保证**：
+- 代码质量 → `0011-code-quality.md`
+- 测试指南 → `0005-testing.md`
+- 验证指南 → `0004-verification.md`
+
+**工作流程**：
+- Git 工作流 → `0007-git-workflow.md`
+- 问题排查 → `0009-troubleshooting.md`
+- 经验教训 → `0014-lessons-learned.md`
+
+**元文档**：
+- 文档结构 → `0008-documentation-structure.md`（本文档）
+
+### 按角色查找
+
+**项目经理**：
+- 0001-spec.md - 需求
+- 0002-implementation-plan.md - 计划
+- 0014-lessons-learned.md - 经验
+
+**后端开发**：
+- 0010-docker-development.md - 环境
+- 0011-code-quality.md - 代码规范
+- 0012-database-design.md - 数据库
+- 0005-testing.md - 测试
+
+**前端开发**：
+- 0010-docker-development.md - 环境
+- 0011-code-quality.md - 代码规范
+- 0013-frontend-architecture.md - 架构
+
+**新成员**：
+- 0006-quick-start.md - 快速开始
+- 0010-docker-development.md - 环境
+- 0009-troubleshooting.md - 问题排查
 
 ---
 
