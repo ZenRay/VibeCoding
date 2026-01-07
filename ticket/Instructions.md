@@ -11,11 +11,12 @@
 
 按照这个想法，帮我生成详细的需求和设计文档，放在 ../specs/0001-spec.md 文件中，输出为中文。
 
-## Document Mangement
+## Document Management
 1. 非开发的内容不需要存放太冗余的代码
 2. 关于项目说明和项目进度的 md 文件在 `../specs` 中完成
 3. 测试文件统一存放到 `../tests` 中，该目录中的内容不需要git管理
 
+## Progress Management
 ### Git Management
 1. 进行 Git 提交时，使用 pre-commit 检查
 2. push 代码到 GitHub 时，使用 action 的能力
