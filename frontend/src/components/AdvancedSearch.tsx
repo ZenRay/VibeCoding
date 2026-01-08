@@ -167,12 +167,14 @@ export function AdvancedSearch({
 
       {/* 搜索设置对话框 */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent onKeyDown={e => {
-          if (e.key === 'Escape') {
-            setShowSettings(false)
-            e.stopPropagation()
-          }
-        }}>
+        <DialogContent
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              setShowSettings(false)
+              e.stopPropagation()
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>搜索设置</DialogTitle>
           </DialogHeader>
@@ -187,38 +189,25 @@ export function AdvancedSearch({
                 <option value="title">仅搜索标题</option>
                 <option value="all">搜索标题和描述</option>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                选择搜索时包含的字段范围
-              </p>
+              <p className="text-xs text-muted-foreground">选择搜索时包含的字段范围</p>
             </div>
 
             <div className="space-y-2">
               <Label>搜索历史</Label>
               <div className="flex items-center justify-between p-3 border rounded">
-                <span className="text-sm">
-                  已保存 {searchHistory.length} 条搜索历史
-                </span>
+                <span className="text-sm">已保存 {searchHistory.length} 条搜索历史</span>
                 {searchHistory.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearHistory}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleClearHistory}>
                     清除历史
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                最多保存最近 10 条搜索记录
-              </p>
+              <p className="text-xs text-muted-foreground">最多保存最近 10 条搜索记录</p>
             </div>
 
             {/* 底部按钮 */}
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setShowSettings(false)}
-              >
+              <Button variant="outline" onClick={() => setShowSettings(false)}>
                 关闭
               </Button>
             </div>

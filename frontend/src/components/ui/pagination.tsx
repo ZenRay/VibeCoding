@@ -66,7 +66,11 @@ export function Pagination({
         <span className="text-sm text-muted-foreground">
           显示 {startItem} - {endItem} / 共 {totalItems} 项
         </span>
-        <Select value={pageSize.toString()} onChange={e => onPageSizeChange(Number(e.target.value))} className="w-20">
+        <Select
+          value={pageSize.toString()}
+          onChange={e => onPageSizeChange(Number(e.target.value))}
+          className="w-20"
+        >
           <option value="20">20</option>
           <option value="50">50</option>
           <option value="100">100</option>

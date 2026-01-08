@@ -13,7 +13,7 @@ interface TicketCardProps {
 
 export function TicketCard({ ticket, onUpdate, onEdit }: TicketCardProps) {
   const { addToast } = useToast()
-  
+
   const handleToggleStatus = async () => {
     try {
       await ticketService.toggleTicketStatus(ticket.id)

@@ -65,7 +65,16 @@ function HomePage() {
     params.page_size = pageSize
 
     return params
-  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder, includeDeleted, currentPage, pageSize])
+  }, [
+    searchQuery,
+    statusFilter,
+    selectedTagIds,
+    sortBy,
+    sortOrder,
+    includeDeleted,
+    currentPage,
+    pageSize,
+  ])
 
   const {
     tickets,
@@ -202,11 +211,7 @@ function HomePage() {
 
             {/* 右侧：操作按钮 */}
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => navigate('/trash')}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={() => navigate('/trash')} variant="outline" size="sm">
                 <Trash2 className="w-4 h-4 mr-2" />
                 回收站
               </Button>
@@ -282,12 +287,24 @@ function HomePage() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center p-8">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <svg
+                    className="w-8 h-8 text-destructive"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-destructive mb-2">加载失败</h3>
-                <p className="text-muted-foreground mb-4">{ticketsError.message || '无法获取 Ticket 列表，请检查网络连接'}</p>
+                <p className="text-muted-foreground mb-4">
+                  {ticketsError.message || '无法获取 Ticket 列表，请检查网络连接'}
+                </p>
                 <Button onClick={() => refetchTickets()} variant="outline">
                   重新加载
                 </Button>
@@ -302,17 +319,30 @@ function HomePage() {
                     {searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0 ? (
                       <>
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                          <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          <svg
+                            className="w-8 h-8 text-muted-foreground"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
                           </svg>
                         </div>
                         <h3 className="text-lg font-semibold mb-2">没有找到匹配的 Ticket</h3>
                         <p className="text-muted-foreground mb-4">尝试调整搜索条件或过滤器</p>
-                        <Button onClick={() => {
-                          setSearchQuery('')
-                          setStatusFilter('all')
-                          setSelectedTagIds([])
-                        }} variant="outline">
+                        <Button
+                          onClick={() => {
+                            setSearchQuery('')
+                            setStatusFilter('all')
+                            setSelectedTagIds([])
+                          }}
+                          variant="outline"
+                        >
                           清除过滤条件
                         </Button>
                       </>
@@ -322,7 +352,9 @@ function HomePage() {
                           <Plus className="w-8 h-8 text-primary" />
                         </div>
                         <h3 className="text-lg font-semibold mb-2">还没有 Ticket</h3>
-                        <p className="text-muted-foreground mb-4">创建你的第一个 Ticket 来开始管理任务</p>
+                        <p className="text-muted-foreground mb-4">
+                          创建你的第一个 Ticket 来开始管理任务
+                        </p>
                         <Button onClick={handleCreateTicket}>
                           <Plus className="w-4 h-4 mr-2" />
                           新建 Ticket

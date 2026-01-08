@@ -50,9 +50,7 @@ function TrashPage() {
     }
 
     try {
-      await Promise.all(
-        Array.from(selectedTicketIds).map(id => ticketService.restoreTicket(id))
-      )
+      await Promise.all(Array.from(selectedTicketIds).map(id => ticketService.restoreTicket(id)))
       addToast('success', `成功恢复 ${selectedTicketIds.size} 个 Ticket`)
       setSelectedTicketIds(new Set())
       refetchTickets()
@@ -170,17 +168,11 @@ function TrashPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => window.history.back()}
-              >
+              <Button variant="outline" onClick={() => window.history.back()}>
                 返回
               </Button>
               {tickets.length > 0 && (
-                <Button
-                  variant="destructive"
-                  onClick={handleEmptyTrash}
-                >
+                <Button variant="destructive" onClick={handleEmptyTrash}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   清空回收站
                 </Button>
@@ -194,7 +186,8 @@ function TrashPage() {
             <div className="text-sm text-yellow-800">
               <p className="font-medium">回收站说明</p>
               <p className="mt-1">
-                这里显示所有已删除的 Ticket。您可以恢复它们或永久删除。永久删除后无法恢复，请谨慎操作。
+                这里显示所有已删除的
+                Ticket。您可以恢复它们或永久删除。永久删除后无法恢复，请谨慎操作。
               </p>
             </div>
           </div>
@@ -208,37 +201,21 @@ function TrashPage() {
                 <span className="text-sm text-muted-foreground">
                   已选择 {selectedTicketIds.size} 项
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBatchRestore}
-                >
+                <Button variant="outline" size="sm" onClick={handleBatchRestore}>
                   <RotateCcw className="w-4 h-4 mr-2" />
                   批量恢复
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBatchPermanentDelete}
-                >
+                <Button variant="destructive" size="sm" onClick={handleBatchPermanentDelete}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   永久删除
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedTicketIds(new Set())}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setSelectedTicketIds(new Set())}>
                   取消选择
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
+                <Button variant="ghost" size="sm" onClick={handleSelectAll}>
                   {selectedTicketIds.size === tickets.length && tickets.length > 0
                     ? '取消全选'
                     : '全选'}
@@ -258,7 +235,9 @@ function TrashPage() {
                   <AlertTriangle className="w-8 h-8 text-destructive" />
                 </div>
                 <h3 className="text-lg font-semibold text-destructive mb-2">加载失败</h3>
-                <p className="text-muted-foreground mb-4">{ticketsError.message || '无法加载回收站'}</p>
+                <p className="text-muted-foreground mb-4">
+                  {ticketsError.message || '无法加载回收站'}
+                </p>
                 <Button onClick={() => refetchTickets()} variant="outline">
                   重新加载
                 </Button>
@@ -271,12 +250,8 @@ function TrashPage() {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <Trash2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <p className="text-xl font-medium text-muted-foreground mb-2">
-                      回收站是空的
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      已删除的 Ticket 会显示在这里
-                    </p>
+                    <p className="text-xl font-medium text-muted-foreground mb-2">回收站是空的</p>
+                    <p className="text-sm text-muted-foreground">已删除的 Ticket 会显示在这里</p>
                   </div>
                 </div>
               ) : (

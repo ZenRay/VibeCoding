@@ -144,69 +144,63 @@ export function SearchAndFilter({
             : 'opacity-0 max-h-0 -translate-y-2 pointer-events-none p-0 border-0'
         }`}
       >
-          {/* 状态过滤 */}
+        {/* 状态过滤 */}
+        <div className="space-y-2">
+          <Label>状态</Label>
+          <Select
+            value={statusFilter}
+            onChange={e => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')}
+          >
+            <option value="all">全部</option>
+            <option value="pending">未完成</option>
+            <option value="completed">已完成</option>
+          </Select>
+        </div>
+
+        {/* 标签过滤 */}
+        {tags.length > 0 && (
           <div className="space-y-2">
-            <Label>状态</Label>
-            <Select
-              value={statusFilter}
-              onChange={e =>
-                onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')
-              }
-            >
-              <option value="all">全部</option>
-              <option value="pending">未完成</option>
-              <option value="completed">已完成</option>
-            </Select>
-          </div>
-
-          {/* 标签过滤 */}
-          {tags.length > 0 && (
-            <div className="space-y-2">
-              <Label>标签过滤</Label>
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTag(tag.id)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                      selectedTagIds.includes(tag.id)
-                        ? 'ring-2 ring-offset-2'
-                        : 'opacity-60 hover:opacity-100'
-                    }`}
-                    style={{
-                      backgroundColor: selectedTagIds.includes(tag.id)
-                        ? tag.color
-                        : tag.color + '20',
-                      color: selectedTagIds.includes(tag.id) ? 'white' : tag.color,
-                      border: `1px solid ${tag.color}`,
-                    }}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
-              </div>
-              {selectedTagIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  已选择 {selectedTagIds.length} 个标签
-                </p>
-              )}
+            <Label>标签过滤</Label>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                    selectedTagIds.includes(tag.id)
+                      ? 'ring-2 ring-offset-2'
+                      : 'opacity-60 hover:opacity-100'
+                  }`}
+                  style={{
+                    backgroundColor: selectedTagIds.includes(tag.id) ? tag.color : tag.color + '20',
+                    color: selectedTagIds.includes(tag.id) ? 'white' : tag.color,
+                    border: `1px solid ${tag.color}`,
+                  }}
+                >
+                  {tag.name}
+                </button>
+              ))}
             </div>
-          )}
-
-          {/* 包含已删除 */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="include-deleted"
-              checked={includeDeleted}
-              onChange={e => onIncludeDeletedChange(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300"
-            />
-            <Label htmlFor="include-deleted" className="cursor-pointer">
-              包含已删除的 Ticket
-            </Label>
+            {selectedTagIds.length > 0 && (
+              <p className="text-xs text-muted-foreground">已选择 {selectedTagIds.length} 个标签</p>
+            )}
           </div>
+        )}
+
+        {/* 包含已删除 */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="include-deleted"
+            checked={includeDeleted}
+            onChange={e => onIncludeDeletedChange(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300"
+          />
+          <Label htmlFor="include-deleted" className="cursor-pointer">
+            包含已删除的 Ticket
+          </Label>
+        </div>
       </div>
 
       {/* 当前过滤条件显示 */}
@@ -217,25 +211,23 @@ export function SearchAndFilter({
             : 'opacity-0 max-h-0 -translate-y-1 pointer-events-none overflow-hidden'
         }`}
       >
-          <span>当前过滤：</span>
-          {localSearchQuery && (
-            <span className="px-2 py-1 bg-background rounded border">
-              搜索: "{localSearchQuery}"
-            </span>
-          )}
-          {statusFilter !== 'all' && (
-            <span className="px-2 py-1 bg-background rounded border">
-              状态: {statusFilter === 'pending' ? '未完成' : '已完成'}
-            </span>
-          )}
-          {selectedTagIds.length > 0 && (
-            <span className="px-2 py-1 bg-background rounded border">
-              标签: {selectedTagIds.length} 个
-            </span>
-          )}
-          {includeDeleted && (
-            <span className="px-2 py-1 bg-background rounded border">包含已删除</span>
-          )}
+        <span>当前过滤：</span>
+        {localSearchQuery && (
+          <span className="px-2 py-1 bg-background rounded border">搜索: "{localSearchQuery}"</span>
+        )}
+        {statusFilter !== 'all' && (
+          <span className="px-2 py-1 bg-background rounded border">
+            状态: {statusFilter === 'pending' ? '未完成' : '已完成'}
+          </span>
+        )}
+        {selectedTagIds.length > 0 && (
+          <span className="px-2 py-1 bg-background rounded border">
+            标签: {selectedTagIds.length} 个
+          </span>
+        )}
+        {includeDeleted && (
+          <span className="px-2 py-1 bg-background rounded border">包含已删除</span>
+        )}
       </div>
     </div>
   )
