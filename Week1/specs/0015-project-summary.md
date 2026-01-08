@@ -474,19 +474,22 @@ status: str | None = Query(...)  # 单行格式
 ### 使用方法
 
 ```bash
-# 1. 复制配置文件
-cp -r Week1/env/ NewProject/env/
-cp Week1/.github/ NewProject/.github/
-cp Week1/.pre-commit-config.yaml NewProject/
+# 1. 在 Projects 根目录创建新项目目录（如 Week2）
+mkdir -p Week2/{backend,frontend,env,specs}
 
-# 2. 修改项目名称
-# - docker-compose.yml 中的 container_name
+# 2. 复制配置文件模板
+cp -r Week1/env/*.sh Week2/env/
+cp -r Week1/env/Dockerfile.* Week2/env/
+cp -r Week1/env/docker-compose.yml Week2/env/
+
+# 3. 修改项目名称
+# - docker-compose.yml 中的 container_name 和 volume 名
 # - 各配置文件中的项目名称
 
-# 3. 启动开发
-cd NewProject/env && ./start.sh
+# 4. 启动开发
+cd Week2/env && ./start.sh
 
-# 4. 开始开发
+# 5. 开始开发
 # 环境已配置完成，直接开发即可！
 ```
 

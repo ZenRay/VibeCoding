@@ -62,7 +62,7 @@
 
 #### 方法 3：使用验证脚本
 ```bash
-cd Week1
+# 在 Week1 目录下运行
 ./verify_frontend_backend.sh
 ```
 
