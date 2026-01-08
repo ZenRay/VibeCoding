@@ -34,11 +34,21 @@ test.describe('标签管理功能', () => {
     // 提交创建
     await page.getByRole('button', { name: '创建', exact: true }).click()
 
-    // 等待创建完成和对话框关闭
+    // 等待创建完成
     await page.waitForTimeout(1000)
 
+    // 验证 Toast 消息显示创建成功
+    await expect(page.getByText('标签创建成功')).toBeVisible()
+
+    // 如果有"显示更多"按钮，点击展开所有标签
+    const showMoreButton = page.getByText('显示更多')
+    if (await showMoreButton.isVisible()) {
+      await showMoreButton.click()
+      await page.waitForTimeout(300)
+    }
+
     // 验证标签出现在侧边栏 (标签会自动转为大写)
-    await expect(page.locator('.space-y-2').getByText(tagName.toUpperCase())).toBeVisible()
+    await expect(page.getByText(tagName.toUpperCase())).toBeVisible()
   })
 
   test('应该自动将标签名转为大写', async ({ page }) => {
@@ -54,8 +64,18 @@ test.describe('标签管理功能', () => {
     await page.getByRole('button', { name: '创建', exact: true }).click()
     await page.waitForTimeout(1000)
 
+    // 验证 Toast 消息显示创建成功
+    await expect(page.getByText('标签创建成功')).toBeVisible()
+
+    // 如果有"显示更多"按钮，点击展开所有标签
+    const showMoreButton = page.getByText('显示更多')
+    if (await showMoreButton.isVisible()) {
+      await showMoreButton.click()
+      await page.waitForTimeout(300)
+    }
+
     // 验证标签显示为大写（在侧边栏）
-    await expect(page.locator('.space-y-2').getByText(upperCaseName)).toBeVisible()
+    await expect(page.getByText(upperCaseName)).toBeVisible()
   })
 
   test('应该能够为 Ticket 添加标签', async ({ page }) => {
@@ -110,8 +130,8 @@ test.describe('标签管理功能', () => {
     // 验证侧边栏的标签部分存在
     await expect(page.getByText('标签').first()).toBeVisible()
 
-    // 侧边栏的标签列表 (.space-y-2 内的 button)
-    const tagButtons = page.locator('.space-y-2 button')
+    // 侧边栏的标签列表 (.space-y-1 内的 button)
+    const tagButtons = page.locator('.space-y-1 button')
     const count = await tagButtons.count()
 
     // 如果有标签，验证每个标签按钮可见
@@ -124,7 +144,7 @@ test.describe('标签管理功能', () => {
 
   test('应该能够点击标签进行过滤', async ({ page }) => {
     // 在侧边栏找到标签按钮
-    const tagButtons = page.locator('.space-y-2 button')
+    const tagButtons = page.locator('.space-y-1 button')
     const count = await tagButtons.count()
 
     if (count > 0) {

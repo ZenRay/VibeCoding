@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Tag } from '@/types/tag'
 import { Label } from './ui/label'
 import { RadioGroup, RadioGroupItem } from './ui/radio-group'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface SidebarProps {
   statusFilter: 'all' | 'pending' | 'completed'
@@ -12,6 +14,9 @@ interface SidebarProps {
   onIncludeDeletedChange: (include: boolean) => void
 }
 
+// 默认显示的标签数量
+const DEFAULT_VISIBLE_TAGS = 8
+
 export function Sidebar({
   statusFilter,
   onStatusFilterChange,
@@ -21,6 +26,8 @@ export function Sidebar({
   includeDeleted,
   onIncludeDeletedChange,
 }: SidebarProps) {
+  const [showAllTags, setShowAllTags] = useState(false)
+
   const toggleTag = (tagId: number) => {
     if (selectedTagIds.includes(tagId)) {
       onTagFilterChange(selectedTagIds.filter(id => id !== tagId))
@@ -29,10 +36,15 @@ export function Sidebar({
     }
   }
 
+  // 决定显示哪些标签
+  const visibleTags = showAllTags ? tags : tags.slice(0, DEFAULT_VISIBLE_TAGS)
+  const hasMoreTags = tags.length > DEFAULT_VISIBLE_TAGS
+  const hiddenCount = tags.length - DEFAULT_VISIBLE_TAGS
+
   return (
-    <div className="w-64 border-r bg-background p-6 space-y-6 animate-slide-in-left">
-      {/* 状态过滤 */}
-      <div>
+    <div className="w-64 border-r bg-background flex flex-col h-screen animate-slide-in-left">
+      {/* 固定区域：状态过滤 */}
+      <div className="p-6 pb-4 flex-shrink-0">
         <Label className="text-sm font-semibold mb-3 block">状态</Label>
         <RadioGroup
           value={statusFilter}
@@ -74,37 +86,69 @@ export function Sidebar({
         </RadioGroup>
       </div>
 
-      {/* 标签过滤 */}
-      <div>
-        <Label className="text-sm font-semibold mb-3 block">标签</Label>
-        <div className="space-y-2">
+      {/* 可滚动区域：标签过滤 */}
+      <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
+        <div className="flex items-center justify-between mb-3">
+          <Label className="text-sm font-semibold">标签</Label>
+          {tags.length > 0 && (
+            <span className="text-xs text-muted-foreground">{tags.length} 个</span>
+          )}
+        </div>
+        <div className="space-y-1">
           {tags.length === 0 ? (
             <p className="text-sm text-muted-foreground">暂无标签</p>
           ) : (
-            tags.map(tag => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => toggleTag(tag.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-all duration-200 hover:translate-x-1 ${
-                  selectedTagIds.includes(tag.id)
-                    ? 'bg-primary/10 border border-primary'
-                    : 'hover:bg-muted'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
-                  <span>{tag.name}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">{tag.ticket_count || 0}</span>
-              </button>
-            ))
+            <>
+              {visibleTags.map(tag => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-all duration-200 hover:translate-x-1 ${
+                    selectedTagIds.includes(tag.id)
+                      ? 'bg-primary/10 border border-primary'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    <span className="truncate">{tag.name}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                    {tag.ticket_count || 0}
+                  </span>
+                </button>
+              ))}
+              {/* 展开/收起按钮 */}
+              {hasMoreTags && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllTags(!showAllTags)}
+                  className="w-full flex items-center justify-center gap-1 p-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                >
+                  {showAllTags ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      收起
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      显示更多 ({hiddenCount})
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* 显示选项 */}
-      <div>
+      {/* 固定区域：显示选项 */}
+      <div className="p-6 pt-4 border-t flex-shrink-0">
         <Label className="text-sm font-semibold mb-3 block">显示选项</Label>
         <div className="flex items-center space-x-2">
           <input

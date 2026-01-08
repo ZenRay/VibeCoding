@@ -124,8 +124,8 @@ test.describe('搜索和过滤功能', () => {
   })
 
   test('应该能够排序 Ticket', async ({ page }) => {
-    // 找到排序下拉框 (Select 组件)
-    const sortSelect = page.locator('select')
+    // 找到排序下拉框（工具栏中的第一个 select，用于排序字段选择）
+    const sortSelect = page.locator('select').first()
 
     // 切换到按标题排序
     await sortSelect.selectOption('title')

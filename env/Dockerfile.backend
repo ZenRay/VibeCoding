@@ -44,7 +44,10 @@ RUN python -m venv .venv && \
         "pydantic>=2.5.3" \
         "pydantic-settings>=2.1.0" \
         "python-dotenv>=1.0.0" \
-        "python-multipart>=0.0.6" && \
+        "python-multipart>=0.0.6" \
+        "pytest>=8.0.0" \
+        "pytest-cov>=4.1.0" \
+        "httpx>=0.26.0" && \
     echo "✅ Dependencies installed"
 
 # 复制应用代码

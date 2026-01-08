@@ -1,10 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { ticketService } from '@/services/ticketService'
-import { Ticket, TicketQueryParams } from '@/types/ticket'
+import { Ticket, TicketQueryParams, TicketListResponse } from '@/types/ticket'
 import { useStore } from '@/store/useStore'
+
+interface PaginationInfo {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
 
 export function useTickets(params?: TicketQueryParams) {
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const { setTickets: setStoreTickets } = useStore()
@@ -22,9 +35,18 @@ export function useTickets(params?: TicketQueryParams) {
     setLoading(true)
     setError(null)
     try {
-      const response = await ticketService.getTickets(paramsRef.current)
+      const response: TicketListResponse = await ticketService.getTickets(paramsRef.current)
       setTickets(response.data)
       setStoreTickets(response.data)
+      // 更新分页信息
+      if (response.pagination) {
+        setPagination({
+          page: response.pagination.page,
+          pageSize: response.pagination.page_size,
+          total: response.pagination.total,
+          totalPages: response.pagination.total_pages,
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('获取 Ticket 列表失败'))
     } finally {
@@ -50,6 +72,7 @@ export function useTickets(params?: TicketQueryParams) {
 
   return {
     tickets,
+    pagination,
     loading,
     error,
     refetch: fetchTickets,

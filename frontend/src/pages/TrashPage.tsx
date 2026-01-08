@@ -35,6 +35,7 @@ function TrashPage() {
 
   const {
     tickets,
+    pagination,
     loading: ticketsLoading,
     error: ticketsError,
     refetch: refetchTickets,
@@ -273,12 +274,12 @@ function TrashPage() {
         </div>
 
         {/* 分页 */}
-        {!ticketsLoading && !ticketsError && tickets.length > 0 && (
+        {!ticketsLoading && !ticketsError && pagination.total > 0 && (
           <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(tickets.length / pageSize)}
-            pageSize={pageSize}
-            totalItems={tickets.length}
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.total}
             onPageChange={setCurrentPage}
             onPageSizeChange={size => {
               setPageSize(size)
