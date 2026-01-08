@@ -1,3 +1,4 @@
+import { memo, useCallback } from 'react'
 import { Ticket } from '@/types/ticket'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'
@@ -12,7 +13,11 @@ interface TicketListItemProps {
   onEdit: (ticket: Ticket) => void
 }
 
-export function TicketListItem({
+/**
+ * Ticket 列表项组件
+ * 使用 React.memo 优化，只有当 props 变化时才重新渲染
+ */
+export const TicketListItem = memo(function TicketListItem({
   ticket,
   selected,
   onSelect,
@@ -20,7 +25,7 @@ export function TicketListItem({
   onEdit,
 }: TicketListItemProps) {
   const { addToast } = useToast()
-  
+
   const handleToggleStatus = async () => {
     try {
       await ticketService.toggleTicketStatus(ticket.id)
@@ -114,7 +119,7 @@ export function TicketListItem({
                 )}
               </button>
             )}
-            
+
             <h3
               className={`text-base font-medium ${
                 isDeleted ? 'line-through text-muted-foreground' : ''
@@ -123,7 +128,7 @@ export function TicketListItem({
               {ticket.title}
             </h3>
           </div>
-          
+
           <div className="flex items-center gap-2 flex-shrink-0">
             {!isDeleted ? (
               <>
@@ -188,9 +193,9 @@ export function TicketListItem({
           >
             {ticket.status === 'completed' ? '已完成' : '未完成'}
           </span>
-          
+
           <span>创建于 {formatDate(ticket.created_at)}</span>
-          
+
           {ticket.tags.length > 0 && (
             <div className="flex items-center gap-2">
               {ticket.tags.map(tag => (
@@ -212,4 +217,16 @@ export function TicketListItem({
       </div>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // 自定义比较函数，优化重渲染
+  return (
+    prevProps.ticket.id === nextProps.ticket.id &&
+    prevProps.ticket.title === nextProps.ticket.title &&
+    prevProps.ticket.description === nextProps.ticket.description &&
+    prevProps.ticket.status === nextProps.ticket.status &&
+    prevProps.ticket.deleted_at === nextProps.ticket.deleted_at &&
+    prevProps.ticket.updated_at === nextProps.ticket.updated_at &&
+    prevProps.ticket.tags.length === nextProps.ticket.tags.length &&
+    prevProps.selected === nextProps.selected
+  )
+})

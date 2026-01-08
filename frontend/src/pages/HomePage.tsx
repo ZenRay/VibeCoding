@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTickets } from '@/hooks/useTickets'
 import { useTags } from '@/hooks/useTags'
@@ -80,22 +80,23 @@ function HomePage() {
   const [tagDialogOpen, setTagDialogOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
-  const handleCreateTicket = () => {
+  // 使用 useCallback 优化回调函数，避免不必要的重渲染
+  const handleCreateTicket = useCallback(() => {
     setEditingTicket(null)
     setTicketDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditTicket = (ticket: Ticket) => {
+  const handleEditTicket = useCallback((ticket: Ticket) => {
     setEditingTicket(ticket)
     setTicketDialogOpen(true)
-  }
+  }, [])
 
-  const handleCreateTag = () => {
+  const handleCreateTag = useCallback(() => {
     setEditingTag(null)
     setTagDialogOpen(true)
-  }
+  }, [])
 
-  const handleSelectTicket = (ticketId: number, selected: boolean) => {
+  const handleSelectTicket = useCallback((ticketId: number, selected: boolean) => {
     setSelectedTicketIds(prev => {
       const newSet = new Set(prev)
       if (selected) {
@@ -105,17 +106,19 @@ function HomePage() {
       }
       return newSet
     })
-  }
+  }, [])
 
-  const handleSelectAll = () => {
-    if (selectedTicketIds.size === tickets.length) {
-      setSelectedTicketIds(new Set())
-    } else {
-      setSelectedTicketIds(new Set(tickets.map(t => t.id)))
-    }
-  }
+  const handleSelectAll = useCallback(() => {
+    setSelectedTicketIds(prev => {
+      if (prev.size === tickets.length) {
+        return new Set()
+      } else {
+        return new Set(tickets.map(t => t.id))
+      }
+    })
+  }, [tickets])
 
-  const handleBatchDelete = async () => {
+  const handleBatchDelete = useCallback(async () => {
     if (selectedTicketIds.size === 0) return
     if (!confirm(`确定要删除选中的 ${selectedTicketIds.size} 个 Ticket 吗？`)) return
 
@@ -130,7 +133,7 @@ function HomePage() {
       console.error('批量删除失败:', error)
       addToast('error', '批量删除失败，请重试')
     }
-  }
+  }, [selectedTicketIds, addToast, refetchTickets])
 
   // 键盘快捷键
   useKeyboard([
@@ -142,11 +145,10 @@ function HomePage() {
     {
       key: 'k',
       ctrl: true,
-      meta: true,
       callback: () => {
         document.querySelector<HTMLInputElement>('input[type="text"]')?.focus()
       },
-      description: '聚焦搜索框',
+      description: '聚焦搜索框 (Ctrl+K)',
     },
     {
       key: 'Escape',
@@ -173,9 +175,9 @@ function HomePage() {
     },
   ])
 
-  const toggleSortOrder = () => {
+  const toggleSortOrder = useCallback(() => {
     setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
-  }
+  }, [])
 
   return (
     <div className="flex h-screen bg-background">
@@ -276,17 +278,57 @@ function HomePage() {
         {/* Ticket 列表 */}
         <div className="flex-1 overflow-y-auto">
           {ticketsLoading && <TicketListSkeleton />}
-          {ticketsError && <div className="p-4 text-red-500">错误: {ticketsError.message}</div>}
+          {ticketsError && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-destructive mb-2">加载失败</h3>
+                <p className="text-muted-foreground mb-4">{ticketsError.message || '无法获取 Ticket 列表，请检查网络连接'}</p>
+                <Button onClick={() => refetchTickets()} variant="outline">
+                  重新加载
+                </Button>
+              </div>
+            </div>
+          )}
           {!ticketsLoading && !ticketsError && (
             <>
               {tickets.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <p className="text-muted-foreground mb-2">
-                      {searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0
-                        ? '没有找到匹配的 Ticket'
-                        : '暂无 Ticket，点击"新建 Ticket"添加'}
-                    </p>
+                  <div className="text-center p-8">
+                    {searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0 ? (
+                      <>
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                          <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">没有找到匹配的 Ticket</h3>
+                        <p className="text-muted-foreground mb-4">尝试调整搜索条件或过滤器</p>
+                        <Button onClick={() => {
+                          setSearchQuery('')
+                          setStatusFilter('all')
+                          setSelectedTagIds([])
+                        }} variant="outline">
+                          清除过滤条件
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Plus className="w-8 h-8 text-primary" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">还没有 Ticket</h3>
+                        <p className="text-muted-foreground mb-4">创建你的第一个 Ticket 来开始管理任务</p>
+                        <Button onClick={handleCreateTicket}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          新建 Ticket
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (

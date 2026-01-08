@@ -13,27 +13,79 @@ interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
-  if (!open) return null
+  const [isVisible, setIsVisible] = React.useState(false)
+  const [isAnimating, setIsAnimating] = React.useState(false)
+
+  React.useEffect(() => {
+    if (open) {
+      // 打开：先显示，然后触发动画
+      setIsVisible(true)
+      // 使用 requestAnimationFrame 确保 DOM 更新后再添加动画类
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true)
+        })
+      })
+    } else {
+      // 关闭：先触发退出动画
+      setIsAnimating(false)
+      // 动画结束后隐藏
+      const timer = setTimeout(() => {
+        setIsVisible(false)
+      }, 200) // 与 CSS transition duration 匹配
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   // 处理 ESC 键
   React.useEffect(() => {
+    if (!open) return
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onOpenChange?.(false)
       }
     }
-    
+
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [onOpenChange])
+  }, [open, onOpenChange])
+
+  // 阻止背景滚动
+  React.useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
+  if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
-      <div 
-        className="fixed inset-0 bg-black/50 animate-fade-in" 
-        onClick={() => onOpenChange?.(false)} 
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* 背景遮罩 */}
+      <div
+        className={cn(
+          'fixed inset-0 bg-black/50 transition-opacity duration-200',
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        )}
+        onClick={() => onOpenChange?.(false)}
       />
-      <div className="relative z-50 animate-scale-in">{children}</div>
+      {/* 内容容器 */}
+      <div
+        className={cn(
+          'relative z-50 transition-all duration-200 ease-out',
+          isAnimating
+            ? 'opacity-100 scale-100 translate-y-0'
+            : 'opacity-0 scale-95 translate-y-4'
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -44,7 +96,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div
         ref={ref}
         className={cn(
-          'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg',
+          'relative w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg',
           className
         )}
         {...props}

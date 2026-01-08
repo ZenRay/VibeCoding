@@ -29,7 +29,7 @@ export function AdvancedSearch({
   useEffect(() => {
     const timer = setTimeout(() => {
       onSearchChange(localSearchQuery)
-      
+
       // 保存到搜索历史（非空且不重复）
       if (localSearchQuery.trim() && !searchHistory.includes(localSearchQuery.trim())) {
         const newHistory = [localSearchQuery.trim(), ...searchHistory].slice(0, 10) // 最多保存 10 条
@@ -123,31 +123,35 @@ export function AdvancedSearch({
           </div>
 
           {/* 搜索历史下拉 */}
-          {showHistory && searchHistory.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2 px-2">
-                  <span className="text-xs font-medium text-muted-foreground">搜索历史</span>
-                  <button
-                    onClick={handleClearHistory}
-                    className="text-xs text-destructive hover:underline"
-                  >
-                    清除
-                  </button>
-                </div>
-                {searchHistory.map((query, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectHistory(query)}
-                    className="w-full text-left px-3 py-2 hover:bg-muted rounded text-sm flex items-center gap-2"
-                  >
-                    <History className="w-3 h-3 text-muted-foreground" />
-                    <span>{query}</span>
-                  </button>
-                ))}
+          <div
+            className={`absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto transition-all duration-200 ease-out ${
+              showHistory && searchHistory.length > 0
+                ? 'opacity-100 translate-y-0 pointer-events-auto'
+                : 'opacity-0 -translate-y-2 pointer-events-none'
+            }`}
+          >
+            <div className="p-2">
+              <div className="flex items-center justify-between mb-2 px-2">
+                <span className="text-xs font-medium text-muted-foreground">搜索历史</span>
+                <button
+                  onClick={handleClearHistory}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  清除
+                </button>
               </div>
+              {searchHistory.map((query, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelectHistory(query)}
+                  className="w-full text-left px-3 py-2 hover:bg-muted rounded text-sm flex items-center gap-2 transition-colors"
+                >
+                  <History className="w-3 h-3 text-muted-foreground" />
+                  <span>{query}</span>
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* 搜索范围快速切换 */}

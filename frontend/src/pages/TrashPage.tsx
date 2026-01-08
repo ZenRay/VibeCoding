@@ -16,7 +16,7 @@ function TrashPage() {
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<number>>(new Set())
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
-  
+
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -70,12 +70,12 @@ function TrashPage() {
     }
 
     const count = selectedTicketIds.size
-    
+
     // 第一次确认
     if (!confirm(`⚠️ 警告：您即将永久删除 ${count} 个 Ticket\n\n此操作不可恢复！是否继续？`)) {
       return
     }
-    
+
     // 第二次确认
     if (!confirm(`⚠️ 最后确认：永久删除 ${count} 个 Ticket\n\n删除后无法恢复，确定要继续吗？`)) {
       return
@@ -251,7 +251,20 @@ function TrashPage() {
         {/* Ticket 列表 */}
         <div className="flex-1 overflow-y-auto">
           {ticketsLoading && <TicketListSkeleton />}
-          {ticketsError && <div className="p-4 text-red-500">错误: {ticketsError.message}</div>}
+          {ticketsError && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-destructive mb-2">加载失败</h3>
+                <p className="text-muted-foreground mb-4">{ticketsError.message || '无法加载回收站'}</p>
+                <Button onClick={() => refetchTickets()} variant="outline">
+                  重新加载
+                </Button>
+              </div>
+            </div>
+          )}
           {!ticketsLoading && !ticketsError && (
             <>
               {tickets.length === 0 ? (

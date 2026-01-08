@@ -137,8 +137,13 @@ export function SearchAndFilter({
       </div>
 
       {/* 展开的过滤器面板 */}
-      {showFilters && (
-        <div className="border rounded-lg p-4 bg-muted/50 space-y-4">
+      <div
+        className={`border rounded-lg p-4 bg-muted/50 space-y-4 transition-all duration-200 ease-out overflow-hidden ${
+          showFilters
+            ? 'opacity-100 max-h-96 translate-y-0'
+            : 'opacity-0 max-h-0 -translate-y-2 pointer-events-none p-0 border-0'
+        }`}
+      >
           {/* 状态过滤 */}
           <div className="space-y-2">
             <Label>状态</Label>
@@ -202,12 +207,16 @@ export function SearchAndFilter({
               包含已删除的 Ticket
             </Label>
           </div>
-        </div>
-      )}
+      </div>
 
       {/* 当前过滤条件显示 */}
-      {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
+      <div
+        className={`flex items-center gap-2 flex-wrap text-sm text-muted-foreground transition-all duration-200 ease-out ${
+          hasActiveFilters
+            ? 'opacity-100 max-h-20 translate-y-0'
+            : 'opacity-0 max-h-0 -translate-y-1 pointer-events-none overflow-hidden'
+        }`}
+      >
           <span>当前过滤：</span>
           {localSearchQuery && (
             <span className="px-2 py-1 bg-background rounded border">
@@ -227,8 +236,7 @@ export function SearchAndFilter({
           {includeDeleted && (
             <span className="px-2 py-1 bg-background rounded border">包含已删除</span>
           )}
-        </div>
-      )}
+      </div>
     </div>
   )
 }

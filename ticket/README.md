@@ -4,193 +4,127 @@
 
 ## 技术栈
 
-- **后端**: FastAPI + PostgreSQL + SQLAlchemy + Alembic
-- **前端**: React + TypeScript + Vite + Tailwind CSS + Shadcn UI
+- **后端**: Python 3.12 + FastAPI + PostgreSQL 16 + SQLAlchemy 2.0 + Alembic
+- **前端**: React 18 + TypeScript 5 + Vite 5 + Tailwind CSS + Shadcn UI
 - **状态管理**: Zustand
-- **数据获取**: Axios
-- **通知**: Sonner
+- **开发环境**: Docker + Docker Compose
 
 ## 功能特性
 
 - ✅ 创建、编辑、删除、完成 Ticket
+- ✅ 软删除和恢复功能
 - ✅ 批量操作（批量完成、批量删除）
 - ✅ 基于标签的灵活分类
-- ✅ 标签管理（创建、删除标签）
-- ✅ 多维度过滤（状态、标签）
+- ✅ 标签管理（创建、编辑、删除，名称自动大写）
+- ✅ 多维度过滤（状态、标签、删除状态）
 - ✅ 实时搜索（防抖优化）
 - ✅ 排序功能（按创建时间、更新时间、标题）
-- ✅ 响应式设计（移动端适配）
+- ✅ 分页功能
+- ✅ Toast 提示系统
+- ✅ 骨架屏加载状态
+- ✅ 回收站页面
 - ✅ 键盘快捷键支持
-- ✅ 直观的用户界面
+- ✅ 错误边界处理
 
 ## 快速开始
 
 ### 前置要求
 
-- Python 3.11+ (推荐使用 uv)
-- Node.js 18+ (推荐使用 yarn)
-- PostgreSQL 14+
+- Docker Desktop（已安装 Docker Compose）
 
-### 后端设置
+### 一键启动
 
 ```bash
-cd backend
-
-# 使用 uv 安装依赖
-uv sync
-
-# 复制环境变量文件
-cp .env.example .env
-
-# 编辑 .env 文件，配置数据库连接
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha
-
-# 创建数据库（如果不存在）
-createdb projectalpha
-
-# 运行数据库迁移
-uv run alembic upgrade head
-
-# （可选）导入种子数据
-psql -U postgres -d projectalpha -f seed.sql
-
-# 启动开发服务器
-uv run uvicorn app.main:app --reload --port 8000
+cd env
+./start.sh
 ```
 
-### 前端设置
+### 访问应用
+
+- 前端: http://localhost:5173
+- 后端 API: http://localhost:8000
+- API 文档 (Swagger): http://localhost:8000/docs
+- API 文档 (ReDoc): http://localhost:8000/redoc
+
+### 停止服务
 
 ```bash
-cd frontend
-
-# 安装依赖
-yarn install
-
-# 启动开发服务器
-yarn dev
+cd env
+./stop.sh
 ```
-
-访问 <http://localhost:5173> 查看应用。
 
 ## 项目结构
 
 ```
-project-alpha/
+Week1/
 ├── backend/          # FastAPI 后端
 │   ├── app/
-│   │   ├── api/     # API 路由
-│   │   ├── crud/    # 数据库操作
-│   │   ├── models/  # 数据模型
-│   │   ├── schemas/ # Pydantic 模型
-│   │   └── utils/   # 工具函数
-│   ├── alembic/     # 数据库迁移
-│   └── tests/       # 测试
-├── frontend/        # React 前端
+│   │   ├── api/      # API 路由
+│   │   ├── models/   # 数据模型
+│   │   ├── schemas/  # Pydantic 模型
+│   │   ├── services/ # 业务逻辑
+│   │   └── utils/    # 工具函数
+│   ├── alembic/      # 数据库迁移
+│   └── tests/        # 测试
+├── frontend/         # React 前端
 │   └── src/
-│       ├── components/  # React 组件
-│       ├── store/       # 状态管理
-│       ├── types/       # TypeScript 类型
-│       └── lib/         # 工具函数和 API 客户端
-├── docs/           # 文档
-│   └── test.rest   # REST Client 测试文件
-└── specs/          # 项目规范文档
+│       ├── components/   # React 组件
+│       ├── hooks/        # 自定义 Hooks
+│       ├── pages/        # 页面组件
+│       ├── services/     # API 服务
+│       ├── store/        # 状态管理
+│       └── types/        # TypeScript 类型
+├── env/              # Docker 环境配置
+├── specs/            # 技术文档（17 个）
+└── ticket/           # 项目说明
 ```
-
-## API 文档
-
-后端运行后访问:
-
-- Swagger UI: <http://localhost:8000/api/v1/docs>
-- ReDoc: <http://localhost:8000/api/v1/redoc>
 
 ## 开发
 
-### 后端开发
+### 代码检查（提交前必须）
 
 ```bash
-# 运行测试
-uv run pytest
-
-# 代码格式化
-uv run black app/
-uv run isort app/
-
-# 类型检查
-uv run mypy app/
+cd env
+./check-running.sh
 ```
 
-### 前端开发
+### 运行测试
 
 ```bash
-# 构建
-yarn build
+docker exec project-alpha-backend bash -c \
+  "source .venv/bin/activate && pytest -v"
+```
 
-# 预览构建
-yarn preview
+### 查看日志
 
-# 代码检查
-yarn lint
+```bash
+docker compose -f env/docker-compose.yml logs -f backend
+docker compose -f env/docker-compose.yml logs -f frontend
+```
+
+### 进入容器
+
+```bash
+# 后端
+docker exec -it project-alpha-backend bash
+
+# 前端
+docker exec -it project-alpha-frontend sh
 ```
 
 ## 键盘快捷键
 
+- `N`: 创建新 Ticket
 - `Ctrl/Cmd + K`: 聚焦搜索框
-- `N`: 创建新 Ticket（不在输入框时）
-- `Esc`: 关闭对话框/侧边栏
+- `Esc`: 关闭对话框
 
-## 测试
+## 文档
 
-### 后端测试
-
-```bash
-cd backend
-uv run pytest -v
-```
-
-### API 测试
-
-使用 REST Client 测试文件：`docs/test.rest`
-
-## 部署
-
-### 生产环境变量
-
-创建 `backend/.env.production`:
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/projectalpha
-ENVIRONMENT=production
-ALLOWED_ORIGINS=https://yourdomain.com
-```
-
-### 启动应用
-
-使用 Makefile 启动应用（推荐，从项目根目录运行）：
-
-```bash
-# 从项目根目录运行
-cd /Users/tchen/projects/mycode/bootcamp/ai
-
-# 启动应用
-make w1-start
-
-# 停止应用
-make w1-stop
-
-# 安装依赖
-make w1-install
-
-# 查看所有可用命令
-make help
-```
-
-或者使用 `start.sh` 脚本（已废弃，推荐使用 Makefile）：
-
-```bash
-cd w1/project-alpha
-chmod +x start.sh
-./start.sh
-```
+- [快速开始](../specs/0006-quick-start.md) - 3 分钟上手
+- [Docker 环境](../specs/0010-docker-development.md) - 开发环境详解
+- [代码质量](../specs/0011-code-quality.md) - 代码规范
+- [项目状态](../PROJECT_STATUS.md) - 当前进度
+- [文档导航](../文档导航.md) - 所有文档索引
 
 ## 许可证
 
