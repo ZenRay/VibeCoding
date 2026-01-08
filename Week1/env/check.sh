@@ -84,7 +84,6 @@ docker run --rm -v "$(pwd)/../backend:/app" -w /app python:3.12-slim bash -c "
     exit 1
 }
 
-cd ..
 echo ""
 echo -e "${GREEN}=== 后端检查完成 ===${NC}\n"
 
@@ -93,12 +92,12 @@ echo -e "${GREEN}=== 前端检查（Node 20） ===${NC}"
 echo ""
 
 echo -e "${YELLOW}[1/4] Prettier 格式化检查...${NC}"
-docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
+docker run --rm -v "$(pwd)/../frontend:/app" -w /app node:20-alpine sh -c "
     npm install > /dev/null 2>&1 &&
     npx prettier --check 'src/**/*.{ts,tsx,css}'
 " && echo -e "${GREEN}✓ Prettier 检查通过${NC}" || {
     echo -e "${RED}✗ Prettier 检查失败，自动修复...${NC}"
-    docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
+    docker run --rm -v "$(pwd)/../frontend:/app" -w /app node:20-alpine sh -c "
         npm install > /dev/null 2>&1 &&
         npx prettier --write 'src/**/*.{ts,tsx,css}'
     "
@@ -107,7 +106,7 @@ docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
 
 echo ""
 echo -e "${YELLOW}[2/4] ESLint 检查...${NC}"
-docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
+docker run --rm -v "$(pwd)/../frontend:/app" -w /app node:20-alpine sh -c "
     npm install > /dev/null 2>&1 &&
     npm run lint
 " && echo -e "${GREEN}✓ ESLint 检查通过${NC}" || {
@@ -117,7 +116,7 @@ docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
 
 echo ""
 echo -e "${YELLOW}[3/4] TypeScript 类型检查...${NC}"
-docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
+docker run --rm -v "$(pwd)/../frontend:/app" -w /app node:20-alpine sh -c "
     npm install > /dev/null 2>&1 &&
     npm run type-check
 " && echo -e "${GREEN}✓ TypeScript 检查通过${NC}" || {
@@ -127,7 +126,7 @@ docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
 
 echo ""
 echo -e "${YELLOW}[4/4] 构建检查...${NC}"
-docker run --rm -v "$(pwd)/frontend:/app" -w /app node:20-alpine sh -c "
+docker run --rm -v "$(pwd)/../frontend:/app" -w /app node:20-alpine sh -c "
     npm install > /dev/null 2>&1 &&
     npm run build
 " && echo -e "${GREEN}✓ 构建成功${NC}" || {

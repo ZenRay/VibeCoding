@@ -1,4 +1,4 @@
-# Docker Compose 开发环境配置（增强版）
+# Docker Compose 开发环境配置（Week1 项目）
 # 包含代码质量检查和测试工具
 
 version: '3.8'
@@ -7,7 +7,7 @@ services:
   # PostgreSQL 数据库服务
   postgres:
     image: postgres:16-alpine
-    container_name: project-alpha-db
+    container_name: week1-project-alpha-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ticketdb
@@ -17,10 +17,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - week1_postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
-      - project-alpha-network
+      - week1-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ticketuser -d ticketdb"]
       interval: 10s
@@ -44,12 +44,12 @@ services:
       - "8000:8000"
     volumes:
       - ../backend:/app
-      - backend_venv:/app/.venv  # 持久化虚拟环境
+      - week1_backend_venv:/app/.venv  # 持久化虚拟环境
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - project-alpha-network
+      - week1-network
     command: .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Vite 前端开发服务器
@@ -66,23 +66,23 @@ services:
       - "5173:5173"
     volumes:
       - ../frontend:/app
-      - frontend_node_modules:/app/node_modules  # 持久化 node_modules
+      - week1_frontend_node_modules:/app/node_modules  # 持久化 node_modules
     depends_on:
       - backend
     networks:
-      - project-alpha-network
+      - week1-network
     command: npm run dev -- --host 0.0.0.0
 
   # 代码质量检查服务（按需启动）
   code-check:
     image: python:3.12-slim
-    container_name: project-alpha-code-check
+    container_name: week1-code-check
     volumes:
       - ../backend:/app/backend
       - ../frontend:/app/frontend
     working_dir: /app
     networks:
-      - project-alpha-network
+      - week1-network
     profiles:
       - check
     command: >
@@ -99,7 +99,7 @@ services:
   # PgAdmin（可选）
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: project-alpha-pgadmin
+    container_name: week1-pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
@@ -108,24 +108,24 @@ services:
     ports:
       - "5050:80"
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - week1_pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
     networks:
-      - project-alpha-network
+      - week1-network
     profiles:
       - tools
 
 volumes:
-  postgres_data:
+  week1_postgres_data:
     driver: local
-  pgadmin_data:
+  week1_pgadmin_data:
     driver: local
-  backend_venv:
+  week1_backend_venv:
     driver: local
-  frontend_node_modules:
+  week1_frontend_node_modules:
     driver: local
 
 networks:
-  project-alpha-network:
+  week1-network:
     driver: bridge

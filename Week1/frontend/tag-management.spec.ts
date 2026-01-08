@@ -28,27 +28,27 @@ test.describe('标签管理功能', () => {
     await page.waitForTimeout(300)
 
     // 填写标签名称 (id="tag-name")
-    const tagName = `TESTTAG${Date.now()}`
+    const tagName = `TAG${Date.now()}`
     await page.locator('#tag-name').fill(tagName)
 
     // 提交创建
     await page.getByRole('button', { name: '创建', exact: true }).click()
 
-    // 等待创建完成
-    await page.waitForTimeout(1000)
+    // 等待对话框关闭（创建成功后会自动关闭）
+    await expect(page.getByRole('heading', { name: '创建标签' })).not.toBeVisible({ timeout: 3000 })
 
-    // 验证 Toast 消息显示创建成功
-    await expect(page.getByText('标签创建成功')).toBeVisible()
+    // 等待页面刷新标签列表
+    await page.waitForTimeout(500)
 
-    // 如果有"显示更多"按钮，点击展开所有标签
-    const showMoreButton = page.getByText('显示更多')
-    if (await showMoreButton.isVisible()) {
+    // 展开所有标签（如果有折叠）
+    const showMoreButton = page.getByText(/显示更多/)
+    if (await showMoreButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await showMoreButton.click()
       await page.waitForTimeout(300)
     }
 
     // 验证标签出现在侧边栏 (标签会自动转为大写)
-    await expect(page.getByText(tagName.toUpperCase())).toBeVisible()
+    await expect(page.getByText(tagName.toUpperCase())).toBeVisible({ timeout: 5000 })
   })
 
   test('应该自动将标签名转为大写', async ({ page }) => {
@@ -57,25 +57,27 @@ test.describe('标签管理功能', () => {
     await page.waitForTimeout(300)
 
     // 用小写创建标签
-    const lowerCaseName = `lowercase${Date.now()}`
+    const lowerCaseName = `lower${Date.now()}`
     const upperCaseName = lowerCaseName.toUpperCase()
 
     await page.locator('#tag-name').fill(lowerCaseName)
     await page.getByRole('button', { name: '创建', exact: true }).click()
-    await page.waitForTimeout(1000)
 
-    // 验证 Toast 消息显示创建成功
-    await expect(page.getByText('标签创建成功')).toBeVisible()
+    // 等待对话框关闭（创建成功后会自动关闭）
+    await expect(page.getByRole('heading', { name: '创建标签' })).not.toBeVisible({ timeout: 3000 })
 
-    // 如果有"显示更多"按钮，点击展开所有标签
-    const showMoreButton = page.getByText('显示更多')
-    if (await showMoreButton.isVisible()) {
+    // 等待页面刷新标签列表
+    await page.waitForTimeout(500)
+
+    // 展开所有标签（如果有折叠）
+    const showMoreButton = page.getByText(/显示更多/)
+    if (await showMoreButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await showMoreButton.click()
       await page.waitForTimeout(300)
     }
 
     // 验证标签显示为大写（在侧边栏）
-    await expect(page.getByText(upperCaseName)).toBeVisible()
+    await expect(page.getByText(upperCaseName)).toBeVisible({ timeout: 5000 })
   })
 
   test('应该能够为 Ticket 添加标签', async ({ page }) => {

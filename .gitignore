@@ -13,7 +13,7 @@ eggs/
 lib/
 lib64/
 # 注意：不忽略 frontend/src/lib/ 目录（用于工具函数）
-!/frontend/src/lib/
+!**/frontend/src/lib/
 parts/
 sdist/
 var/
@@ -26,9 +26,8 @@ wheels/
 .venv/
 venv/
 ENV/
-# 注意：不忽略项目根目录下的 env/ 目录（用于 Docker 配置）
-# 如果需要忽略特定位置的虚拟环境，使用更具体的路径，如 backend/env/ 或 frontend/env/
-!/env/
+# 注意：不忽略项目下的 env/ 目录（用于 Docker 配置）
+!**/env/
 
 # IDE
 .vscode/
@@ -78,9 +77,9 @@ build/
 .DS_Store
 Thumbs.db
 
-# Git
-.git/
-.gitignore
+# Git (不要忽略 .git 和 .gitignore)
+# .git/
+# .gitignore
 
 # Docker
 *.log

@@ -28,7 +28,7 @@ repos:
     rev: 23.12.1
     hooks:
       - id: black
-        files: ^backend/
+        files: ^Week1/backend/
         args: ['--line-length=100']
 
   # Python 导入排序 - isort
@@ -36,7 +36,7 @@ repos:
     rev: 5.13.2
     hooks:
       - id: isort
-        files: ^backend/
+        files: ^Week1/backend/
         args: ['--profile', 'black', '--line-length=100']
 
   # Python 代码检查 - Ruff
@@ -44,7 +44,7 @@ repos:
     rev: v0.1.9
     hooks:
       - id: ruff
-        files: ^backend/
+        files: ^Week1/backend/
         args: ['--fix']
 
   # Python 类型检查 - mypy（暂时禁用，需要额外配置）
@@ -52,7 +52,7 @@ repos:
   #   rev: v1.8.0
   #   hooks:
   #     - id: mypy
-  #       files: ^backend/
+  #       files: ^Week1/backend/
   #       args: ['--ignore-missing-imports', '--no-strict-optional']
 
   # 前端代码格式化 - Prettier
@@ -62,7 +62,7 @@ repos:
   #   rev: v4.0.0-alpha.8
   #   hooks:
   #     - id: prettier
-  #       files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|scss)$
+  #       files: ^Week1/frontend/.*\.(js|jsx|ts|tsx|json|css|scss)$
   #       exclude: '\.(min\.js|min\.css)$|package-lock\.json'
   #       additional_dependencies:
   #         - prettier@3.1.1
@@ -73,7 +73,7 @@ repos:
   #   rev: v8.56.0
   #   hooks:
   #     - id: eslint
-  #       files: ^frontend/.*\.(js|jsx|ts|tsx)$
+  #       files: ^Week1/frontend/.*\.(js|jsx|ts|tsx)$
   #       types: [file]
   #       additional_dependencies:
   #         - eslint@8.56.0
@@ -96,7 +96,7 @@ repos:
   #   rev: v2.12.0
   #   hooks:
   #     - id: hadolint-docker
-  #       files: ^env/.*Dockerfile.*$
+  #       files: ^Week1/env/.*Dockerfile.*$
 
   # YAML 文件检查（包括 docker-compose.yml）
   - repo: https://github.com/adrienverge/yamllint
@@ -104,4 +104,4 @@ repos:
     hooks:
       - id: yamllint
         args: ['-d', '{extends: default, rules: {line-length: {max: 120}}}']
-        files: ^env/.*\.(yml|yaml)$
+        files: ^Week1/env/.*\.(yml|yaml)$

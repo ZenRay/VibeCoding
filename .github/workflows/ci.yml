@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    paths:
+      - 'Week1/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'Week1/**'
+      - '.github/workflows/ci.yml'
 
 env:
   PYTHON_VERSION: '3.12'
@@ -26,7 +32,7 @@ jobs:
       - name: Run Black format check
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/backend:/app" \
+            -v "${{ github.workspace }}/Week1/backend:/app" \
             -w /app \
             python:${{ env.PYTHON_VERSION }}-slim \
             bash -c "apt-get update -qq && apt-get install -y -qq git && pip install -q black && black --check --diff ."
@@ -34,7 +40,7 @@ jobs:
       - name: Run isort import check
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/backend:/app" \
+            -v "${{ github.workspace }}/Week1/backend:/app" \
             -w /app \
             python:${{ env.PYTHON_VERSION }}-slim \
             bash -c "apt-get update -qq && apt-get install -y -qq git && pip install -q isort && isort --check-only --diff ."
@@ -42,7 +48,7 @@ jobs:
       - name: Run Ruff linter
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/backend:/app" \
+            -v "${{ github.workspace }}/Week1/backend:/app" \
             -w /app \
             python:${{ env.PYTHON_VERSION }}-slim \
             bash -c "apt-get update -qq && apt-get install -y -qq git && pip install -q ruff && ruff check ."
@@ -50,7 +56,7 @@ jobs:
       - name: Run backend tests
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/backend:/app" \
+            -v "${{ github.workspace }}/Week1/backend:/app" \
             -w /app \
             python:${{ env.PYTHON_VERSION }}-slim \
             bash -c "apt-get update -qq && apt-get install -y -qq git gcc libpq-dev && pip install -q -e '.[dev]' && pytest --cov=app --cov-report=xml --cov-report=term"
@@ -58,7 +64,7 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          file: ./backend/coverage.xml
+          file: ./Week1/backend/coverage.xml
           flags: backend
           name: backend-coverage
         continue-on-error: true
@@ -78,7 +84,7 @@ jobs:
       - name: Run Prettier format check
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/frontend:/app" \
+            -v "${{ github.workspace }}/Week1/frontend:/app" \
             -w /app \
             node:${{ env.NODE_VERSION }}-alpine \
             sh -c "npm install && npx prettier --check 'src/**/*.{ts,tsx,css}'"
@@ -86,7 +92,7 @@ jobs:
       - name: Run ESLint
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/frontend:/app" \
+            -v "${{ github.workspace }}/Week1/frontend:/app" \
             -w /app \
             node:${{ env.NODE_VERSION }}-alpine \
             sh -c "npm install && npm run lint"
@@ -94,7 +100,7 @@ jobs:
       - name: Run TypeScript type check
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/frontend:/app" \
+            -v "${{ github.workspace }}/Week1/frontend:/app" \
             -w /app \
             node:${{ env.NODE_VERSION }}-alpine \
             sh -c "npm install && npm run type-check"
@@ -102,7 +108,7 @@ jobs:
       - name: Build frontend
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/frontend:/app" \
+            -v "${{ github.workspace }}/Week1/frontend:/app" \
             -w /app \
             node:${{ env.NODE_VERSION }}-alpine \
             sh -c "npm install && npm run build"
@@ -111,7 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/dist
+          path: Week1/frontend/dist
           retention-days: 7
 
   # Docker 镜像构建检查
@@ -130,8 +136,8 @@ jobs:
       - name: Build backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
-          file: ./env/Dockerfile.backend
+          context: ./Week1/backend
+          file: ./Week1/env/Dockerfile.backend
           push: false
           tags: project-alpha-backend:test
           cache-from: type=gha
@@ -140,8 +146,8 @@ jobs:
       - name: Build frontend image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
-          file: ./env/Dockerfile.frontend
+          context: ./Week1/frontend
+          file: ./Week1/env/Dockerfile.frontend
           push: false
           tags: project-alpha-frontend:test
           cache-from: type=gha
@@ -163,16 +169,16 @@ jobs:
 
       - name: Start services with docker compose
         run: |
-          cd env
+          cd Week1/env
           docker compose up -d
           # 等待服务启动
           sleep 15
 
       - name: Check services health
         run: |
-          docker compose -f env/docker-compose.yml ps
-          docker compose -f env/docker-compose.yml logs backend
-          docker compose -f env/docker-compose.yml logs frontend
+          docker compose -f Week1/env/docker-compose.yml ps
+          docker compose -f Week1/env/docker-compose.yml logs backend
+          docker compose -f Week1/env/docker-compose.yml logs frontend
 
       - name: Run integration tests in container
         run: |
@@ -198,6 +204,6 @@ jobs:
       - name: Stop services
         if: always()
         run: |
-          cd env
+          cd Week1/env
           docker compose logs
           docker compose down -v
