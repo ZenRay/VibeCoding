@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react'
+import { memo } from 'react'
 import { Ticket } from '@/types/ticket'
 import { Button } from './ui/button'
 import { ticketService } from '@/services/ticketService'

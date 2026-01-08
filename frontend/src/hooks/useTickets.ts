@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ticketService } from '@/services/ticketService'
 import { Ticket, TicketQueryParams } from '@/types/ticket'
 import { useStore } from '@/store/useStore'
