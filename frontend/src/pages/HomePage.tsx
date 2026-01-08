@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { Plus, Tag as TagIcon, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { Ticket } from '@/types/ticket'
 import { TicketQueryParams } from '@/types/ticket'
+import { Tag } from '@/types/tag'
 import { ticketService } from '@/services/ticketService'
 
 function HomePage() {

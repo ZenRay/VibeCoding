@@ -40,7 +40,7 @@ export interface TicketQueryParams {
   tag_ids?: string // 逗号分隔的 ID 字符串，如 "1,2,3"
   tag_filter?: 'and' | 'or'
   search?: string
-  sort_by?: 'created_at' | 'updated_at' | 'title'
+  sort_by?: 'created_at' | 'updated_at' | 'title' | 'deleted_at'
   sort_order?: 'asc' | 'desc'
   page?: number
   page_size?: number
