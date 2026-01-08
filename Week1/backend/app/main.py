@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.v1 import api_router
 from app.config import settings
@@ -26,6 +27,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 配置 Prometheus 监控
+# 自动收集请求指标并暴露 /metrics 端点
+Instrumentator().instrument(app).expose(app, include_in_schema=True, tags=["Monitoring"])
 
 
 # 全局异常处理器
