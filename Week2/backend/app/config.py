@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # OpenAI API 配置
     openai_api_key: str | None = None
+    openai_model: str = "gpt-3.5-turbo"  # 默认使用 gpt-3.5-turbo
 
     # 日志配置
     log_level: str = "info"

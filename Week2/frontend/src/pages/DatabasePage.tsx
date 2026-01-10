@@ -32,7 +32,9 @@ import MetadataRefreshBanner from "../components/MetadataRefreshBanner";
 import SqlEditor from "../components/SqlEditor";
 import QueryResult from "../components/QueryResult";
 import QueryHistory from "../components/QueryHistory";
+import NaturalLanguageInput from "../components/NaturalLanguageInput";
 import { useQuery } from "../hooks/useQuery";
+import { queryService } from "../services/queryService";
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -48,6 +50,10 @@ const DatabasePage: React.FC = () => {
   const [resultRowCount, setResultRowCount] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<"result" | "history">("result");
+  const [nlLoading, setNlLoading] = useState(false);
+  const [activeEditorTab, setActiveEditorTab] = useState<"editor" | "ai">(
+    "editor",
+  );
 
   const {
     result,
@@ -152,6 +158,144 @@ const DatabasePage: React.FC = () => {
     if (result) {
       setActiveTab("result");
     }
+  };
+
+  const handleGenerateSql = async (prompt: string): Promise<string> => {
+    if (!name) {
+      throw new Error("请先选择数据库");
+    }
+
+    setNlLoading(true);
+    try {
+      const nlResult = await queryService.generateFromNaturalLanguage(
+        name,
+        prompt,
+      );
+      return nlResult.generatedSql;
+    } catch (err: any) {
+      console.error("AI 生成 SQL 失败 - 完整错误对象:", err);
+
+      // 获取详细错误信息
+      let errorMessage = "生成失败";
+
+      // 1. 尝试从 err.message 获取
+      if (typeof err.message === "string" && err.message) {
+        errorMessage = err.message;
+      }
+      // 2. 如果 message 是对象，转换为字符串
+      else if (err.message && typeof err.message === "object") {
+        errorMessage = JSON.stringify(err.message);
+      }
+      // 3. 尝试从 err.response.data 获取
+      else if (err.response?.data) {
+        const data = err.response.data;
+        if (typeof data === "string") {
+          errorMessage = data;
+        } else if (data.detail) {
+          errorMessage =
+            typeof data.detail === "string"
+              ? data.detail
+              : JSON.stringify(data.detail);
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else {
+          errorMessage = JSON.stringify(data);
+        }
+      }
+      // 4. 如果整个 err 是字符串
+      else if (typeof err === "string") {
+        errorMessage = err;
+      }
+
+      console.log("解析后的错误信息:", errorMessage);
+
+      // 显示友好的错误提示
+      if (
+        errorMessage.includes("AI 服务未配置") ||
+        errorMessage.includes("OPENAI_API_KEY")
+      ) {
+        message.error({
+          content: (
+            <div>
+              <div>❌ AI 服务未配置</div>
+              <div style={{ marginTop: 8, fontSize: "12px", opacity: 0.8 }}>
+                请在 backend/.env 中设置 OPENAI_API_KEY 并重启服务
+              </div>
+            </div>
+          ),
+          duration: 8,
+        });
+      } else if (
+        errorMessage.includes("model") &&
+        (errorMessage.includes("not found") ||
+          errorMessage.includes("does not exist"))
+      ) {
+        message.error({
+          content: (
+            <div>
+              <div>❌ 模型不可用</div>
+              <div style={{ marginTop: 8, fontSize: "12px", opacity: 0.8 }}>
+                请在 backend/.env 中设置 OPENAI_MODEL=gpt-3.5-turbo 并重启服务
+              </div>
+            </div>
+          ),
+          duration: 8,
+        });
+      } else if (
+        errorMessage.includes("quota") ||
+        errorMessage.includes("配额") ||
+        errorMessage.includes("rate limit")
+      ) {
+        message.error({
+          content: "OpenAI API 配额不足或达到速率限制，请稍后重试",
+          duration: 6,
+        });
+      } else if (
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("超时")
+      ) {
+        message.error({
+          content: "AI 服务响应超时，请检查网络或稍后重试",
+          duration: 6,
+        });
+      } else {
+        // 显示原始错误信息（最多200字符）
+        const displayMessage =
+          errorMessage.length > 200
+            ? errorMessage.substring(0, 200) + "..."
+            : errorMessage;
+
+        message.error({
+          content: (
+            <div>
+              <div>SQL 生成失败</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: "12px",
+                  opacity: 0.8,
+                  maxWidth: "500px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {displayMessage}
+              </div>
+            </div>
+          ),
+          duration: 8,
+        });
+      }
+
+      throw err;
+    } finally {
+      setNlLoading(false);
+    }
+  };
+
+  const handleSqlGenerated = (generatedSql: string) => {
+    setSql(generatedSql);
+    setActiveEditorTab("editor"); // 切换到编辑器 tab
+    message.success("SQL 已填充到编辑器，可以直接执行或修改");
   };
 
   const handleDatabaseSelect = (dbName: string) => {
@@ -517,44 +661,58 @@ const DatabasePage: React.FC = () => {
                   </Card>
                 </div>
 
-                {/* SQL Editor - Match left column height */}
+                {/* SQL Editor with AI Tab */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Card
-                    title="SQL 编辑器"
                     size="small"
                     bodyStyle={{ padding: "8px" }}
-                    extra={
-                      <Space>
-                        <Button
-                          type="primary"
-                          icon={<PlayCircleOutlined />}
-                          onClick={handleExecuteQuery}
-                          loading={queryLoading}
-                        >
-                          执行
-                        </Button>
-                        <Button onClick={handleClearResult}>清除结果</Button>
-                      </Space>
+                    tabList={[
+                      { key: "editor", tab: "SQL 编辑器" },
+                      { key: "ai", tab: "AI 生成 SQL" },
+                    ]}
+                    activeTabKey={activeEditorTab}
+                    onTabChange={(key) =>
+                      setActiveEditorTab(key as "editor" | "ai")
                     }
                   >
-                    {/*
-                      左侧4个卡片精确计算：
-                      - 前3个卡片：padding 12px*2 + 内容高度 38px = 62px，共 62px * 3 = 186px
-                      - 查询历史卡片：padding 12px*2 + 内容 38px + 按钮区 (8+1+8+22) 39px = 101px
-                      - 4个卡片总高：186px + 101px = 287px
-                      - 3个间距：8px * 3 = 24px
-                      - 总高度：287px + 24px = 311px
-
-                      右侧卡片 size="small" 标题栏约 40px
-                      编辑器内容区：311px - 40px = 271px
-                    */}
-                    <div style={{ height: "271px" }}>
-                      <SqlEditor
-                        value={sql}
-                        onChange={(value) => setSql(value || "")}
-                        height="271px"
-                      />
-                    </div>
+                    {activeEditorTab === "editor" ? (
+                      <div>
+                        {/* SQL Editor */}
+                        <div style={{ height: "300px", marginBottom: "12px" }}>
+                          <SqlEditor
+                            value={sql}
+                            onChange={(value) => setSql(value || "")}
+                            height="300px"
+                          />
+                        </div>
+                        {/* Action Buttons */}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: "8px",
+                          }}
+                        >
+                          <Button
+                            type="primary"
+                            icon={<PlayCircleOutlined />}
+                            onClick={handleExecuteQuery}
+                            loading={queryLoading}
+                          >
+                            执行
+                          </Button>
+                          <Button onClick={handleClearResult}>清除结果</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: "8px" }}>
+                        <NaturalLanguageInput
+                          onGenerate={handleGenerateSql}
+                          onSqlGenerated={handleSqlGenerated}
+                          loading={nlLoading}
+                        />
+                      </div>
+                    )}
                   </Card>
                 </div>
               </div>
