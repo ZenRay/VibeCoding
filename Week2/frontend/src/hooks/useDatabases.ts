@@ -1,8 +1,8 @@
 /** 数据库连接管理 Hook */
-import { useState, useEffect, useCallback } from 'react';
-import { message } from 'antd';
-import { databaseService } from '../services/databaseService';
-import { DatabaseConnectionResponse } from '../types/database';
+import { useState, useEffect, useCallback } from "react";
+import { message } from "antd";
+import { databaseService } from "../services/databaseService";
+import { DatabaseConnectionResponse } from "../types/database";
 
 export const useDatabases = () => {
   const [databases, setDatabases] = useState<DatabaseConnectionResponse[]>([]);
@@ -17,7 +17,7 @@ export const useDatabases = () => {
       const response = await databaseService.list();
       setDatabases(response.databases);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '加载失败';
+      const errorMessage = err instanceof Error ? err.message : "加载失败";
       setError(errorMessage);
       message.error(`加载数据库列表失败: ${errorMessage}`);
     } finally {
@@ -33,12 +33,12 @@ export const useDatabases = () => {
         message.success(`数据库连接 ${name} 已保存`);
         await loadDatabases();
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '保存失败';
+        const errorMessage = err instanceof Error ? err.message : "保存失败";
         message.error(`保存失败: ${errorMessage}`);
         throw err;
       }
     },
-    [loadDatabases]
+    [loadDatabases],
   );
 
   // 删除数据库连接
@@ -49,12 +49,12 @@ export const useDatabases = () => {
         message.success(`数据库连接 ${name} 已删除`);
         await loadDatabases();
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '删除失败';
+        const errorMessage = err instanceof Error ? err.message : "删除失败";
         message.error(`删除失败: ${errorMessage}`);
         throw err;
       }
     },
-    [loadDatabases]
+    [loadDatabases],
   );
 
   useEffect(() => {

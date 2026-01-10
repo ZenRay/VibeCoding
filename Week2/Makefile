@@ -66,7 +66,7 @@ init-db: ## 初始化数据库（运行迁移）
 		exit 1; \
 	fi
 	@mkdir -p $(DATA_DIR)
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/alembic upgrade head
+	@cd $(BACKEND_DIR) && .venv/bin/alembic upgrade head
 	@echo "$(COLOR_GREEN)✓ 数据库初始化完成$(COLOR_RESET)"
 
 setup: install init-db ## 完整设置（安装依赖 + 初始化数据库）
@@ -88,7 +88,7 @@ start-backend: ## 启动后端服务（端口 8000）
 		echo "$(COLOR_YELLOW)错误: 虚拟环境不存在，请先运行 make install-backend$(COLOR_RESET)"; \
 		exit 1; \
 	fi
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	@cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 start-frontend: ## 启动前端开发服务器（端口 3000）
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)启动前端服务...$(COLOR_RESET)"
@@ -125,7 +125,7 @@ dev: start-db ## 启动开发环境（数据库 + 后端 + 前端，后台运行
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)启动开发环境...$(COLOR_RESET)"
 	@echo "$(COLOR_YELLOW)提示: 后端和前端将在后台运行$(COLOR_RESET)"
 	@echo "$(COLOR_YELLOW)使用 'make stop' 停止所有服务$(COLOR_RESET)"
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
+	@cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
 	@cd $(FRONTEND_DIR) && npm run dev > /tmp/frontend.log 2>&1 &
 	@sleep 2
 	@echo "$(COLOR_GREEN)✓ 开发环境已启动$(COLOR_RESET)"
@@ -149,11 +149,11 @@ migrate-create: ## 创建新的数据库迁移（用法: make migrate-create MES
 		echo "用法: make migrate-create MESSAGE=\"你的描述\""; \
 		exit 1; \
 	fi
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/alembic revision --autogenerate -m "$(MESSAGE)"
+	@cd $(BACKEND_DIR) && .venv/bin/alembic revision --autogenerate -m "$(MESSAGE)"
 	@echo "$(COLOR_GREEN)✓ 迁移文件已创建$(COLOR_RESET)"
 
 migrate-upgrade: ## 升级数据库到最新版本
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/alembic upgrade head
+	@cd $(BACKEND_DIR) && .venv/bin/alembic upgrade head
 	@echo "$(COLOR_GREEN)✓ 数据库已升级$(COLOR_RESET)"
 
 migrate-downgrade: ## 降级数据库一个版本（用法: make migrate-downgrade REVISION="-1"）
@@ -162,11 +162,11 @@ migrate-downgrade: ## 降级数据库一个版本（用法: make migrate-downgra
 		echo "用法: make migrate-downgrade REVISION=\"-1\" 或 REVISION=\"base\""; \
 		exit 1; \
 	fi
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/alembic downgrade $(REVISION)
+	@cd $(BACKEND_DIR) && .venv/bin/alembic downgrade $(REVISION)
 	@echo "$(COLOR_GREEN)✓ 数据库已降级$(COLOR_RESET)"
 
 migrate-history: ## 显示迁移历史
-	@cd $(BACKEND_DIR) && $(VENV_BIN)/alembic history
+	@cd $(BACKEND_DIR) && .venv/bin/alembic history
 
 migrate: migrate-upgrade ## 运行数据库迁移（升级到最新版本）
 

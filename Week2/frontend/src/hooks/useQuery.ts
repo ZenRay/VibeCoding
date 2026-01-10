@@ -1,8 +1,8 @@
 /** 查询执行 Hook */
-import { useState, useCallback } from 'react';
-import { message } from 'antd';
-import { queryService } from '../services/queryService';
-import { QueryResult } from '../types/query';
+import { useState, useCallback } from "react";
+import { message } from "antd";
+import { queryService } from "../services/queryService";
+import { QueryResult } from "../types/query";
 
 interface QueryHistoryItem {
   sql: string;
@@ -20,7 +20,7 @@ export const useQuery = (dbName: string | undefined) => {
   const executeQuery = useCallback(
     async (sql: string) => {
       if (!dbName) {
-        message.error('请先选择数据库');
+        message.error("请先选择数据库");
         return;
       }
 
@@ -41,7 +41,7 @@ export const useQuery = (dbName: string | undefined) => {
           return newHistory.slice(0, 50);
         });
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '查询失败';
+        const errorMessage = err instanceof Error ? err.message : "查询失败";
         setError(errorMessage);
         message.error(`查询失败: ${errorMessage}`);
 
@@ -57,7 +57,7 @@ export const useQuery = (dbName: string | undefined) => {
         setLoading(false);
       }
     },
-    [dbName]
+    [dbName],
   );
 
   const clearResult = useCallback(() => {

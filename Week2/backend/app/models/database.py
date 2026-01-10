@@ -59,6 +59,32 @@ class DatabaseConnectionResponse(BaseModel):
     updated_at: datetime = Field(..., description="更新时间（UTC）")
 
 
+class DatabaseConnectionWithUrl(BaseModel):
+    """数据库连接响应模型（包含 URL，仅用于编辑场景）"""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    name: str = Field(
+        ...,
+        description="连接名称/标识符",
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-zA-Z0-9_-]+$",
+    )
+    db_type: DatabaseType = Field(..., description="数据库类型")
+    host: str | None = Field(None, description="主机名（SQLite 为 null）")
+    port: int | None = Field(
+        None, description="端口（范围 1-65535，SQLite 为 null）", ge=1, le=65535
+    )
+    database: str = Field(..., description="数据库名或文件路径")
+    url: str = Field(..., description="完整的数据库连接 URL（包含密码）")
+    created_at: datetime = Field(..., description="创建时间（UTC）")
+    updated_at: datetime = Field(..., description="更新时间（UTC）")
+
+
 class DatabaseListResponse(BaseModel):
     """数据库列表响应模型"""
 

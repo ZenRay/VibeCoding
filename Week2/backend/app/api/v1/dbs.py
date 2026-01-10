@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.database import (
     DatabaseConnectionCreate,
     DatabaseConnectionResponse,
+    DatabaseConnectionWithUrl,
     DatabaseListResponse,
 )
 from app.models.metadata import DatabaseMetadata
@@ -50,8 +51,33 @@ async def get_database(
     name: str,
     db: Session = Depends(get_db),
 ) -> DatabaseConnectionResponse:
-    """获取数据库连接"""
+    """获取数据库连接（不含密码）"""
     return DatabaseService.get_connection(db, name)
+
+
+@router.get("/{name}/with-url", response_model=DatabaseConnectionWithUrl)
+async def get_database_with_url(
+    name: str,
+    db: Session = Depends(get_db),
+) -> DatabaseConnectionWithUrl:
+    """获取数据库连接（包含完整 URL，用于编辑场景）"""
+    connection = LocalStorage.get_connection_by_name(db, name)
+    if not connection:
+        raise create_error_response(
+            ErrorCode.NOT_FOUND,
+            f"数据库连接 '{name}' 不存在",
+        )
+
+    return DatabaseConnectionWithUrl(
+        name=connection.name,
+        db_type=connection.db_type,
+        host=connection.host,
+        port=connection.port,
+        database=connection.database,
+        url=connection.url,
+        created_at=connection.created_at,
+        updated_at=connection.updated_at,
+    )
 
 
 @router.delete("/{name}", status_code=status.HTTP_204_NO_CONTENT)

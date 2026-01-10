@@ -1,7 +1,7 @@
 /** 元数据刷新提示横幅组件 */
-import React from 'react';
-import { Alert, Button, Space } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import React from "react";
+import { Alert, Button, Space } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 
 interface MetadataRefreshBannerProps {
   visible: boolean;
@@ -23,11 +23,7 @@ const MetadataRefreshBanner: React.FC<MetadataRefreshBannerProps> = ({
       type="info"
       showIcon
       action={
-        <Button
-          size="small"
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-        >
+        <Button size="small" icon={<ReloadOutlined />} onClick={onRefresh}>
           刷新
         </Button>
       }

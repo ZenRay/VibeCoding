@@ -1,9 +1,9 @@
 /** 数据库相关类型定义 */
 
 export enum DatabaseType {
-  POSTGRESQL = 'postgresql',
-  MYSQL = 'mysql',
-  SQLITE = 'sqlite',
+  POSTGRESQL = "postgresql",
+  MYSQL = "mysql",
+  SQLITE = "sqlite",
 }
 
 export interface DatabaseConnectionCreate {
@@ -16,6 +16,17 @@ export interface DatabaseConnectionResponse {
   host: string | null;
   port: number | null;
   database: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DatabaseConnectionWithUrl {
+  name: string;
+  dbType: DatabaseType;
+  host: string | null;
+  port: number | null;
+  database: string;
+  url: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,7 +47,7 @@ export interface ColumnInfo {
 
 export interface TableInfo {
   name: string;
-  tableType: 'table' | 'view';
+  tableType: "table" | "view";
   columns: ColumnInfo[];
   rowCount?: number | null;
   comment?: string | null;

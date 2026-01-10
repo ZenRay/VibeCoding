@@ -1,26 +1,37 @@
 /** 数据库连接 API 服务 */
-import apiClient from './api';
+import apiClient from "./api";
 import {
   DatabaseConnectionCreate,
   DatabaseConnectionResponse,
+  DatabaseConnectionWithUrl,
   DatabaseListResponse,
-} from '../types/database';
+} from "../types/database";
 
 export const databaseService = {
   /**
    * 获取所有数据库连接
    */
   async list(): Promise<DatabaseListResponse> {
-    const response = await apiClient.get<DatabaseListResponse>('/api/v1/dbs');
+    const response = await apiClient.get<DatabaseListResponse>("/api/v1/dbs");
     return response.data;
   },
 
   /**
-   * 获取单个数据库连接
+   * 获取单个数据库连接（不含密码）
    */
   async get(name: string): Promise<DatabaseConnectionResponse> {
     const response = await apiClient.get<DatabaseConnectionResponse>(
-      `/api/v1/dbs/${name}`
+      `/api/v1/dbs/${name}`,
+    );
+    return response.data;
+  },
+
+  /**
+   * 获取单个数据库连接（包含完整 URL，用于编辑）
+   */
+  async getWithUrl(name: string): Promise<DatabaseConnectionWithUrl> {
+    const response = await apiClient.get<DatabaseConnectionWithUrl>(
+      `/api/v1/dbs/${name}/with-url`,
     );
     return response.data;
   },
@@ -30,11 +41,11 @@ export const databaseService = {
    */
   async upsert(
     name: string,
-    data: DatabaseConnectionCreate
+    data: DatabaseConnectionCreate,
   ): Promise<DatabaseConnectionResponse> {
     const response = await apiClient.put<DatabaseConnectionResponse>(
       `/api/v1/dbs/${name}`,
-      data
+      data,
     );
     return response.data;
   },
@@ -49,11 +60,13 @@ export const databaseService = {
   /**
    * 获取数据库元数据
    */
-  async getMetadata(name: string, refresh = false): Promise<import('../types/database').DatabaseMetadata> {
-    const response = await apiClient.get<import('../types/database').DatabaseMetadata>(
-      `/api/v1/dbs/${name}/metadata`,
-      { params: { refresh } }
-    );
+  async getMetadata(
+    name: string,
+    refresh = false,
+  ): Promise<import("../types/database").DatabaseMetadata> {
+    const response = await apiClient.get<
+      import("../types/database").DatabaseMetadata
+    >(`/api/v1/dbs/${name}/metadata`, { params: { refresh } });
     return response.data;
   },
 };

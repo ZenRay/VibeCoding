@@ -1,6 +1,11 @@
 /** 查询 API 服务 */
-import apiClient from './api';
-import { QueryRequest, QueryResult, NaturalLanguageQueryRequest, NaturalLanguageQueryResult } from '../types/query';
+import apiClient from "./api";
+import {
+  QueryRequest,
+  QueryResult,
+  NaturalLanguageQueryRequest,
+  NaturalLanguageQueryResult,
+} from "../types/query";
 
 export const queryService = {
   /**
@@ -9,7 +14,7 @@ export const queryService = {
   async execute(dbName: string, sql: string): Promise<QueryResult> {
     const response = await apiClient.post<QueryResult>(
       `/api/v1/dbs/${dbName}/query`,
-      { sql } as QueryRequest
+      { sql } as QueryRequest,
     );
     return response.data;
   },
@@ -19,11 +24,11 @@ export const queryService = {
    */
   async generateFromNaturalLanguage(
     dbName: string,
-    prompt: string
+    prompt: string,
   ): Promise<NaturalLanguageQueryResult> {
     const response = await apiClient.post<NaturalLanguageQueryResult>(
       `/api/v1/dbs/${dbName}/query/natural`,
-      { prompt } as NaturalLanguageQueryRequest
+      { prompt } as NaturalLanguageQueryRequest,
     );
     return response.data;
   },

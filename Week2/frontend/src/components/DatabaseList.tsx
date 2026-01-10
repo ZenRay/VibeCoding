@@ -1,9 +1,9 @@
 /** 数据库连接列表组件 */
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { List, Card, Button, Popconfirm, Tag, Space } from 'antd';
-import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { DatabaseConnectionResponse } from '../types/database';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { List, Card, Button, Popconfirm, Tag, Space } from "antd";
+import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
+import { DatabaseConnectionResponse } from "../types/database";
 
 interface DatabaseListProps {
   databases: DatabaseConnectionResponse[];
@@ -21,14 +21,14 @@ const DatabaseList: React.FC<DatabaseListProps> = ({
   const navigate = useNavigate();
   const getDbTypeColor = (dbType: string) => {
     switch (dbType) {
-      case 'postgresql':
-        return 'blue';
-      case 'mysql':
-        return 'orange';
-      case 'sqlite':
-        return 'green';
+      case "postgresql":
+        return "blue";
+      case "mysql":
+        return "orange";
+      case "sqlite":
+        return "green";
       default:
-        return 'default';
+        return "default";
     }
   };
 
@@ -80,8 +80,8 @@ const DatabaseList: React.FC<DatabaseListProps> = ({
                   {db.port && `:${db.port}`}
                 </div>
               )}
-              <div style={{ marginTop: 8, fontSize: '12px', color: '#999' }}>
-                创建于: {new Date(db.createdAt).toLocaleString('zh-CN')}
+              <div style={{ marginTop: 8, fontSize: "12px", color: "#999" }}>
+                创建于: {new Date(db.createdAt).toLocaleString("zh-CN")}
               </div>
             </div>
           </Card>

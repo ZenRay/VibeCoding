@@ -1,7 +1,7 @@
 /** 查询结果表格组件 */
-import React from 'react';
-import { Table, Typography, Tag, Space } from 'antd';
-import { QueryResult as QueryResultType } from '../types/query';
+import React from "react";
+import { Table, Typography, Tag, Space } from "antd";
+import { QueryResult as QueryResultType } from "../types/query";
 
 const { Text } = Typography;
 
@@ -27,7 +27,10 @@ const QueryResult: React.FC<QueryResultProps> = ({ result }) => {
     }
 
     // 处理二进制数据
-    if (value instanceof Uint8Array || (typeof value === 'string' && value.startsWith('[BINARY]'))) {
+    if (
+      value instanceof Uint8Array ||
+      (typeof value === "string" && value.startsWith("[BINARY]"))
+    ) {
       return <Text code>[BINARY]</Text>;
     }
 
@@ -57,13 +60,11 @@ const QueryResult: React.FC<QueryResultProps> = ({ result }) => {
         <Text type="secondary">
           执行时间: <Text strong>{result.executionTimeMs}</Text> ms
         </Text>
-        {result.truncated && (
-          <Tag color="orange">结果已截断（LIMIT 1000）</Tag>
-        )}
+        {result.truncated && <Tag color="orange">结果已截断（LIMIT 1000）</Tag>}
       </Space>
 
       {result.rowCount === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+        <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
           无结果
         </div>
       ) : (
@@ -75,7 +76,7 @@ const QueryResult: React.FC<QueryResultProps> = ({ result }) => {
             showSizeChanger: true,
             showTotal: (total) => `共 ${total} 条`,
           }}
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: "max-content" }}
         />
       )}
     </div>

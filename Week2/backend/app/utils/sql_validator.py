@@ -20,7 +20,7 @@ FORBIDDEN_STATEMENTS = {
 
 # 危险关键字列表
 DANGEROUS_KEYWORDS = {
-    "UNION",
+    # "UNION",  # 已移除：允许 UNION 查询
     "INTO OUTFILE",
     "INTO DUMPFILE",
     "LOAD_FILE",
@@ -93,8 +93,8 @@ def validate_sql(sql: str, dialect: str = "postgres") -> tuple[bool, str | None]
             if statement_type in FORBIDDEN_STATEMENTS:
                 return False, f"仅允许 SELECT 查询，{statement_type.upper()} 操作已被阻止"
 
-            # 检查是否为 SELECT 语句
-            if statement_type != "select":
+            # 检查是否为 SELECT 或 UNION 语句
+            if statement_type not in ("select", "union"):
                 return False, f"仅允许 SELECT 查询，检测到 {statement_type.upper()} 语句"
 
         return True, None
