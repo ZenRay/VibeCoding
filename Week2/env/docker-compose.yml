@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: env/Dockerfile.backend
+    container_name: db-query-tool-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///../data/meta.db
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LOG_LEVEL=info
+    volumes:
+      - ../backend:/app
+      - ../data:/app/data
+    depends_on:
+      - postgres
+      - mysql
+    networks:
+      - db-network
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: env/Dockerfile.frontend
+    container_name: db-query-tool-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - db-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: db-query-tool-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=testdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - db-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: db-query-tool-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=testdb
+      - MYSQL_USER=testuser
+      - MYSQL_PASSWORD=testpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-scripts/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - db-network
+
+volumes:
+  postgres-data:
+  mysql-data:
+
+networks:
+  db-network:
+    driver: bridge

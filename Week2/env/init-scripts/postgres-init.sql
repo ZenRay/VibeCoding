@@ -1,0 +1,62 @@
+-- PostgreSQL 测试数据库初始化脚本
+-- 用于 docker-compose 自动初始化测试数据
+
+-- 创建测试表
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    age INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    product_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 插入测试数据
+INSERT INTO users (name, email, age) VALUES
+    ('张三', 'zhangsan@example.com', 25),
+    ('李四', 'lisi@example.com', 30),
+    ('王五', 'wangwu@example.com', 35),
+    ('赵六', 'zhaoliu@example.com', 28)
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO products (name, description, price, stock) VALUES
+    ('产品A', '这是产品A的描述', 99.99, 100),
+    ('产品B', '这是产品B的描述', 199.99, 50),
+    ('产品C', '这是产品C的描述', 299.99, 25)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO orders (user_id, product_name, quantity, price) VALUES
+    (1, '产品A', 2, 99.99),
+    (1, '产品B', 1, 199.99),
+    (2, '产品A', 3, 99.99),
+    (3, '产品C', 1, 299.99)
+ON CONFLICT DO NOTHING;
+
+-- 创建视图
+CREATE OR REPLACE VIEW user_order_summary AS
+SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    u.email,
+    COUNT(o.id) AS total_orders,
+    COALESCE(SUM(o.price * o.quantity), 0) AS total_amount
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.name, u.email;

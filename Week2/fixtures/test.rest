@@ -1,0 +1,598 @@
+###############################################################################
+# 数据库查询工具 API 测试文件
+#
+# 使用方法：
+# 1. 安装 REST Client 插件 (VS Code: humao.rest-client)
+# 2. 确保后端服务运行在 http://localhost:8000
+# 3. 点击每个请求上方的 "Send Request" 执行测试
+#
+# 基于: specs/001-db-query-tool/contracts/api.yaml
+# 版本: 1.0.0
+# 日期: 2026-01-11
+###############################################################################
+
+# 变量定义
+@baseUrl = http://localhost:8000
+@apiVersion = v1
+@contentType = application/json
+
+# 测试数据库连接名称
+@postgresName = test-postgres
+@mysqlName = test-mysql
+@sqliteName = test-sqlite
+
+###############################################################################
+# 1. 健康检查
+###############################################################################
+
+### 1.1 健康检查
+GET {{baseUrl}}/health HTTP/1.1
+
+###############################################################################
+# 2. 数据库连接管理 (Database Management)
+###############################################################################
+
+### 2.1 获取所有数据库连接 (空列表)
+# @name getAllDatabases
+GET {{baseUrl}}/api/{{apiVersion}}/dbs HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.2 添加 PostgreSQL 连接 (创建 - 201)
+# @name createPostgres
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://testuser:testpass@localhost:5433/testdb"
+}
+
+###
+
+### 2.3 添加 MySQL 连接 (创建 - 201)
+# @name createMysql
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "mysql://testuser:testpass@localhost:3307/testdb"
+}
+
+###
+
+### 2.4 添加 SQLite 连接 (创建 - 201)
+# @name createSqlite
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/{{sqliteName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "sqlite:///data/test.db"
+}
+
+###
+
+### 2.5 更新 PostgreSQL 连接 (更新 - 200)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://testuser:testpass@localhost:5433/testdb"
+}
+
+###
+
+### 2.6 获取所有数据库连接 (应返回 3 个)
+GET {{baseUrl}}/api/{{apiVersion}}/dbs HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.7 获取 PostgreSQL 元数据 (首次 - 从远程提取)
+# @name getPostgresMetadata
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.8 获取 PostgreSQL 元数据 (第二次 - 使用缓存)
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.9 强制刷新 PostgreSQL 元数据
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}?refresh=true HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.10 获取 MySQL 元数据
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.11 获取 SQLite 元数据
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{sqliteName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 2.12 删除 SQLite 连接 (204)
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/{{sqliteName}} HTTP/1.1
+
+###
+
+### 2.13 验证删除 (404)
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{sqliteName}} HTTP/1.1
+Content-Type: {{contentType}}
+
+###############################################################################
+# 3. SQL 查询执行 (Query Execution)
+###############################################################################
+
+### 3.1 执行简单 SELECT 查询
+# @name simpleQuery
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users LIMIT 5"
+}
+
+###
+
+### 3.2 执行带 WHERE 条件的查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT id, name, email FROM users WHERE age > 25"
+}
+
+###
+
+### 3.3 执行聚合查询 (COUNT - 自动豁免 LIMIT)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT COUNT(*) as total FROM users"
+}
+
+###
+
+### 3.4 执行聚合查询 (GROUP BY - 会添加 LIMIT)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT city, COUNT(*) as count FROM users GROUP BY city"
+}
+
+###
+
+### 3.5 执行 JOIN 查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT u.name, o.order_date FROM users u LEFT JOIN orders o ON u.id = o.user_id"
+}
+
+###
+
+### 3.6 测试自动添加 LIMIT (无 LIMIT 的查询)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users WHERE status = 'active'"
+}
+
+###
+
+### 3.7 测试超大 LIMIT (应限制为 10000)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users LIMIT 50000"
+}
+
+###
+
+### 3.8 MySQL 查询测试
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM products LIMIT 5"
+}
+
+###############################################################################
+# 4. SQL 注入防护测试 (Security Tests)
+###############################################################################
+
+### 4.1 测试注释注入 (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users -- WHERE role='admin'"
+}
+
+###
+
+### 4.2 测试多语句注入 (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users; DROP TABLE users"
+}
+
+###
+
+### 4.3 测试 UNION 注入 (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users UNION SELECT * FROM passwords"
+}
+
+###
+
+### 4.4 测试系统表访问 (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM information_schema.tables"
+}
+
+###
+
+### 4.5 测试 INTO OUTFILE 注入 (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users INTO OUTFILE '/tmp/users.txt'"
+}
+
+###
+
+### 4.6 测试非 SELECT 语句 - INSERT (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "INSERT INTO users (name, email) VALUES ('test', 'test@example.com')"
+}
+
+###
+
+### 4.7 测试非 SELECT 语句 - UPDATE (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "UPDATE users SET role = 'admin' WHERE id = 1"
+}
+
+###
+
+### 4.8 测试非 SELECT 语句 - DELETE (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "DELETE FROM users WHERE id = 1"
+}
+
+###
+
+### 4.9 测试非 SELECT 语句 - DROP (应被拒绝)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "DROP TABLE users"
+}
+
+###############################################################################
+# 5. 自然语言查询 (Natural Language Query)
+###############################################################################
+
+### 5.1 简单自然语言查询
+# 注意: 需要设置 OPENAI_API_KEY 环境变量
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询所有用户的姓名和邮箱"
+}
+
+###
+
+### 5.2 带条件的自然语言查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询年龄大于 30 岁的用户数量"
+}
+
+###
+
+### 5.3 聚合查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "按城市统计用户数量"
+}
+
+###
+
+### 5.4 JOIN 查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询用户及其订单信息"
+}
+
+###
+
+### 5.5 复杂查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询每个城市中年龄最大的用户姓名和年龄"
+}
+
+###############################################################################
+# 6. 错误场景测试 (Error Scenarios)
+###############################################################################
+
+### 6.1 连接不存在 (404)
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/non-existent-db HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 6.2 无效的连接 URL (400)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/invalid-db HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "invalid://url"
+}
+
+###
+
+### 6.3 连接失败 (422)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/bad-postgres HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://baduser:badpass@localhost:9999/baddb"
+}
+
+###
+
+### 6.4 SQL 语法错误 (400)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FORM users"
+}
+
+###
+
+### 6.5 空 SQL (400)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": ""
+}
+
+###
+
+### 6.6 SQL 太长 (400)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users WHERE name = 'very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit_very_long_string_that_repeats_many_times_to_exceed_limit'"
+}
+
+###
+
+### 6.7 AI 服务未配置 (503)
+# 当 OPENAI_API_KEY 未设置时
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询所有用户"
+}
+
+###
+
+### 6.8 无效的自然语言输入 (400)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": ""
+}
+
+###############################################################################
+# 7. 并发控制测试 (Concurrency Tests)
+###############################################################################
+
+### 7.1 正常元数据刷新
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}?refresh=true HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 7.2 刷新期间执行查询 (可能返回 409 CONFLICT)
+# 注意: 需要在元数据刷新进行时快速执行此请求
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT COUNT(*) FROM users"
+}
+
+###############################################################################
+# 8. 边界测试 (Boundary Tests)
+###############################################################################
+
+### 8.1 连接名称边界 - 最小长度 (1 字符)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/a HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "sqlite:///data/test.db"
+}
+
+###
+
+### 8.2 连接名称边界 - 最大长度 (100 字符)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/a123456789b123456789c123456789d123456789e123456789f123456789g123456789h123456789i123456789j1234567890 HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "sqlite:///data/test.db"
+}
+
+###
+
+### 8.3 连接名称边界 - 无效字符 (应被拒绝)
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/test@db HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "sqlite:///data/test.db"
+}
+
+###
+
+### 8.4 LIMIT 边界 - 最小值 (1)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users LIMIT 1"
+}
+
+###
+
+### 8.5 LIMIT 边界 - 最大值 (10000)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM users LIMIT 10000"
+}
+
+###
+
+### 8.6 自然语言提示边界 - 最大长度 (1000 字符)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询用户表中的所有数据，包括用户的姓名、邮箱、年龄、城市、注册时间等信息，并且需要按照注册时间降序排列，同时需要统计每个城市的用户数量，以及每个年龄段的用户分布情况，还要分析用户的活跃度，包括最近登录时间、订单数量、消费金额等指标，最后需要生成一个综合报表，展示用户的整体情况和趋势分析，包括新增用户趋势、活跃用户变化、用户留存率等关键指标，以便进行后续的数据分析和业务决策支持，这个查询需要尽可能详细和全面，涵盖所有可能的用户维度和指标，同时也要考虑查询性能和数据准确性，确保返回的结果既完整又高效，能够满足各种业务分析需求和报表展示要求，特别是要注意数据的时效性和一致性，避免出现数据不准确或者查询超时的情况，最终目标是为管理层提供可靠的数据支撑，帮助他们做出正确的业务决策和战略规划，推动公司业务的持续增长和发展，实现长期的商业成功和市场竞争优势，同时也要关注用户体验和满意度，通过数据分析发现问题和机会，不断优化产品和服务，提升用户价值和忠诚度，最终实现企业和用户的双赢局面。"
+}
+
+###############################################################################
+# 9. 清理测试数据 (Cleanup)
+###############################################################################
+
+### 9.1 删除 PostgreSQL 连接
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}} HTTP/1.1
+
+###
+
+### 9.2 删除 MySQL 连接
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}} HTTP/1.1
+
+###
+
+### 9.3 删除测试连接 a
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/a HTTP/1.1
+
+###
+
+### 9.4 删除测试连接 (长名称)
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/a123456789b123456789c123456789d123456789e123456789f123456789g123456789h123456789i123456789j1234567890 HTTP/1.1
+
+###
+
+### 9.5 验证所有连接已删除
+GET {{baseUrl}}/api/{{apiVersion}}/dbs HTTP/1.1
+Content-Type: {{contentType}}
+
+###############################################################################
+# 10. 性能测试 (Performance Tests)
+###############################################################################
+
+### 10.1 批量查询测试 - 简单查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT id FROM users LIMIT 100"
+}
+
+###
+
+### 10.2 批量查询测试 - 复杂查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT u.*, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id LIMIT 100"
+}
+
+###
+
+### 10.3 元数据提取性能测试
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/{{postgresName}}?refresh=true HTTP/1.1
+Content-Type: {{contentType}}
+
+###############################################################################
+# 测试完成
+###############################################################################
+
+# 测试总结:
+# - 健康检查: 1 个
+# - 数据库管理: 13 个 (创建、读取、更新、删除)
+# - SQL 查询: 8 个 (基础、聚合、JOIN、LIMIT)
+# - 安全测试: 9 个 (注入防护)
+# - AI 查询: 5 个 (自然语言转 SQL)
+# - 错误场景: 8 个 (各种错误情况)
+# - 并发控制: 2 个 (元数据刷新冲突)
+# - 边界测试: 6 个 (参数边界值)
+# - 清理: 5 个 (删除测试数据)
+# - 性能: 3 个 (性能验证)
+#
+# 总计: 60+ 个测试用例
+#
+# 使用建议:
+# 1. 按顺序执行测试 (2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9)
+# 2. 安全测试 (第 4 节) 应该全部返回 400 错误
+# 3. AI 测试 (第 5 节) 需要配置 OPENAI_API_KEY
+# 4. 并发测试 (第 7 节) 需要快速执行以触发冲突
+# 5. 执行完成后运行清理 (第 9 节) 删除测试数据
