@@ -1,0 +1,631 @@
+openapi: 3.1.0
+info:
+  title: 数据库查询工具 API
+  description: |
+    数据库查询工具的 RESTful API，支持多种数据库的连接管理、元数据浏览、SQL 查询和自然语言生成 SQL。
+
+    ## 特性
+    - 支持 PostgreSQL、MySQL、SQLite 数据库
+    - 自动提取和缓存数据库元数据
+    - SQL 语法验证（仅允许 SELECT 语句）
+    - AI 驱动的自然语言生成 SQL
+
+    ## CORS
+    API 允许所有来源的跨域请求。
+  version: 1.0.0
+  contact:
+    name: Database Query Tool Team
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发服务器
+
+tags:
+  - name: databases
+    description: 数据库连接管理
+  - name: query
+    description: SQL 查询执行
+
+paths:
+  /api/v1/dbs:
+    get:
+      tags:
+        - databases
+      summary: 获取所有数据库连接
+      description: 返回所有已保存的数据库连接列表
+      operationId: listDatabases
+      responses:
+        '200':
+          description: 成功获取数据库列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseListResponse'
+              example:
+                databases:
+                  - name: my-postgres
+                    dbType: postgresql
+                    host: localhost
+                    port: 5432
+                    database: mydb
+                    createdAt: "2026-01-10T10:00:00Z"
+                    updatedAt: "2026-01-10T10:00:00Z"
+                total: 1
+
+  /api/v1/dbs/{name}:
+    put:
+      tags:
+        - databases
+      summary: 添加或更新数据库连接
+      description: |
+        添加新的数据库连接或更新现有连接（Upsert 语义）。
+
+        - 如果指定名称的连接不存在，则创建新连接（返回 201）
+        - 如果指定名称的连接已存在，则更新该连接（返回 200）
+
+        系统会自动验证连接有效性并提取元数据。
+
+        **安全警告**: 连接凭据以明文形式存储，仅适用于开发环境。
+      operationId: upsertDatabase
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseConnectionCreate'
+            examples:
+              postgresql:
+                summary: PostgreSQL 连接
+                value:
+                  url: "postgresql://user:password@localhost:5432/mydb"
+              mysql:
+                summary: MySQL 连接
+                value:
+                  url: "mysql://user:password@localhost:3306/mydb"
+              sqlite:
+                summary: SQLite 连接
+                value:
+                  url: "sqlite:///data/test.db"
+      responses:
+        '200':
+          description: 连接更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseConnectionResponse'
+        '201':
+          description: 连接创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseConnectionResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: VALIDATION_ERROR
+                message: "URL 格式无效"
+                details:
+                  field: url
+        '422':
+          description: 连接验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                connection_failed:
+                  summary: 连接失败
+                  value:
+                    code: CONNECTION_FAILED
+                    message: "无法连接到数据库"
+                    details:
+                      host: localhost
+                      port: 5432
+                auth_failed:
+                  summary: 认证失败
+                  value:
+                    code: AUTHENTICATION_FAILED
+                    message: "用户名或密码错误"
+
+    get:
+      tags:
+        - databases
+      summary: 获取数据库元数据
+      description: |
+        获取指定数据库的完整元数据，包括所有表和视图的结构信息。
+        首次访问会从远程数据库提取元数据并缓存，后续访问使用缓存。
+
+        如果检测到元数据版本变化，响应中的 `needsRefresh` 字段为 true。
+      operationId: getDatabaseMetadata
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - name: refresh
+          in: query
+          description: 是否强制刷新元数据
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 成功获取元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMetadata'
+        '404':
+          description: 数据库连接不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: NOT_FOUND
+                message: "数据库连接 'my-postgres' 不存在"
+
+    delete:
+      tags:
+        - databases
+      summary: 删除数据库连接
+      description: 删除指定的数据库连接及其缓存的元数据
+      operationId: deleteDatabase
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          description: 数据库连接不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/dbs/{name}/query:
+    post:
+      tags:
+        - query
+      summary: 执行 SQL 查询
+      description: |
+        在指定数据库上执行 SQL 查询。
+
+        **限制**:
+        - 仅允许 SELECT 语句
+        - 如果查询没有 LIMIT 子句，系统自动添加 LIMIT 1000
+        - 查询超时时间为 30 秒
+      operationId: executeQuery
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+            example:
+              sql: "SELECT * FROM users WHERE age > 30"
+      responses:
+        '200':
+          description: 查询执行成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: SQL 语法错误或非法语句
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                syntax_error:
+                  summary: 语法错误
+                  value:
+                    code: SYNTAX_ERROR
+                    message: "语法错误：未闭合的括号。位置：第 1 行，第 25 列"
+                invalid_statement:
+                  summary: 非法语句
+                  value:
+                    code: INVALID_STATEMENT
+                    message: "仅允许 SELECT 查询，该操作已被阻止"
+        '404':
+          description: 数据库连接不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '408':
+          description: 查询超时
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: QUERY_TIMEOUT
+                message: "查询超时（30秒）。建议：优化查询条件、减少返回行数或添加索引"
+        '499':
+          description: 查询被取消
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: QUERY_CANCELLED
+                message: "查询已取消"
+
+  /api/v1/dbs/{name}/query/natural:
+    post:
+      tags:
+        - query
+      summary: 自然语言生成 SQL
+      description: |
+        使用 AI 将自然语言描述转换为 SQL 查询。
+        系统会将数据库元数据作为上下文传递给 AI 服务以提高准确性。
+
+        **注意**: 此功能依赖外部 AI 服务（OpenAI API），可能因网络或配额问题失败。
+      operationId: naturalLanguageQuery
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NaturalLanguageQueryRequest'
+            example:
+              prompt: "查询所有年龄大于 30 的用户的姓名和邮箱"
+      responses:
+        '200':
+          description: SQL 生成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NaturalLanguageQueryResult'
+              example:
+                generatedSql: "SELECT name, email FROM users WHERE age > 30"
+                result: null
+                generationTimeMs: 1500
+        '404':
+          description: 数据库连接不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: AI 服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unavailable:
+                  summary: 服务不可用
+                  value:
+                    code: AI_SERVICE_UNAVAILABLE
+                    message: "AI 服务不可用，请稍后重试或使用手动 SQL 查询"
+                quota:
+                  summary: 配额超限
+                  value:
+                    code: AI_QUOTA_EXCEEDED
+                    message: "API 配额已用尽，请稍后重试"
+
+components:
+  parameters:
+    DatabaseName:
+      name: name
+      in: path
+      description: 数据库连接名称（唯一标识符）
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+        pattern: '^[a-zA-Z0-9_-]+$'
+      example: my-postgres
+
+  schemas:
+    DatabaseConnectionCreate:
+      type: object
+      description: 创建/更新数据库连接请求
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: |
+            数据库连接 URL。支持的格式：
+            - PostgreSQL: `postgresql://user:password@host:port/database`
+            - MySQL: `mysql://user:password@host:port/database`
+            - SQLite: `sqlite:///path/to/database.db`
+          examples:
+            - postgresql://user:password@localhost:5432/mydb
+            - mysql://user:password@localhost:3306/mydb
+            - sqlite:///data/test.db
+
+    DatabaseConnectionResponse:
+      type: object
+      description: |
+        数据库连接响应
+
+        **安全注意**: 此响应不包含密码字段。密码仅在创建/更新时接受，
+        不会通过 API 返回。前端展示连接 URL 时应将密码部分遮蔽显示为 `***`。
+      required:
+        - name
+        - dbType
+        - database
+        - createdAt
+        - updatedAt
+      properties:
+        name:
+          type: string
+          description: 连接名称
+        dbType:
+          type: string
+          enum: [postgresql, mysql, sqlite]
+          description: 数据库类型
+        host:
+          type: string
+          nullable: true
+          description: 主机名（SQLite 为 null）
+        port:
+          type: integer
+          nullable: true
+          description: 端口（SQLite 为 null）
+        database:
+          type: string
+          description: 数据库名或文件路径
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    DatabaseListResponse:
+      type: object
+      description: 数据库列表响应
+      required:
+        - databases
+        - total
+      properties:
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseConnectionResponse'
+        total:
+          type: integer
+          description: 总数
+
+    DatabaseMetadata:
+      type: object
+      description: 数据库元数据
+      required:
+        - name
+        - dbType
+        - tables
+        - views
+      properties:
+        name:
+          type: string
+          description: 数据库名
+        dbType:
+          type: string
+          description: 数据库类型
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableInfo'
+          description: 表列表
+        views:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableInfo'
+          description: 视图列表
+        versionHash:
+          type: string
+          nullable: true
+          description: 元数据版本哈希
+        cachedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 缓存时间
+        needsRefresh:
+          type: boolean
+          default: false
+          description: 是否需要刷新
+        warnings:
+          type: array
+          items:
+            type: string
+          description: 提取时的警告信息
+
+    TableInfo:
+      type: object
+      description: 表/视图信息
+      required:
+        - name
+        - tableType
+        - columns
+      properties:
+        name:
+          type: string
+          description: 表名
+        tableType:
+          type: string
+          enum: [table, view]
+          description: 类型
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnInfo'
+        rowCount:
+          type: integer
+          nullable: true
+          description: 估计行数
+        comment:
+          type: string
+          nullable: true
+          description: 表注释
+
+    ColumnInfo:
+      type: object
+      description: 列信息
+      required:
+        - name
+        - dataType
+      properties:
+        name:
+          type: string
+          description: 列名
+        dataType:
+          type: string
+          description: 数据类型
+        isNullable:
+          type: boolean
+          default: true
+          description: 是否可为空
+        isPrimaryKey:
+          type: boolean
+          default: false
+          description: 是否为主键
+        defaultValue:
+          type: string
+          nullable: true
+          description: 默认值
+        comment:
+          type: string
+          nullable: true
+          description: 列注释
+
+    QueryRequest:
+      type: object
+      description: SQL 查询请求
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: SQL 查询语句
+
+    NaturalLanguageQueryRequest:
+      type: object
+      description: 自然语言查询请求
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: 自然语言查询描述
+
+    QueryResult:
+      type: object
+      description: 查询结果
+      required:
+        - columns
+        - rows
+        - rowCount
+        - executionTimeMs
+        - sql
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryResultColumn'
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        rowCount:
+          type: integer
+          description: 返回行数
+        executionTimeMs:
+          type: integer
+          description: 执行时间（毫秒）
+        truncated:
+          type: boolean
+          default: false
+          description: 是否因 LIMIT 被截断
+        sql:
+          type: string
+          description: 实际执行的 SQL
+
+    QueryResultColumn:
+      type: object
+      description: 查询结果列信息
+      required:
+        - name
+        - dataType
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+
+    NaturalLanguageQueryResult:
+      type: object
+      description: 自然语言查询结果
+      required:
+        - generatedSql
+        - generationTimeMs
+      properties:
+        generatedSql:
+          type: string
+          description: 生成的 SQL
+        result:
+          $ref: '#/components/schemas/QueryResult'
+          nullable: true
+          description: 查询结果（如果自动执行）
+        generationTimeMs:
+          type: integer
+          description: SQL 生成时间（毫秒）
+
+    ErrorResponse:
+      type: object
+      description: 错误响应
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - CONNECTION_FAILED
+            - AUTHENTICATION_FAILED
+            - DATABASE_NOT_FOUND
+            - NETWORK_UNREACHABLE
+            - PERMISSION_DENIED
+            - QUERY_TIMEOUT
+            - QUERY_CANCELLED
+            - SYNTAX_ERROR
+            - INVALID_STATEMENT
+            - AI_SERVICE_UNAVAILABLE
+            - AI_QUOTA_EXCEEDED
+            - AI_INVALID_RESPONSE
+            - STORAGE_FULL
+            - STORAGE_CORRUPTED
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - INTERNAL_ERROR
+          description: 错误代码
+        message:
+          type: string
+          description: 错误消息
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: 详细信息

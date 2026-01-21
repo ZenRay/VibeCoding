@@ -73,6 +73,9 @@ dist-ssr/
 build/
 *.tsbuildinfo
 
+# Vite cache
+.vite/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -107,3 +110,4 @@ coverage.xml
 *.tmp
 *.temp
 .cache/
+.cursor/plans/监控系统配置_70b34b18.plan.md
