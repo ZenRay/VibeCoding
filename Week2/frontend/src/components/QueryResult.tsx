@@ -2,6 +2,7 @@
 import React from "react";
 import { Table, Typography, Tag, Space } from "antd";
 import { QueryResult as QueryResultType } from "../types/query";
+import { ExportButton } from "./export/ExportButton";
 
 const { Text } = Typography;
 
@@ -53,15 +54,22 @@ const QueryResult: React.FC<QueryResultProps> = ({ result }) => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Text>
-          返回 <Text strong>{result.rowCount}</Text> 行
-        </Text>
-        <Text type="secondary">
-          执行时间: <Text strong>{result.executionTimeMs}</Text> ms
-        </Text>
-        {result.truncated && <Tag color="orange">结果已截断（LIMIT 1000）</Tag>}
-      </Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space>
+          <Text>
+            返回 <Text strong>{result.rowCount}</Text> 行
+          </Text>
+          <Text type="secondary">
+            执行时间: <Text strong>{result.executionTimeMs}</Text> ms
+          </Text>
+          {result.truncated && <Tag color="orange">结果已截断（LIMIT 1000）</Tag>}
+        </Space>
+
+        <ExportButton
+          queryResult={result}
+          size="small"
+        />
+      </div>
 
       {result.rowCount === 0 ? (
         <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>

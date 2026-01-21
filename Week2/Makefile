@@ -80,7 +80,14 @@ setup: install init-db ## 完整设置（安装依赖 + 初始化数据库）
 # 启动和停止服务
 # ============================================================================
 
-start: start-db start-backend start-frontend ## 启动所有服务（数据库 + 后端 + 前端）
+start: ## 启动所有服务（后台运行，等同于 make dev）
+	@echo "$(COLOR_YELLOW)提示: 'make start' 将在后台启动所有服务$(COLOR_RESET)"
+	@echo "$(COLOR_YELLOW)如需前台运行以查看日志，请分别运行:$(COLOR_RESET)"
+	@echo "  - make start-db"
+	@echo "  - make start-backend  (新终端)"
+	@echo "  - make start-frontend (新终端)"
+	@echo ""
+	@$(MAKE) dev
 
 start-backend: ## 启动后端服务（端口 8000）
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)启动后端服务...$(COLOR_RESET)"
@@ -88,11 +95,16 @@ start-backend: ## 启动后端服务（端口 8000）
 		echo "$(COLOR_YELLOW)错误: 虚拟环境不存在，请先运行 make install-backend$(COLOR_RESET)"; \
 		exit 1; \
 	fi
+	@if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
+		echo "$(COLOR_YELLOW)警告: 端口 8000 已被占用，请先运行 'make stop-backend'$(COLOR_RESET)"; \
+		echo "或使用 'make dev' 在后台启动服务"; \
+		exit 1; \
+	fi
 	@cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 start-frontend: ## 启动前端开发服务器（端口 3000）
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)启动前端服务...$(COLOR_RESET)"
-	@cd $(FRONTEND_DIR) && npm run dev
+	@cd $(FRONTEND_DIR) && bash -c 'export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh" && nvm use 18 && npm run dev'
 
 start-db: ## 启动测试数据库（PostgreSQL + MySQL）
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)启动测试数据库...$(COLOR_RESET)"
@@ -106,12 +118,13 @@ stop: stop-backend stop-frontend stop-db ## 停止所有服务
 
 stop-backend: ## 停止后端服务
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)停止后端服务...$(COLOR_RESET)"
-	@pkill -f "uvicorn app.main:app" || echo "后端服务未运行"
+	-@pkill -f "uvicorn app.main:app" 2>/dev/null
 	@echo "$(COLOR_GREEN)✓ 后端服务已停止$(COLOR_RESET)"
 
 stop-frontend: ## 停止前端服务
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)停止前端服务...$(COLOR_RESET)"
-	@pkill -f "vite" || echo "前端服务未运行"
+	-@pkill -f "vite" 2>/dev/null
+	-@pkill -f "npm run dev" 2>/dev/null
 	@echo "$(COLOR_GREEN)✓ 前端服务已停止$(COLOR_RESET)"
 
 stop-db: ## 停止测试数据库
@@ -126,12 +139,12 @@ dev: start-db ## 启动开发环境（数据库 + 后端 + 前端，后台运行
 	@echo "$(COLOR_YELLOW)提示: 后端和前端将在后台运行$(COLOR_RESET)"
 	@echo "$(COLOR_YELLOW)使用 'make stop' 停止所有服务$(COLOR_RESET)"
 	@cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
-	@cd $(FRONTEND_DIR) && npm run dev > /tmp/frontend.log 2>&1 &
-	@sleep 2
+	@cd $(FRONTEND_DIR) && bash -c 'export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh" && nvm use 18 && npm run dev' > /tmp/frontend.log 2>&1 &
+	@sleep 4
 	@echo "$(COLOR_GREEN)✓ 开发环境已启动$(COLOR_RESET)"
 	@echo ""
 	@echo "服务地址："
-	@echo "  前端: $(COLOR_BOLD)http://localhost:3000$(COLOR_RESET)"
+	@echo "  前端: $(COLOR_BOLD)http://localhost:3001$(COLOR_RESET)"
 	@echo "  后端 API: $(COLOR_BOLD)http://localhost:8000$(COLOR_RESET)"
 	@echo "  API 文档: $(COLOR_BOLD)http://localhost:8000/docs$(COLOR_RESET)"
 	@echo ""
@@ -182,7 +195,7 @@ test-backend: ## 运行后端测试
 		echo "$(COLOR_YELLOW)错误: 虚拟环境不存在，请先运行 make install-backend$(COLOR_RESET)"; \
 		exit 1; \
 	fi
-	cd $(BACKEND_DIR) && $(PYTHON) -m pytest -v
+	@cd $(BACKEND_DIR) && .venv/bin/pytest -v
 
 test-frontend: ## 运行前端测试
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)运行前端测试...$(COLOR_RESET)"

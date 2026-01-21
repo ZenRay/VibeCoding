@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
+    strictPort: true,  // 如果端口被占用则失败，不自动切换
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
