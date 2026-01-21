@@ -18,6 +18,7 @@ dependencies = [
     "asyncpg>=0.29.0",  # PostgreSQL
     "aiomysql>=0.2.0",   # MySQL
     "aiosqlite>=0.19.0", # SQLite
+    "cryptography>=41.0.0",  # Required for MySQL caching_sha2_password auth
 
     # ORM 和迁移
     "sqlalchemy>=2.0.25",

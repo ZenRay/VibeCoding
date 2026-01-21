@@ -61,3 +61,49 @@ SELECT
 FROM users u
 LEFT JOIN orders o ON u.id = o.user_id
 GROUP BY u.id, u.name, u.email;
+
+-- 创建 interview_db 数据库用于测试
+CREATE DATABASE IF NOT EXISTS interview_db DEFAULT CHARACTER SET utf8mb4;
+
+USE interview_db;
+
+-- 创建面试相关的表
+CREATE TABLE IF NOT EXISTS candidates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    experience_years INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    candidate_id INT NOT NULL,
+    interviewer VARCHAR(100) NOT NULL,
+    interview_date DATE NOT NULL,
+    score INT CHECK (score BETWEEN 0 AND 100),
+    status ENUM('scheduled', 'completed', 'cancelled') DEFAULT 'scheduled',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入面试测试数据
+INSERT INTO candidates (name, email, position, experience_years) VALUES
+    ('Alice Wang', 'alice.wang@example.com', 'Senior Software Engineer', 5),
+    ('Bob Chen', 'bob.chen@example.com', 'Frontend Developer', 3),
+    ('Carol Li', 'carol.li@example.com', 'Backend Developer', 4),
+    ('David Zhang', 'david.zhang@example.com', 'Full Stack Developer', 6)
+ON DUPLICATE KEY UPDATE name=name;
+
+INSERT INTO interviews (candidate_id, interviewer, interview_date, score, status, notes) VALUES
+    (1, 'John Smith', '2026-01-25', 85, 'completed', '优秀的技术能力和沟通技巧'),
+    (1, 'Jane Doe', '2026-01-26', 90, 'completed', '非常适合这个职位'),
+    (2, 'Tom Brown', '2026-01-27', 75, 'completed', '前端技能扎实，需要提升后端能力'),
+    (3, 'Sarah Wilson', '2026-01-28', 88, 'completed', '后端经验丰富，架构能力强'),
+    (4, 'Mike Johnson', '2026-01-29', NULL, 'scheduled', '即将进行面试')
+ON DUPLICATE KEY UPDATE score=score;
+
+-- 切换回 testdb
+USE testdb;

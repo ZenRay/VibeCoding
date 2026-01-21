@@ -356,6 +356,138 @@ Content-Type: {{contentType}}
   "prompt": "查询每个城市中年龄最大的用户姓名和年龄"
 }
 
+###
+
+### 5.6 MySQL 自然语言查询 - 简单查询
+# 注意: 需要设置 OPENAI_API_KEY 环境变量
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询所有产品的名称和价格"
+}
+
+###
+
+### 5.7 MySQL 自然语言查询 - 带条件查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询价格大于 100 的产品数量"
+}
+
+###
+
+### 5.8 MySQL 自然语言查询 - 聚合查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}}/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "按类别统计产品数量"
+}
+
+###############################################################################
+# 5.9 interview_db MySQL 数据库测试 (Interview Database Tests)
+###############################################################################
+
+### 5.9.1 添加 interview_db MySQL 连接
+# @name createInterviewDb
+PUT {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "url": "mysql://root@localhost:3306/interview_db"
+}
+
+###
+
+### 5.9.2 获取 interview_db 元数据
+GET {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db HTTP/1.1
+Content-Type: {{contentType}}
+
+###
+
+### 5.9.3 查询所有候选人信息
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM candidates"
+}
+
+###
+
+### 5.9.4 查询所有面试记录
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM interviews"
+}
+
+###
+
+### 5.9.5 查询已完成的面试及候选人信息 (JOIN)
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT c.name, c.position, i.interviewer, i.interview_date, i.score, i.status FROM candidates c JOIN interviews i ON c.id = i.candidate_id WHERE i.status = 'completed'"
+}
+
+###
+
+### 5.9.6 查询平均面试分数最高的候选人
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT c.name, c.position, AVG(i.score) as avg_score FROM candidates c JOIN interviews i ON c.id = i.candidate_id WHERE i.score IS NOT NULL GROUP BY c.id, c.name, c.position ORDER BY avg_score DESC"
+}
+
+###
+
+### 5.9.7 自然语言查询 - 查询所有候选人
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询所有候选人的姓名、邮箱和职位"
+}
+
+###
+
+### 5.9.8 自然语言查询 - 查询面试分数
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询所有已完成面试的候选人姓名和面试分数"
+}
+
+###
+
+### 5.9.9 自然语言查询 - 统计查询
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "统计每个职位的候选人数量"
+}
+
+###
+
+### 5.9.10 自然语言查询 - 复杂聚合
+POST {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db/query/natural HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "prompt": "查询每个候选人的平均面试分数，按分数降序排列"
+}
+
+###
+
 ###############################################################################
 # 6. 错误场景测试 (Error Scenarios)
 ###############################################################################
@@ -530,17 +662,22 @@ DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/{{mysqlName}} HTTP/1.1
 
 ###
 
-### 9.3 删除测试连接 a
+### 9.3 删除 interview_db MySQL 连接
+DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/interview-db HTTP/1.1
+
+###
+
+### 9.4 删除测试连接 a
 DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/a HTTP/1.1
 
 ###
 
-### 9.4 删除测试连接 (长名称)
+### 9.5 删除测试连接 (长名称)
 DELETE {{baseUrl}}/api/{{apiVersion}}/dbs/a123456789b123456789c123456789d123456789e123456789f123456789g123456789h123456789i123456789j1234567890 HTTP/1.1
 
 ###
 
-### 9.5 验证所有连接已删除
+### 9.6 验证所有连接已删除
 GET {{baseUrl}}/api/{{apiVersion}}/dbs HTTP/1.1
 Content-Type: {{contentType}}
 
