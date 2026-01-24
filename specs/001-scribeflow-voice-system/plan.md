@@ -561,7 +561,7 @@ Idle → Connecting → Listening → Recording → Processing → Committing �
 ---
 
 (继续定义其他 5 个实体: TranscriptEvent, OverlayWindow, AppConfig, ActiveWindow, WebSocketConnection)
-```
+
 
 #### 1.2 API Contracts Generation
 
@@ -573,7 +573,7 @@ Idle → Connecting → Listening → Recording → Processing → Committing �
 
 文件: `contracts/elevenlabs-websocket-protocol.md`
 
-```markdown
+
 # ElevenLabs Scribe v2 Realtime WebSocket Protocol
 
 ## Connection

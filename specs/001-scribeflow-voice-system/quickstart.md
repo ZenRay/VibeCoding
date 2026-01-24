@@ -106,17 +106,17 @@ sudo apt update
 
 # Tauri 核心依赖
 sudo apt install -y \
-    build-essential \
-    curl \
-    wget \
-    file \
-    pkg-config \
-    libssl-dev \
-    libgtk-3-dev \
-    libayatana-appindicator3-dev \
-    librsvg2-dev \
-    libwebkit2gtk-4.0-dev \
-    patchelf
+   build-essential \
+   curl \
+   wget \
+   file \
+   pkg-config \
+   libssl-dev \
+   libgtk-3-dev \
+   libayatana-appindicator3-dev \
+   librsvg2-dev \
+   libwebkit2gtk-4.1-dev \
+   patchelf
 
 # 音频依赖
 sudo apt install -y libasound2-dev
