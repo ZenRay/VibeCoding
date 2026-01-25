@@ -34,7 +34,7 @@
 
 **Purpose**: 实现麦克风音频采集、环形缓冲区和 16kHz 重采样管道
 
-- [ ] T002 实现音频采集与重采样模块
+- [X] T002 实现音频采集与重采样模块
   - **音频采集** (`src-tauri/src/audio/capture.rs`):
     - 使用 `cpal` 枚举默认输入设备
     - 配置音频流: 48kHz 单声道,10ms 缓冲区 (480 frames)
@@ -56,7 +56,7 @@
 
 **Purpose**: 实现 ElevenLabs Scribe v2 WebSocket 通信和状态管理
 
-- [ ] T003 实现 WebSocket 客户端与协议状态机
+- [X] T003 实现 WebSocket 客户端与协议状态机
   - **WebSocket 客户端** (`src-tauri/src/network/client.rs`):
     - 使用 `tokio-tungstenite` 建立 WSS 连接
     - 鉴权: HTTP Header `xi-api-key`
