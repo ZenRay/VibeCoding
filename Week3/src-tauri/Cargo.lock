@@ -4207,6 +4207,7 @@ dependencies = [
  "crossbeam",
  "dashmap",
  "enigo",
+ "futures-util",
  "keyring",
  "rubato",
  "serde",
