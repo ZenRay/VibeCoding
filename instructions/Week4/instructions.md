@@ -20,3 +20,18 @@
 
 ## apply_patch 集成
 如果我要把apply_patch工具集成到我自己的项目中,我需要做哪些工作,如何做等等。如果需要,可以用mermaid chart来辅助说明。写入./specs/w4/codex-apply-patch-integration.md
+
+
+# 项目探索
+帮我详细介绍一下surrealdb,包括它的设计思路,架构,主要的应用场景,目前使用它的著名项目或者公司,以及它和postgres的对比。
+
+## 架构设计
+仔细阅读./vendors/open-notebook的代码,撰写一个详细的架构分析文档,如需图表,使用 mermaid chart。文档放在: ./specs/w4/open-notebook-arch-design.md.
+
+帮我详细介绍 surrealdb 跟 worker之间是如何交互的,撰写./specs/w4/open-notebook-worker.md 
+
+open-notebook如何使用Surrealdb 帮我详细介绍open-notebook如何使用Surrealdb,如何定义存放在surrealdb中的数据,如何定义图结构,app和surrealdb如何交互,撰写./specs/w4/open-notebook surrealdb.md
+
+
+帮我详细介绍 open-notebook 如何生成 podcast,如何使用数据库中的数据,如何定义podcast 的结构,如何生成 podcast,撰写./specs/w4 open-notebook-podcast.md
+
