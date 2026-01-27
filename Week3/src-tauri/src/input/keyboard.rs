@@ -1,4 +1,6 @@
-use crate::input::clipboard::InputError;
+use enigo::{Enigo, Keyboard, Settings};
+
+use crate::input::error::InputError;
 
 pub struct KeyboardInjector;
 
@@ -11,6 +13,9 @@ impl KeyboardInjector {
         if text.trim().is_empty() {
             return Err(InputError::EmptyText);
         }
+        let mut enigo =
+            Enigo::new(&Settings::default()).map_err(|e| InputError::Backend(e.to_string()))?;
+        let _ = enigo.text(text).map_err(|e| InputError::Backend(e.to_string()))?;
         Ok(())
     }
 }
@@ -18,7 +23,7 @@ impl KeyboardInjector {
 #[cfg(test)]
 mod tests {
     use super::KeyboardInjector;
-    use crate::input::clipboard::InputError;
+    use crate::input::error::InputError;
 
     #[test]
     fn empty_text_is_error() {

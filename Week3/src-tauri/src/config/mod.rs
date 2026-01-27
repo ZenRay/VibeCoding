@@ -1,3 +1,5 @@
+pub mod store;
+
 use serde::{Deserialize, Serialize};
 
 pub const CONFIG_MODULE_NAME: &str = "config";

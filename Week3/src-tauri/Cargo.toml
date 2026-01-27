@@ -26,6 +26,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 enigo = "0.6.1"
 hound = "3.5"
+keyring = "2.3"
+tauri-plugin-store = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-global-shortcut = "2"
+active-win-pos-rs = "0.8"
+tokio-socks = "0.5.2"
+rustls = "0.23.36"
 
 [lib]
 name = "tauri_app_lib"

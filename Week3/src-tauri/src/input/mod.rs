@@ -1,3 +1,5 @@
+pub mod error;
+pub mod injector;
 pub mod clipboard;
 pub mod keyboard;
 

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke, isTauri as isTauriApi } from "@tauri-apps/api/core";
 import { OverlayWindow } from "./components/OverlayWindow";
 import { SettingsPanel, SettingsValue } from "./components/SettingsPanel";
-import { TranscriptDisplay } from "./components/TranscriptDisplay";
 import { WaveformVisualizer } from "./components/WaveformVisualizer";
 import { useTauriEvents } from "./hooks/useTauriEvents";
 import { useTranscriptStore } from "./stores/transcriptStore";
@@ -20,6 +19,8 @@ export default function App() {
   const audioLevel = useTranscriptStore((state) => state.audioLevel);
   const partialText = useTranscriptStore((state) => state.partialText);
   const committedText = useTranscriptStore((state) => state.committedText);
+  const latestCommitted = committedText[committedText.length - 1] ?? "";
+  const overlayText = partialText || latestCommitted;
   const setRecording = useTranscriptStore((state) => state.setIsRecording);
   const handleRecording = useCallback(
     (value: boolean) => {
@@ -55,7 +56,9 @@ export default function App() {
   return (
     <main className="app">
       <h1>ScribeFlow</h1>
-      <OverlayWindow isRecording={isRecording} />
+      <div className="overlay-slot">
+        <OverlayWindow isRecording={isRecording} transcriptLine={overlayText} />
+      </div>
       <div className="controls">
         <button
           type="button"
@@ -87,7 +90,6 @@ export default function App() {
         </button>
       </div>
       <WaveformVisualizer level={audioLevel} />
-      <TranscriptDisplay partialText={partialText} committedText={committedText} />
       {showSettings && (
         <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
           <div className="modal" onClick={(event) => event.stopPropagation()}>
