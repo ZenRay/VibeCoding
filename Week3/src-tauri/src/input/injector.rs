@@ -2,6 +2,10 @@ use active_win_pos_rs::{get_active_window, ActiveWindow};
 use tauri::{AppHandle, Emitter};
 #[cfg(target_os = "macos")]
 use std::process::Command;
+#[cfg(target_os = "linux")]
+use atspi::{AccessibilityConnection, Role, State};
+#[cfg(target_os = "linux")]
+use atspi::proxy::accessible::{AccessibleProxy, ObjectRefExt};
 
 use crate::input::clipboard::ClipboardInjector;
 use crate::input::error::InputError;
@@ -85,6 +89,16 @@ fn should_block_injection(window: &ActiveWindow) -> Option<String> {
     if sensitive_apps.iter().any(|keyword| app.contains(keyword)) {
         return Some(format!("sensitive app: {}", window.app_name));
     }
+    #[cfg(target_os = "linux")]
+    if let Some(role) = linux_atspi_focused_role() {
+        if role == Role::PasswordText {
+            return Some("password field focused".to_string());
+        }
+        let allowed = [Role::Entry, Role::Text, Role::DocumentText];
+        if !allowed.contains(&role) {
+            return Some(format!("non-editable focus: {}", role.name()));
+        }
+    }
     #[cfg(target_os = "macos")]
     if let Some((role, subrole)) = macos_focused_element_info() {
         if subrole.eq_ignore_ascii_case("AXSecureTextField") {
@@ -96,6 +110,49 @@ fn should_block_injection(window: &ActiveWindow) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(target_os = "linux")]
+fn linux_atspi_focused_role() -> Option<Role> {
+    tauri::async_runtime::block_on(async {
+        let connection = AccessibilityConnection::new().await.ok()?;
+        let root = AccessibleProxy::builder(connection.connection())
+            .destination("org.a11y.atspi.Registry")
+            .ok()?
+            .path("/org/a11y/atspi/accessible/root")
+            .ok()?
+            .build()
+            .await
+            .ok()?;
+        let mut queue = vec![root];
+        let mut visited = 0usize;
+        while let Some(node) = queue.pop() {
+            visited += 1;
+            if visited > 200 {
+                break;
+            }
+            if let Ok(state) = node.get_state().await {
+                if state.contains(State::Focused) {
+                    return node.get_role().await.ok();
+                }
+            }
+            let count = node.child_count().await.unwrap_or(0);
+            if count <= 0 {
+                continue;
+            }
+            for index in 0..count {
+                if let Ok(child) = node.get_child_at_index(index).await {
+                    if let Ok(proxy) = child
+                        .into_accessible_proxy(connection.connection())
+                        .await
+                    {
+                        queue.push(proxy);
+                    }
+                }
+            }
+        }
+        None
+    })
 }
 
 #[cfg(target_os = "macos")]
