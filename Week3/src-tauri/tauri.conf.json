@@ -18,7 +18,11 @@
         "label": "main",
         "title": "ScribeFlow",
         "width": 900,
-        "height": 600
+        "height": 600,
+        "minimizable": true,
+        "maximizable": true,
+        "closable": true,
+        "resizable": true
       }
     ]
   }

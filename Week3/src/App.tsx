@@ -15,6 +15,7 @@ export default function App() {
   const [hotkeyNotice, setHotkeyNotice] = useState<string | null>(null);
   const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsValue>({
     apiKey: "",
     language: "auto",
@@ -114,11 +115,31 @@ export default function App() {
       }).then((stop) => {
         cleanups.push(stop);
       });
+      listen<{ state: string; attempt?: number }>("connection_status", (event) => {
+        const { state, attempt } = event.payload;
+        if (attempt) {
+          setConnectionStatus(`${state} (${attempt})`);
+        } else {
+          setConnectionStatus(state);
+        }
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
     });
     return () => {
       cleanups.forEach((stop) => stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (!statusNotice) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setStatusNotice(null);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [statusNotice]);
   return (
     <main className="app">
       <h1>ScribeFlow</h1>
@@ -159,6 +180,9 @@ export default function App() {
         <p className="hotkey-notice">
           Hotkey unavailable: {hotkeyNotice}. Use the Start button instead.
         </p>
+      )}
+      {connectionStatus && (
+        <p className="connection-status">Connection: {connectionStatus}</p>
       )}
       {permissionNotice && <p className="permission-notice">{permissionNotice}</p>}
       {statusNotice && <p className="status-notice">{statusNotice}</p>}

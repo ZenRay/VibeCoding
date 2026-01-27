@@ -32,6 +32,12 @@ body {
   color: #fbbf24;
 }
 
+.connection-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
 .permission-notice {
   margin: 0;
   font-size: 0.9rem;

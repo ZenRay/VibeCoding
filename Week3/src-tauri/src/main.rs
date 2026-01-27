@@ -110,6 +110,9 @@ fn main() {
             } else {
                 let _ = app.emit("hotkey_status", json!({ "supported": true }));
             }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.hide();
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
