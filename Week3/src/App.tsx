@@ -18,6 +18,7 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [waylandNotice, setWaylandNotice] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsValue>({
     apiKey: "",
     language: "auto",
@@ -142,6 +143,18 @@ export default function App() {
       }).then((stop) => {
         cleanups.push(stop);
       });
+      listen<{ enabled: boolean; message?: string }>("wayland_mode", (event) => {
+        if (event.payload.enabled) {
+          setWaylandNotice(
+            event.payload.message ??
+              "Wayland detected: auto paste is disabled. Use Copy and Ctrl+V."
+          );
+        } else {
+          setWaylandNotice(null);
+        }
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
     });
     return () => {
       cleanups.forEach((stop) => stop());
@@ -215,6 +228,7 @@ export default function App() {
       {connectionStatus && (
         <p className="connection-status">Connection: {connectionStatus}</p>
       )}
+      {waylandNotice && <p className="wayland-notice">{waylandNotice}</p>}
       {permissionNotice && <p className="permission-notice">{permissionNotice}</p>}
       {statusNotice && <p className="status-notice">{statusNotice}</p>}
       <WaveformVisualizer level={audioLevel} />

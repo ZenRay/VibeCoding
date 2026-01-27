@@ -8,6 +8,7 @@ use tauri_app_lib::config::store::load_config;
 use tauri_app_lib::ui::commands::{
     check_connectivity as check_connectivity_impl,
     check_permissions as check_permissions_impl,
+    copy_last_transcript as copy_last_transcript_impl,
     get_hotkey_status as get_hotkey_status_impl,
     get_config as get_config_impl,
     save_config as save_config_impl,
@@ -67,6 +68,14 @@ async fn get_hotkey_status_cmd(app_handle: AppHandle) -> Result<tauri_app_lib::u
     get_hotkey_status_impl(app_handle).await
 }
 
+#[tauri::command]
+async fn copy_last_transcript_cmd(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    copy_last_transcript_impl(&app_handle, state.inner()).await
+}
+
 fn main() {
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     init_logger();
@@ -107,8 +116,16 @@ fn main() {
                         "reason": "Wayland does not support global shortcuts"
                     }),
                 );
+                let _ = app.emit(
+                    "wayland_mode",
+                    json!({
+                        "enabled": true,
+                        "message": "Wayland detected: auto paste is disabled. Use Copy and Ctrl+V."
+                    }),
+                );
             } else {
                 let _ = app.emit("hotkey_status", json!({ "supported": true }));
+                let _ = app.emit("wayland_mode", json!({ "enabled": false }));
             }
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.hide();
@@ -128,7 +145,8 @@ fn main() {
             save_config_cmd,
             check_connectivity_cmd,
             check_permissions_cmd,
-            get_hotkey_status_cmd
+            get_hotkey_status_cmd,
+            copy_last_transcript_cmd
         ])
         .run(tauri::generate_context!())
     {

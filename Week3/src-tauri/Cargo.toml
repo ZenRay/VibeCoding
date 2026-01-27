@@ -37,6 +37,9 @@ aes-gcm = "0.10"
 rand = "0.8"
 sha2 = "0.10"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2"
+
 [lib]
 name = "tauri_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

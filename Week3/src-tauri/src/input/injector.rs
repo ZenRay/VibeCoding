@@ -1,5 +1,7 @@
 use active_win_pos_rs::{get_active_window, ActiveWindow};
 use tauri::{AppHandle, Emitter};
+#[cfg(target_os = "macos")]
+use std::process::Command;
 
 use crate::input::clipboard::ClipboardInjector;
 use crate::input::error::InputError;
@@ -83,6 +85,47 @@ fn should_block_injection(window: &ActiveWindow) -> Option<String> {
     if sensitive_apps.iter().any(|keyword| app.contains(keyword)) {
         return Some(format!("sensitive app: {}", window.app_name));
     }
+    #[cfg(target_os = "macos")]
+    if let Some((role, subrole)) = macos_focused_element_info() {
+        if subrole.eq_ignore_ascii_case("AXSecureTextField") {
+            return Some("secure text field focused".to_string());
+        }
+        let allowed_roles = ["AXTextField", "AXTextArea", "AXSearchField"];
+        if !allowed_roles.iter().any(|item| role.eq_ignore_ascii_case(item)) {
+            return Some(format!("non-editable focus: {role}"));
+        }
+    }
     None
+}
+
+#[cfg(target_os = "macos")]
+fn macos_focused_element_info() -> Option<(String, String)> {
+    let script = r#"
+        tell application "System Events"
+            tell (first application process whose frontmost is true)
+                set focusedElement to value of attribute "AXFocusedUIElement"
+                if focusedElement is missing value then return ""
+                set theRole to role of focusedElement
+                set theSubrole to subrole of focusedElement
+                return theRole & "|" & theSubrole
+            end tell
+        end tell
+    "#;
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if text.is_empty() {
+        return None;
+    }
+    let mut parts = text.splitn(2, '|');
+    let role = parts.next()?.trim().to_string();
+    let subrole = parts.next().unwrap_or("").trim().to_string();
+    Some((role, subrole))
 }
 
