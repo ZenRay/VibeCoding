@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke, isTauri as isTauriApi } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { OverlayWindow } from "./components/OverlayWindow";
 import { SettingsPanel, SettingsValue } from "./components/SettingsPanel";
+import { TranscriptDisplay } from "./components/TranscriptDisplay";
 import { WaveformVisualizer } from "./components/WaveformVisualizer";
 import { useTauriEvents } from "./hooks/useTauriEvents";
 import { useTranscriptStore } from "./stores/transcriptStore";
@@ -10,6 +12,9 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isTauriEnv, setIsTauriEnv] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [hotkeyNotice, setHotkeyNotice] = useState<string | null>(null);
+  const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsValue>({
     apiKey: "",
     language: "auto",
@@ -34,11 +39,22 @@ export default function App() {
   useEffect(() => {
     const result = isTauriApi();
     const resolved = typeof result === "boolean" ? Promise.resolve(result) : result;
+    let cleanups: Array<() => void> = [];
     resolved.then((value) => {
       setIsTauriEnv(value);
       if (!value) {
         return;
       }
+      listen("open_settings", () => {
+        setShowSettings(true);
+      })
+        .then((stop) => cleanups.push(stop))
+        .catch(() => {});
+      listen("open_about", () => {
+        alert("ScribeFlow v0.1.0");
+      })
+        .then((stop) => cleanups.push(stop))
+        .catch(() => {});
       invoke<{
         api_key: string | null;
         language: string;
@@ -55,7 +71,53 @@ export default function App() {
         })
         .catch(() => {});
       invoke("check_connectivity_cmd").catch(() => {});
+      invoke("check_permissions_cmd").catch(() => {});
+      invoke<{ supported: boolean; reason?: string }>("get_hotkey_status_cmd")
+        .then((status) => {
+          if (status.supported) {
+            setHotkeyNotice(null);
+          } else {
+            setHotkeyNotice(status.reason ?? "Hotkey unavailable");
+          }
+        })
+        .catch(() => {});
+      listen<{ supported: boolean; reason?: string }>("hotkey_status", (event) => {
+        if (event.payload.supported) {
+          setHotkeyNotice(null);
+        } else {
+          setHotkeyNotice(event.payload.reason ?? "Hotkey unavailable");
+        }
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
+      listen<{ microphone: string; accessibility: string }>("permission_status", (event) => {
+        const { microphone, accessibility } = event.payload;
+        if (microphone === "denied") {
+          setPermissionNotice("Microphone permission denied");
+          return;
+        }
+        if (accessibility === "denied") {
+          setPermissionNotice("Accessibility permission denied");
+          return;
+        }
+        setPermissionNotice(null);
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
+      listen<{ message: string }>("notification", (event) => {
+        setStatusNotice(event.payload.message);
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
+      listen<{ message: string }>("error", (event) => {
+        setStatusNotice(event.payload.message);
+      }).then((stop) => {
+        cleanups.push(stop);
+      });
     });
+    return () => {
+      cleanups.forEach((stop) => stop());
+    };
   }, []);
   return (
     <main className="app">
@@ -93,7 +155,15 @@ export default function App() {
           {showSettings ? "Hide Settings" : "Show Settings"}
         </button>
       </div>
+      {hotkeyNotice && (
+        <p className="hotkey-notice">
+          Hotkey unavailable: {hotkeyNotice}. Use the Start button instead.
+        </p>
+      )}
+      {permissionNotice && <p className="permission-notice">{permissionNotice}</p>}
+      {statusNotice && <p className="status-notice">{statusNotice}</p>}
       <WaveformVisualizer level={audioLevel} />
+      <TranscriptDisplay partialText={partialText} committedText={committedText} />
       {showSettings && (
         <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
           <div className="modal" onClick={(event) => event.stopPropagation()}>

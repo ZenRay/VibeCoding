@@ -12,12 +12,20 @@ pub struct AppConfig {
     pub proxy_url: Option<String>,
 }
 
+pub fn default_hotkey() -> String {
+    if cfg!(target_os = "macos") {
+        "Cmd+Shift+\\".to_string()
+    } else {
+        "Ctrl+Shift+\\".to_string()
+    }
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             api_key: None,
             language: "auto".to_string(),
-            hotkey: "Cmd+Shift+\\".to_string(),
+            hotkey: default_hotkey(),
             proxy_url: None,
         }
     }

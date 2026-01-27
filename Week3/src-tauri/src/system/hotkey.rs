@@ -23,7 +23,11 @@ impl HotkeyConfig {
 impl Default for HotkeyConfig {
     fn default() -> Self {
         Self {
-            value: "Cmd+Shift+\\".to_string(),
+            value: if cfg!(target_os = "macos") {
+                "Cmd+Shift+\\".to_string()
+            } else {
+                "Ctrl+Shift+\\".to_string()
+            },
         }
     }
 }

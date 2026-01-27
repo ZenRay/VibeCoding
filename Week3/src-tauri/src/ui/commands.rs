@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use tokio::time::{sleep, Duration};
@@ -17,6 +18,48 @@ use crate::config::AppConfig;
 use crate::input::injector::TextInjector;
 use crate::network::client::ScribeClient;
 use crate::network::protocol::{ConnectionConfig, ServerMessage};
+use crate::system::permissions::{PermissionManager, PermissionReport, PermissionStatus};
+
+#[derive(serde::Serialize)]
+pub struct HotkeyStatus {
+    pub supported: bool,
+    pub reason: Option<String>,
+}
+
+async fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) {
+    let mut recording = state.is_recording.lock().await;
+    if !*recording {
+        return;
+    }
+    let cancel = state.session_cancel.lock().await.take();
+    if let Some(cancel_tx) = cancel {
+        let _ = cancel_tx.send(true);
+    }
+    let mut capture_guard = state.capture.lock().await;
+    if let Some(mut capture) = capture_guard.take() {
+        capture.stop();
+    }
+    let mut wav_guard = state.wav_writer.lock().await;
+    if let Some(writer) = wav_guard.take() {
+        let _ = writer.finalize();
+    }
+    *recording = false;
+    let _ = app_handle.emit(
+        "recording_state_changed",
+        serde_json::json!({ "is_recording": false }),
+    );
+}
+
+fn classify_scribe_error(message_type: &str) -> (&'static str, &'static str) {
+    match message_type {
+        "scribe_auth_error" => ("auth_error", "API key invalid or unauthorized"),
+        "scribe_quota_exceeded_error" | "scribe_rate_limited_error" => {
+            ("quota_error", "Quota exceeded or rate limited")
+        }
+        "scribe_unaccepted_terms_error" => ("terms_error", "Terms not accepted"),
+        _ => ("scribe_error", "Transcription service error"),
+    }
+}
 
 fn build_connection_config(config: &AppConfig) -> ConnectionConfig {
     ConnectionConfig {
@@ -65,6 +108,20 @@ pub async fn start_transcription(
         return Ok(());
     }
     let config = config_store::load_config(&app_handle);
+    let perms = PermissionManager::new().report();
+    if perms.microphone == PermissionStatus::Denied {
+        let _ = app_handle.emit(
+            "permission_status",
+            serde_json::json!({ "microphone": "denied", "accessibility": "unknown" }),
+        );
+        return Err("Microphone permission denied".to_string());
+    }
+    if perms.accessibility == PermissionStatus::Denied {
+        let _ = app_handle.emit(
+            "permission_status",
+            serde_json::json!({ "microphone": "granted", "accessibility": "denied" }),
+        );
+    }
     let api_key = config
         .api_key
         .clone()
@@ -246,122 +303,193 @@ pub async fn start_transcription(
 
     let mut cancel_rx_ws = cancel_rx.clone();
     let ws_endpoint = ws_config.endpoint.clone();
+    let ws_config = ws_config.clone();
     tokio::spawn(async move {
-        let mut ws_client = ScribeClient::new(ws_config);
-        info!(event = "ws_connect_start");
-        if let Ok(url) = Url::parse(&ws_endpoint) {
-            if let Some(host) = url.host_str() {
-                let port = url.port_or_known_default().unwrap_or(443);
-                match lookup_host((host, port)).await {
-                    Ok(addrs) => {
-                        let resolved: Vec<String> = addrs.map(|addr| addr.to_string()).collect();
-                        info!(event = "ws_dns_resolved", host = host, port = port, addrs = ?resolved);
-                    }
-                    Err(err) => {
-                        warn!(event = "ws_dns_error", host = host, error = %err);
-                    }
-                }
-                match tokio::time::timeout(Duration::from_secs(3), TcpStream::connect((host, port))).await {
-                    Ok(Ok(_)) => {
-                        info!(event = "ws_tcp_connect_ok", host = host, port = port);
-                    }
-                    Ok(Err(err)) => {
-                        warn!(event = "ws_tcp_connect_error", host = host, port = port, error = %err);
-                    }
-                    Err(_) => {
-                        warn!(event = "ws_tcp_connect_timeout", host = host, port = port);
-                    }
-                }
-            }
-        }
-        match tokio::time::timeout(Duration::from_secs(10), ws_client.connect()).await {
-            Ok(Ok(())) => {
-                let _ = app_handle.emit(
-                    "connection_status",
-                    serde_json::json!({ "state": "connected" }),
-                );
-                info!(event = "ws_connected");
-            }
-            Ok(Err(err)) => {
-                warn!(event = "ws_connect_error", error = %err);
-                let _ = app_handle.emit(
-                    "connection_status",
-                    serde_json::json!({ "state": "failed" }),
-                );
-                return;
-            }
-            Err(_) => {
-                warn!(event = "ws_connect_timeout");
-                let _ = app_handle.emit(
-                    "connection_status",
-                    serde_json::json!({ "state": "failed" }),
-                );
-                return;
-            }
-        }
         let mut audio_rx = audio_rx;
+        let mut retries = 0u32;
+        let mut backoff = Duration::from_secs(1);
+        let mut committed_buffer = String::new();
+        let mut last_partial = String::new();
+
         loop {
-            tokio::select! {
-                _ = cancel_rx_ws.changed() => {
-                    if *cancel_rx_ws.borrow() {
-                        break;
-                    }
-                }
-                pcm = audio_rx.recv() => {
-                    if let Some(pcm) = pcm {
-                        if let Err(err) = ws_client.send_audio(&pcm).await {
-                            warn!(event = "ws_send_error", error = %err);
+            if *cancel_rx_ws.borrow() {
+                break;
+            }
+            let mut ws_client = ScribeClient::new(ws_config.clone());
+            info!(event = "ws_connect_start");
+            if let Ok(url) = Url::parse(&ws_endpoint) {
+                if let Some(host) = url.host_str() {
+                    let port = url.port_or_known_default().unwrap_or(443);
+                    match lookup_host((host, port)).await {
+                        Ok(addrs) => {
+                            let resolved: Vec<String> = addrs.map(|addr| addr.to_string()).collect();
+                            info!(event = "ws_dns_resolved", host = host, port = port, addrs = ?resolved);
                         }
-                    } else {
-                        break;
-                    }
-                }
-                message = ws_client.receive() => {
-                    match message {
-                        Ok(message) => match message {
-                            ServerMessage::SessionStarted { session_id } => {
-                                info!(event = "session_started", session_id = session_id);
-                            }
-                            ServerMessage::PartialTranscript { text } => {
-                                let _ = app_handle.emit(
-                                    "partial_transcript",
-                                    serde_json::json!({ "text": text }),
-                                );
-                                info!(event = "partial_transcript", text = text);
-                            }
-                            ServerMessage::CommittedTranscript { text } => {
-                                let _ = app_handle.emit(
-                                    "committed_transcript",
-                                    serde_json::json!({ "text": text }),
-                                );
-                                info!(event = "committed_transcript", text = text);
-                                let app_handle_inject = app_handle.clone();
-                                let text_clone = text.clone();
-                                tokio::task::spawn_blocking(move || {
-                                    let injector = TextInjector::new();
-                                    let _ = injector.inject(&app_handle_inject, &text_clone);
-                                });
-                            }
-                            ServerMessage::Error {
-                                message_type,
-                                message,
-                            } => {
-                                warn!(
-                                    event = "scribe_error",
-                                    message_type = message_type,
-                                    message = message
-                                );
-                            }
-                            ServerMessage::Unknown { message_type, .. } => {
-                                warn!(event = "unknown_message", message_type = message_type);
-                            }
-                        },
                         Err(err) => {
-                            warn!(event = "ws_receive_error", error = %err);
+                            warn!(event = "ws_dns_error", host = host, error = %err);
+                        }
+                    }
+                    match tokio::time::timeout(Duration::from_secs(3), TcpStream::connect((host, port))).await {
+                        Ok(Ok(_)) => {
+                            info!(event = "ws_tcp_connect_ok", host = host, port = port);
+                        }
+                        Ok(Err(err)) => {
+                            warn!(event = "ws_tcp_connect_error", host = host, port = port, error = %err);
+                        }
+                        Err(_) => {
+                            warn!(event = "ws_tcp_connect_timeout", host = host, port = port);
                         }
                     }
                 }
             }
+            let mut connected = false;
+            match tokio::time::timeout(Duration::from_secs(10), ws_client.connect()).await {
+                Ok(Ok(())) => {
+                    retries = 0;
+                    backoff = Duration::from_secs(1);
+                    connected = true;
+                    let _ = app_handle.emit(
+                        "connection_status",
+                        serde_json::json!({ "state": "connected" }),
+                    );
+                    info!(event = "ws_connected");
+                }
+                Ok(Err(err)) => {
+                    warn!(event = "ws_connect_error", error = %err);
+                }
+                Err(_) => {
+                    warn!(event = "ws_connect_timeout");
+                }
+            }
+
+            if !connected {
+                retries += 1;
+                let _ = app_handle.emit(
+                    "connection_status",
+                    serde_json::json!({ "state": "reconnecting", "attempt": retries }),
+                );
+                if retries >= 3 {
+                    let message = "Unable to connect to transcription service";
+                    let _ = app_handle.emit(
+                        "error",
+                        serde_json::json!({ "code": "network_error", "message": message }),
+                    );
+                    if !committed_buffer.is_empty() || !last_partial.is_empty() {
+                        let text = format!("{}{}", committed_buffer, last_partial);
+                        let _ = app_handle.clipboard().write_text(text);
+                        let _ = app_handle.emit(
+                            "notification",
+                            serde_json::json!({ "message": "Network interrupted; transcript copied to clipboard" }),
+                        );
+                    }
+                    if let Some(state) = app_handle.try_state::<AppState>() {
+                        stop_recording_internal(&app_handle, state.inner()).await;
+                    }
+                    break;
+                }
+                sleep(backoff).await;
+                backoff = std::cmp::min(backoff * 2, Duration::from_secs(8));
+                continue;
+            }
+
+            loop {
+                tokio::select! {
+                    _ = cancel_rx_ws.changed() => {
+                        if *cancel_rx_ws.borrow() {
+                            return;
+                        }
+                    }
+                    pcm = audio_rx.recv() => {
+                        if let Some(pcm) = pcm {
+                            if let Err(err) = ws_client.send_audio(&pcm).await {
+                                warn!(event = "ws_send_error", error = %err);
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    message = ws_client.receive() => {
+                        match message {
+                            Ok(message) => match message {
+                                ServerMessage::SessionStarted { .. } => {
+                                    info!(event = "session_started");
+                                }
+                                ServerMessage::PartialTranscript { text } => {
+                                    last_partial = text.clone();
+                                    let _ = app_handle.emit(
+                                        "partial_transcript",
+                                        serde_json::json!({ "text": text }),
+                                    );
+                                    info!(event = "partial_transcript", len = last_partial.len());
+                                }
+                                ServerMessage::CommittedTranscript { text } => {
+                                    if !committed_buffer.is_empty() {
+                                        committed_buffer.push(' ');
+                                    }
+                                    committed_buffer.push_str(&text);
+                                    last_partial.clear();
+                                    let _ = app_handle.emit(
+                                        "committed_transcript",
+                                        serde_json::json!({ "text": text }),
+                                    );
+                                    info!(event = "committed_transcript", len = text.len());
+                                    let app_handle_inject = app_handle.clone();
+                                    let text_clone = text.clone();
+                                    tokio::task::spawn_blocking(move || {
+                                        let injector = TextInjector::new();
+                                        let _ = injector.inject(&app_handle_inject, &text_clone);
+                                    });
+                                }
+                                ServerMessage::Error { message_type, .. } => {
+                                    let (code, message) = classify_scribe_error(&message_type);
+                                    let _ = app_handle.emit(
+                                        "error",
+                                        serde_json::json!({ "code": code, "message": message }),
+                                    );
+                                }
+                                ServerMessage::Unknown { message_type, .. } => {
+                                    warn!(event = "unknown_message", message_type = message_type);
+                                }
+                            },
+                            Err(err) => {
+                                warn!(event = "ws_receive_error", error = %err);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            retries += 1;
+            let _ = app_handle.emit(
+                "connection_status",
+                serde_json::json!({ "state": "reconnecting", "attempt": retries }),
+            );
+            if !committed_buffer.is_empty() || !last_partial.is_empty() {
+                let text = format!("{}{}", committed_buffer, last_partial);
+                let _ = app_handle.clipboard().write_text(text);
+                let _ = app_handle.emit(
+                    "notification",
+                    serde_json::json!({ "message": "Network interrupted; transcript copied to clipboard" }),
+                );
+                committed_buffer.clear();
+                last_partial.clear();
+            }
+            if retries >= 3 {
+                let message = "Unable to reconnect to transcription service";
+                let _ = app_handle.emit(
+                    "error",
+                    serde_json::json!({ "code": "network_error", "message": message }),
+                );
+                if let Some(state) = app_handle.try_state::<AppState>() {
+                    stop_recording_internal(&app_handle, state.inner()).await;
+                }
+                break;
+            }
+            sleep(backoff).await;
+            backoff = std::cmp::min(backoff * 2, Duration::from_secs(8));
+            continue;
         }
         info!(event = "ws_task_exit");
     });
@@ -398,31 +526,52 @@ pub async fn check_connectivity(app_handle: AppHandle) -> Result<(), String> {
     }
 }
 
+pub async fn check_permissions(app_handle: AppHandle) -> Result<PermissionReport, String> {
+    let report = PermissionManager::new().report();
+    let _ = app_handle.emit(
+        "permission_status",
+        serde_json::json!({
+            "microphone": format!("{:?}", report.microphone).to_lowercase(),
+            "accessibility": format!("{:?}", report.accessibility).to_lowercase(),
+        }),
+    );
+    Ok(report)
+}
+
+pub async fn get_hotkey_status(app_handle: AppHandle) -> Result<HotkeyStatus, String> {
+    let is_wayland = std::env::var("XDG_SESSION_TYPE")
+        .map(|value| value.eq_ignore_ascii_case("wayland"))
+        .unwrap_or(false)
+        || std::env::var("WAYLAND_DISPLAY").is_ok();
+    if is_wayland {
+        return Ok(HotkeyStatus {
+            supported: false,
+            reason: Some("Wayland does not support global shortcuts".to_string()),
+        });
+    }
+    let config = config_store::load_config(&app_handle);
+    if config.hotkey.trim().is_empty() {
+        return Ok(HotkeyStatus {
+            supported: false,
+            reason: Some("Hotkey is empty".to_string()),
+        });
+    }
+    Ok(HotkeyStatus {
+        supported: true,
+        reason: None,
+    })
+}
+
 pub async fn stop_transcription(
     app_handle: AppHandle,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut recording = state.is_recording.lock().await;
+    let recording = state.is_recording.lock().await;
     if !*recording {
         return Err("Not recording".to_string());
     }
-    let cancel = state.session_cancel.lock().await.take();
-    if let Some(cancel_tx) = cancel {
-        let _ = cancel_tx.send(true);
-    }
-    let mut capture_guard = state.capture.lock().await;
-    if let Some(mut capture) = capture_guard.take() {
-        capture.stop();
-    }
-    let mut wav_guard = state.wav_writer.lock().await;
-    if let Some(writer) = wav_guard.take() {
-        let _ = writer.finalize();
-    }
-    *recording = false;
-    let _ = app_handle.emit(
-        "recording_state_changed",
-        serde_json::json!({ "is_recording": false }),
-    );
+    drop(recording);
+    stop_recording_internal(&app_handle, state).await;
     Ok(())
 }
 
@@ -470,7 +619,17 @@ pub async fn save_config(
                 let _ = toggle_transcription(app_handle.clone(), state.inner()).await;
             });
         })
-        .map_err(|e| format!("Failed to register hotkey: {e}"))?;
+        .map_err(|e| {
+            let _ = app_handle.emit(
+                "hotkey_status",
+                serde_json::json!({
+                    "supported": false,
+                    "reason": format!("{e}")
+                }),
+            );
+            format!("Failed to register hotkey: {e}")
+        })?;
+    let _ = app_handle.emit("hotkey_status", serde_json::json!({ "supported": true }));
     let mut current = state.config.lock().await;
     *current = config;
     Ok(())

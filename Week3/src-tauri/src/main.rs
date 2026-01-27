@@ -1,11 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State, WindowEvent};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use serde_json::json;
 use tauri_app_lib::config::AppConfig;
 use tauri_app_lib::config::store::load_config;
 use tauri_app_lib::ui::commands::{
     check_connectivity as check_connectivity_impl,
+    check_permissions as check_permissions_impl,
+    get_hotkey_status as get_hotkey_status_impl,
     get_config as get_config_impl,
     save_config as save_config_impl,
     start_transcription as start_transcription_impl,
@@ -13,6 +16,7 @@ use tauri_app_lib::ui::commands::{
     toggle_transcription as toggle_transcription_impl,
     AppState,
 };
+use tauri_app_lib::ui::tray::setup_tray;
 use tauri_app_lib::utils::logger::init_logger;
 
 #[tauri::command]
@@ -53,6 +57,16 @@ async fn check_connectivity_cmd(app_handle: AppHandle) -> Result<(), String> {
     check_connectivity_impl(app_handle).await
 }
 
+#[tauri::command]
+async fn check_permissions_cmd(app_handle: AppHandle) -> Result<tauri_app_lib::system::permissions::PermissionReport, String> {
+    check_permissions_impl(app_handle).await
+}
+
+#[tauri::command]
+async fn get_hotkey_status_cmd(app_handle: AppHandle) -> Result<tauri_app_lib::ui::commands::HotkeyStatus, String> {
+    get_hotkey_status_impl(app_handle).await
+}
+
 fn main() {
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     init_logger();
@@ -63,10 +77,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_global_shortcut::Builder::default().build())
         .setup(|app| {
-            let icon = tauri::image::Image::new(&[0, 0, 0, 0], 1, 1);
-            let _ = tauri::tray::TrayIconBuilder::new()
-                .icon(icon)
-                .build(app);
+            setup_tray(app)?;
             let app_handle = app.handle();
             let config = load_config(&app_handle);
             let shortcut: Shortcut = config
@@ -84,14 +95,37 @@ fn main() {
                     });
                 })
                 .map_err(|err| err.to_string())?;
+            let is_wayland = std::env::var("XDG_SESSION_TYPE")
+                .map(|value| value.eq_ignore_ascii_case("wayland"))
+                .unwrap_or(false)
+                || std::env::var("WAYLAND_DISPLAY").is_ok();
+            if is_wayland {
+                let _ = app.emit(
+                    "hotkey_status",
+                    json!({
+                        "supported": false,
+                        "reason": "Wayland does not support global shortcuts"
+                    }),
+                );
+            } else {
+                let _ = app.emit("hotkey_status", json!({ "supported": true }));
+            }
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             start_transcription,
             stop_transcription,
             get_config_cmd,
             save_config_cmd,
-            check_connectivity_cmd
+            check_connectivity_cmd,
+            check_permissions_cmd,
+            get_hotkey_status_cmd
         ])
         .run(tauri::generate_context!())
     {

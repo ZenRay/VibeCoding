@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "bundle": {
-    "icon": []
+    "icon": ["icons/app.png"]
   },
   "app": {
     "windows": [

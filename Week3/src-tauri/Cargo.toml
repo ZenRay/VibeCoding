@@ -33,6 +33,9 @@ tauri-plugin-global-shortcut = "2"
 active-win-pos-rs = "0.8"
 tokio-socks = "0.5.2"
 rustls = "0.23.36"
+aes-gcm = "0.10"
+rand = "0.8"
+sha2 = "0.10"
 
 [lib]
 name = "tauri_app_lib"

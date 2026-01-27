@@ -11,6 +11,8 @@ interface TranscriptState {
   setIsRecording: (value: boolean) => void;
 }
 
+const normalize = (value: string) => value.trim().replace(/\s+/g, " ");
+
 export const useTranscriptStore = create<TranscriptState>((set) => ({
   audioLevel: 0,
   partialText: "",
@@ -19,6 +21,16 @@ export const useTranscriptStore = create<TranscriptState>((set) => ({
   setAudioLevel: (value) => set({ audioLevel: value }),
   setPartialText: (value) => set({ partialText: value }),
   addCommittedText: (value) =>
-    set((state) => ({ committedText: [...state.committedText, value] })),
+    set((state) => {
+      const next = normalize(value);
+      if (!next) {
+        return state;
+      }
+      const last = state.committedText[state.committedText.length - 1];
+      if (last && normalize(last) === next) {
+        return state;
+      }
+      return { committedText: [...state.committedText, next] };
+    }),
   setIsRecording: (value) => set({ isRecording: value }),
 }));

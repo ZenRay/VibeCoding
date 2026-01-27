@@ -26,6 +26,24 @@ body {
   justify-content: center;
 }
 
+.hotkey-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+.permission-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #f87171;
+}
+
+.status-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #93c5fd;
+}
+
 .controls button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -37,6 +55,7 @@ body {
   border-radius: 8px;
   display: grid;
   gap: 0.25rem;
+  width: min(640px, 90vw);
 }
 
 .overlay-title {
@@ -46,7 +65,9 @@ body {
 .overlay-text {
   font-size: 0.95rem;
   opacity: 0.85;
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .waveform {
@@ -88,10 +109,22 @@ body {
 
 .transcript-line {
   margin: 0.25rem 0;
+  line-height: 1.4rem;
+  min-height: 1.4rem;
+  max-height: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .transcript-partial {
   opacity: 0.7;
+  line-height: 1.4rem;
+  min-height: 1.4rem;
+  max-height: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .settings {

@@ -29,6 +29,9 @@ impl TextInjector {
                 "display not available for injection".to_string(),
             ));
         }
+        if is_wayland() {
+            return self.clipboard.inject_text(app_handle, text);
+        }
         if let Some(reason) = should_block_injection() {
             return Err(InputError::InjectionBlocked(reason));
         }
@@ -42,6 +45,13 @@ impl TextInjector {
 
 fn has_display() -> bool {
     std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok()
+}
+
+fn is_wayland() -> bool {
+    std::env::var("XDG_SESSION_TYPE")
+        .map(|value| value.eq_ignore_ascii_case("wayland"))
+        .unwrap_or(false)
+        || std::env::var("WAYLAND_DISPLAY").is_ok()
 }
 
 fn should_block_injection() -> Option<String> {
