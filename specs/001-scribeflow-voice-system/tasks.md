@@ -107,7 +107,7 @@
 
 **Purpose**: 实现前后端通信接口,完成核心转写流程 (User Story 1 完整实现)
 
-- [ ] T005 实现 Tauri Commands 和端到端转写流程
+- [X] T005 实现 Tauri Commands 和端到端转写流程
   - **Tauri Commands** (`src-tauri/src/ui/commands.rs`):
     - `start_transcription()`: 启动音频采集 + WebSocket 连接
     - `stop_transcription()`: 停止采集
@@ -136,7 +136,7 @@
 
 **Purpose**: 实现悬浮窗实时反馈、系统托盘和设置面板
 
-- [ ] T006 实现前端 UI 组件和系统托盘
+- [X] T006 实现前端 UI 组件和系统托盘
   - **悬浮窗组件** (`src/components/OverlayWindow.tsx`):
     - 固定位置在主显示器屏幕中央
     - 半透明背景 (CSS: `background: rgba(0,0,0,0.8)`)
@@ -166,7 +166,7 @@
 
 **Purpose**: 实现网络异常处理、结构化日志和性能优化
 
-- [ ] T007 实现错误处理、日志系统和最终优化
+- [X] T007 实现错误处理、日志系统和最终优化
   - **网络错误处理**:
     - 连接失败 → 显示错误通知 (Toast)
     - 连接中断 → 剪贴板回退 + 自动重连 (最多 3 次)

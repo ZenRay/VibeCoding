@@ -1,6 +1,6 @@
 # VibeCoding Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-01-24
+Auto-generated from all feature plans. Last updated: 2026-01-25
 
 **Repository Root**: `~/Documents/VibeCoding`
 **Current Branch**: `001-scribeflow-voice-system`
@@ -35,11 +35,12 @@ This repository contains multiple projects organized by week:
 
 **Project Root**: `~/Documents/VibeCoding/Week3`
 **Feature Branch**: `001-scribeflow-voice-system`
+**Status**: ✅ **v0.1.0 Complete (100%) - Ready for Release**
 **Description**: 基于 Tauri v2 和 ElevenLabs Scribe v2 API 的桌面实时语音听写工具
 
 ### Active Technologies
 
-**Backend (Rust 2024 edition)**:
+**Backend (Rust 2021 edition)**:
 - Tauri v2.9 (桌面应用框架)
 - cpal 0.16 (音频采集)
 - rubato 0.16.2 (音频重采样)
@@ -59,10 +60,12 @@ This repository contains multiple projects organized by week:
 
 ### Key Documents
 
+- **🔥 Current Status**: `specs/001-scribeflow-voice-system/CURRENT_STATUS.md` ← **Start here!**
 - **Constitution**: `Week3/.specify/memory/constitution.md`
 - **Specification**: `specs/001-scribeflow-voice-system/spec.md`
 - **Design**: `specs/001-scribeflow-voice-system/design.md`
 - **Implementation Plan**: `specs/001-scribeflow-voice-system/plan.md`
+- **Tasks**: `specs/001-scribeflow-voice-system/tasks.md`
 - **Research**: `specs/001-scribeflow-voice-system/research.md`
 - **Data Model**: `specs/001-scribeflow-voice-system/data-model.md`
 - **QuickStart**: `specs/001-scribeflow-voice-system/quickstart.md`
@@ -118,13 +121,14 @@ cd ~/Documents/VibeCoding/Week1/env
 
 ## Code Style
 
-### Rust 2024 Edition (Week3)
+### Rust 2021 Edition (Week3)
 
 - **Never** use `unsafe` code
-- **Never** use `.unwrap()` or `.expect()` - properly handle or propagate errors
+- **Never** use `.unwrap()` or `.expect()` - properly handle or propagate errors (except in Default impl)
 - Prefer `mpsc` channels over shared memory
 - Use `ArcSwap` for rarely-modified data, `DashMap` for concurrent HashMap
 - Use Rust's native `async trait` support (not `async_trait` crate)
+- **Note**: Using Rust 2021 (not 2024) - Rust 2024 requires Rust 1.85+
 
 ### TypeScript (All Projects)
 
@@ -137,7 +141,13 @@ cd ~/Documents/VibeCoding/Week1/env
 
 ## Recent Changes
 
-- **2026-01-24**: 001-scribeflow-voice-system - Added Rust 2024 + TypeScript 5.3, Linux platform support
+- **2026-01-25**: 🎉 001-scribeflow-voice-system **v0.1.0 COMPLETE** - All 7 phases done (5,520 LOC, 62 tests)
+  - Phase 6: Frontend UI (悬浮窗, 波形, Toast, 设置面板) - 850 LOC
+  - Phase 7: Error Handling & Logging (日志轮转, 完整文档) - 200 LOC
+  - **Status**: Production build ready, recommended to complete plugin integration before public release
+- **2026-01-25**: 001-scribeflow-voice-system Phase 5 完成 - Tauri Commands & Integration (5 commands, Event system, 650 LOC)
+- **2026-01-25**: 001-scribeflow-voice-system Phase 2-4 完成 - 音频系统 + WebSocket 客户端 + 文本注入 (3,320 LOC, 62 tests)
+- **2026-01-24**: 001-scribeflow-voice-system Phase 1 - 项目初始化 (Rust 2021 + TypeScript 5.3, Linux platform support)
 - **2026-01-20**: Week2 - Database query tool features (MySQL support, export)
 - **2026-01-18**: Week1 - Ticket management system
 
