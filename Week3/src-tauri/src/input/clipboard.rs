@@ -1,5 +1,7 @@
 use std::thread::sleep;
 use std::time::Duration;
+use std::io::Write;
+use std::process::{Command, Stdio};
 
 use enigo::{Direction, Enigo, Key, Keyboard, Settings};
 use tauri::{AppHandle, Emitter};
@@ -20,9 +22,11 @@ impl ClipboardInjector {
         }
         let clipboard = app_handle.clipboard();
         if is_wayland() {
-            clipboard
-                .write_text(text.to_string())
-                .map_err(|e| InputError::ClipboardWriteFailed(e.to_string()))?;
+            if !try_wl_copy(text) {
+                return Err(InputError::ClipboardWriteFailed(
+                    "Wayland clipboard copy failed (wl-copy unavailable or failed)".to_string(),
+                ));
+            }
             let _ = app_handle.emit(
                 "notification",
                 serde_json::json!({
@@ -60,6 +64,22 @@ fn paste_with_enigo(enigo: &mut Enigo) {
         let _ = enigo.key(Key::Unicode('v'), Direction::Click);
         let _ = enigo.key(Key::Control, Direction::Release);
     }
+}
+
+fn try_wl_copy(text: &str) -> bool {
+    let mut child = match Command::new("wl-copy")
+        .stdin(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(_) => return false,
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        if stdin.write_all(text.as_bytes()).is_err() {
+            return false;
+        }
+    }
+    child.wait().is_ok()
 }
 
 fn is_wayland() -> bool {

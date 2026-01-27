@@ -5,6 +5,7 @@ use tauri::tray::TrayIconBuilder;
 const MENU_SETTINGS_ID: &str = "tray_settings";
 const MENU_ABOUT_ID: &str = "tray_about";
 const MENU_TOGGLE_ID: &str = "tray_toggle";
+const MENU_COPY_ID: &str = "tray_copy";
 const MENU_QUIT_ID: &str = "tray_quit";
 
 pub fn setup_tray(app: &tauri::App) -> Result<(), String> {
@@ -14,10 +15,12 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let toggle = MenuItem::with_id(app, MENU_TOGGLE_ID, "Start", true, None::<&str>)
         .map_err(|e| e.to_string())?;
+    let copy = MenuItem::with_id(app, MENU_COPY_ID, "Copy Last Transcript", true, None::<&str>)
+        .map_err(|e| e.to_string())?;
     let quit = MenuItem::with_id(app, MENU_QUIT_ID, "Quit", true, None::<&str>)
         .map_err(|e| e.to_string())?;
     let separator = PredefinedMenuItem::separator(app).map_err(|e| e.to_string())?;
-    let menu = Menu::with_items(app, &[&toggle, &settings, &about, &separator, &quit])
+    let menu = Menu::with_items(app, &[&toggle, &copy, &settings, &about, &separator, &quit])
         .map_err(|e| e.to_string())?;
 
     let icon = app
@@ -42,6 +45,13 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), String> {
                         let _ = toggle.set_text(label);
                     });
                 }
+                MENU_COPY_ID => {
+                    let handle = handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let state = handle.state::<crate::ui::commands::AppState>();
+                        let _ = crate::ui::commands::copy_last_transcript(&handle, state.inner()).await;
+                    });
+                }
                 MENU_SETTINGS_ID => {
                     let _ = handle.emit("open_settings", serde_json::json!({}));
                     if let Some(window) = handle.get_webview_window("main") {
@@ -51,6 +61,10 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), String> {
                 }
                 MENU_ABOUT_ID => {
                     let _ = handle.emit("open_about", serde_json::json!({}));
+                    if let Some(window) = handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
                 }
                 MENU_QUIT_ID => {
                     handle.exit(0);

@@ -17,6 +17,7 @@ export default function App() {
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [settings, setSettings] = useState<SettingsValue>({
     apiKey: "",
     language: "auto",
@@ -68,7 +69,7 @@ export default function App() {
         .then((stop) => cleanups.push(stop))
         .catch(() => {});
       listen("open_about", () => {
-        alert("ScribeFlow v0.1.0");
+        setShowAbout(true);
       })
         .then((stop) => cleanups.push(stop))
         .catch(() => {});
@@ -188,6 +189,20 @@ export default function App() {
         >
           {isRecording ? "Stop" : isStarting ? "Starting..." : "Start"}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!isTauriEnv) {
+              return;
+            }
+            invoke("copy_last_transcript_cmd").catch((error) => {
+              setStatusNotice(String(error));
+            });
+          }}
+          disabled={!isTauriEnv}
+        >
+          Copy
+        </button>
         <button type="button" onClick={() => setShowSettings((v) => !v)}>
           {showSettings ? "Hide Settings" : "Show Settings"}
         </button>
@@ -224,6 +239,20 @@ export default function App() {
                 setShowSettings(false);
               }}
             />
+          </div>
+        </div>
+      )}
+      {showAbout && (
+        <div className="modal-backdrop" onClick={() => setShowAbout(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <section className="about">
+              <h2>About</h2>
+              <p>ScribeFlow v0.1.0</p>
+              <p>Real-time dictation with ElevenLabs Scribe v2.</p>
+              <button type="button" onClick={() => setShowAbout(false)}>
+                Close
+              </button>
+            </section>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ use tokio::net::{lookup_host, TcpStream};
 use url::Url;
 use std::time::Instant;
 use tokio::sync::Mutex;
+use std::process::{Command, Stdio};
 
 use crate::audio::buffer::AudioBuffer;
 use crate::audio::capture::{AudioCapture, CaptureError};
@@ -85,6 +86,7 @@ pub struct AppState {
     capture: Mutex<Option<AudioCapture>>,
     wav_writer: Mutex<Option<hound::WavWriter<BufWriter<File>>>>,
     session_cancel: Mutex<Option<tokio::sync::watch::Sender<bool>>>,
+    last_transcript: Mutex<Option<String>>,
 }
 
 impl AppState {
@@ -95,6 +97,7 @@ impl AppState {
             capture: Mutex::new(None),
             wav_writer: Mutex::new(None),
             session_cancel: Mutex::new(None),
+            last_transcript: Mutex::new(None),
         }
     }
 
@@ -439,6 +442,10 @@ pub async fn start_transcription(
                                         serde_json::json!({ "text": text }),
                                     );
                                     info!(event = "committed_transcript", len = text.len());
+                                    if let Some(state) = app_handle.try_state::<AppState>() {
+                                        let mut last = state.last_transcript.lock().await;
+                                        *last = Some(text.clone());
+                                    }
                                     let app_handle_inject = app_handle.clone();
                                     let text_clone = text.clone();
                                     tokio::task::spawn_blocking(move || {
@@ -646,6 +653,52 @@ pub async fn save_config(
     let mut current = state.config.lock().await;
     *current = config;
     Ok(())
+}
+
+pub async fn copy_last_transcript(
+    app_handle: &AppHandle,
+    state: &AppState,
+) -> Result<(), String> {
+    let text = {
+        let guard = state.last_transcript.lock().await;
+        guard.clone().unwrap_or_default()
+    };
+    if text.trim().is_empty() {
+        return Err("No transcript to copy".to_string());
+    }
+    if try_wl_copy(&text) {
+        return Ok(());
+    }
+    if is_wayland() {
+        return Err("Wayland clipboard copy failed (wl-copy unavailable or failed)".to_string());
+    }
+    match app_handle.clipboard().write_text(text.clone()) {
+        Ok(()) => Ok(()),
+        Err(err) => Err(format!("Clipboard write error: {err}")),
+    }
+}
+
+fn try_wl_copy(text: &str) -> bool {
+    let mut child = match Command::new("wl-copy")
+        .stdin(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(_) => return false,
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        if stdin.write_all(text.as_bytes()).is_err() {
+            return false;
+        }
+    }
+    child.wait().is_ok()
+}
+
+fn is_wayland() -> bool {
+    std::env::var("XDG_SESSION_TYPE")
+        .map(|value| value.eq_ignore_ascii_case("wayland"))
+        .unwrap_or(false)
+        || std::env::var("WAYLAND_DISPLAY").is_ok()
 }
 
 #[cfg(test)]
