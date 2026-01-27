@@ -1,0 +1,32 @@
+[package]
+name = "scribeflow"
+version = "0.1.0"
+description = "ScribeFlow - 桌面实时语音听写系统"
+authors = ["ScribeFlow Team"]
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.9", features = ["tray-icon"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+base64 = "0.22"
+cpal = "0.16"
+crossbeam = "0.8"
+futures-util = "0.3"
+rubato = "0.16.2"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-native-roots"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2"
+enigo = "0.6.1"
+hound = "3.5"
+
+[lib]
+name = "tauri_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
