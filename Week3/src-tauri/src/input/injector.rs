@@ -1,5 +1,5 @@
-use active_win_pos_rs::get_active_window;
-use tauri::AppHandle;
+use active_win_pos_rs::{get_active_window, ActiveWindow};
+use tauri::{AppHandle, Emitter};
 
 use crate::input::clipboard::ClipboardInjector;
 use crate::input::error::InputError;
@@ -32,8 +32,17 @@ impl TextInjector {
         if is_wayland() {
             return self.clipboard.inject_text(app_handle, text);
         }
-        if let Some(reason) = should_block_injection() {
-            return Err(InputError::InjectionBlocked(reason));
+        if let Ok(window) = get_active_window() {
+            if let Some(reason) = should_block_injection(&window) {
+                return Err(InputError::InjectionBlocked(reason));
+            }
+        } else {
+            let _ = app_handle.emit(
+                "notification",
+                serde_json::json!({
+                    "message": "Active window not detected; inserting into current focus"
+                }),
+            );
         }
         if text.chars().count() >= CLIPBOARD_THRESHOLD {
             self.clipboard.inject_text(app_handle, text)
@@ -54,8 +63,7 @@ fn is_wayland() -> bool {
         || std::env::var("WAYLAND_DISPLAY").is_ok()
 }
 
-fn should_block_injection() -> Option<String> {
-    let window = get_active_window().ok()?;
+fn should_block_injection(window: &ActiveWindow) -> Option<String> {
     let title = window.title.to_lowercase();
     let app = window.app_name.to_lowercase();
     let sensitive_keywords = [

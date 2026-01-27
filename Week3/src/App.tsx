@@ -16,6 +16,7 @@ export default function App() {
   const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [overlayVisible, setOverlayVisible] = useState(false);
   const [settings, setSettings] = useState<SettingsValue>({
     apiKey: "",
     language: "auto",
@@ -36,6 +37,21 @@ export default function App() {
     [setRecording]
   );
   useTauriEvents(handleRecording);
+
+  useEffect(() => {
+    if (isRecording) {
+      setOverlayVisible(true);
+      return;
+    }
+    if (!latestCommitted && !partialText) {
+      setOverlayVisible(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setOverlayVisible(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isRecording, latestCommitted, partialText]);
 
   useEffect(() => {
     const result = isTauriApi();
@@ -144,7 +160,7 @@ export default function App() {
     <main className="app">
       <h1>ScribeFlow</h1>
       <div className="overlay-slot">
-        <OverlayWindow isRecording={isRecording} transcriptLine={overlayText} />
+        <OverlayWindow isRecording={overlayVisible} transcriptLine={overlayText} />
       </div>
       <div className="controls">
         <button

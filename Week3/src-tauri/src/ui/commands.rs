@@ -97,6 +97,11 @@ impl AppState {
             session_cancel: Mutex::new(None),
         }
     }
+
+    pub async fn is_recording(&self) -> bool {
+        let guard = self.is_recording.lock().await;
+        *guard
+    }
 }
 
 pub async fn start_transcription(
@@ -423,7 +428,7 @@ pub async fn start_transcription(
                                     );
                                     info!(event = "partial_transcript", len = last_partial.len());
                                 }
-                                ServerMessage::CommittedTranscript { text } => {
+                            ServerMessage::CommittedTranscript { text } => {
                                     if !committed_buffer.is_empty() {
                                         committed_buffer.push(' ');
                                     }
@@ -438,7 +443,15 @@ pub async fn start_transcription(
                                     let text_clone = text.clone();
                                     tokio::task::spawn_blocking(move || {
                                         let injector = TextInjector::new();
-                                        let _ = injector.inject(&app_handle_inject, &text_clone);
+                                        if let Err(err) = injector.inject(&app_handle_inject, &text_clone) {
+                                            let _ = app_handle_inject.emit(
+                                                "error",
+                                                serde_json::json!({
+                                                    "code": "injection_blocked",
+                                                    "message": format!("Text injection blocked: {err}")
+                                                }),
+                                            );
+                                        }
                                     });
                                 }
                                 ServerMessage::Error { message_type, .. } => {

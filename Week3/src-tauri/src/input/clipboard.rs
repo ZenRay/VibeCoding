@@ -2,7 +2,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use enigo::{Direction, Enigo, Key, Keyboard, Settings};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::input::error::InputError;
@@ -19,6 +19,18 @@ impl ClipboardInjector {
             return Err(InputError::EmptyText);
         }
         let clipboard = app_handle.clipboard();
+        if is_wayland() {
+            clipboard
+                .write_text(text.to_string())
+                .map_err(|e| InputError::ClipboardWriteFailed(e.to_string()))?;
+            let _ = app_handle.emit(
+                "notification",
+                serde_json::json!({
+                    "message": "Text copied to clipboard. Paste manually (Ctrl+V). Clipboard not restored on Wayland."
+                }),
+            );
+            return Ok(());
+        }
         let previous = clipboard
             .read_text()
             .map_err(|e| InputError::ClipboardReadFailed(e.to_string()))?;
@@ -48,4 +60,11 @@ fn paste_with_enigo(enigo: &mut Enigo) {
         let _ = enigo.key(Key::Unicode('v'), Direction::Click);
         let _ = enigo.key(Key::Control, Direction::Release);
     }
+}
+
+fn is_wayland() -> bool {
+    std::env::var("XDG_SESSION_TYPE")
+        .map(|value| value.eq_ignore_ascii_case("wayland"))
+        .unwrap_or(false)
+        || std::env::var("WAYLAND_DISPLAY").is_ok()
 }
