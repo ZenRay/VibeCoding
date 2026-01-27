@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub api_key: Option<String>,
     pub language: String,
     pub hotkey: String,
+    pub proxy_url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -17,6 +18,7 @@ impl Default for AppConfig {
             api_key: None,
             language: "auto".to_string(),
             hotkey: "Cmd+Shift+\\".to_string(),
+            proxy_url: None,
         }
     }
 }

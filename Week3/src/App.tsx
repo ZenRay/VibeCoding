@@ -14,6 +14,7 @@ export default function App() {
     apiKey: "",
     language: "auto",
     hotkey: "Cmd+Shift+\\",
+    proxyUrl: "",
   });
   const isRecording = useTranscriptStore((state) => state.isRecording);
   const audioLevel = useTranscriptStore((state) => state.audioLevel);
@@ -42,15 +43,18 @@ export default function App() {
         api_key: string | null;
         language: string;
         hotkey: string;
+        proxy_url: string | null;
       }>("get_config_cmd")
         .then((config) => {
           setSettings({
             apiKey: config.api_key ?? "",
             language: config.language,
             hotkey: config.hotkey,
+            proxyUrl: config.proxy_url ?? "",
           });
         })
         .catch(() => {});
+      invoke("check_connectivity_cmd").catch(() => {});
     });
   }, []);
   return (
@@ -103,6 +107,7 @@ export default function App() {
                       api_key: value.apiKey || null,
                       language: value.language,
                       hotkey: value.hotkey,
+                      proxy_url: value.proxyUrl || null,
                     },
                   }).catch(() => {});
                 }

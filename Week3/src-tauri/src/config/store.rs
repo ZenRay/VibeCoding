@@ -31,7 +31,8 @@ pub fn save_config(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
         serde_json::json!({
             "api_key": null,
             "language": config.language.clone(),
-            "hotkey": config.hotkey.clone()
+            "hotkey": config.hotkey.clone(),
+            "proxy_url": config.proxy_url.clone()
         }),
     );
     store

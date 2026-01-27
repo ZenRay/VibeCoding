@@ -49,15 +49,28 @@ impl ScribeClient {
             HeaderValue::from_str(&self.config.api_key)
                 .map_err(|e| ClientError::ConnectionFailed(e.to_string()))?,
         );
-        if let Some(proxy_url) = proxy_from_env() {
+        if let Some(proxy_url) = self.config.proxy_url.as_ref().and_then(|value| Url::parse(value).ok()) {
             return self.connect_via_proxy(request, proxy_url).await;
         }
-        let (stream, _response) =
-            connect_async(request)
-                .await
-                .map_err(|e| ClientError::ConnectionFailed(e.to_string()))?;
-        self.stream = Some(stream);
-        Ok(())
+        let request_for_direct = request.clone();
+        match tokio::time::timeout(std::time::Duration::from_secs(6), connect_async(request_for_direct)).await {
+            Ok(Ok((stream, _response))) => {
+                self.stream = Some(stream);
+                return Ok(());
+            }
+            Ok(Err(err)) => {
+                if let Some(proxy_url) = proxy_from_env() {
+                    return self.connect_via_proxy(request, proxy_url).await;
+                }
+                return Err(ClientError::ConnectionFailed(err.to_string()));
+            }
+            Err(_) => {
+                if let Some(proxy_url) = proxy_from_env() {
+                    return self.connect_via_proxy(request, proxy_url).await;
+                }
+                return Err(ClientError::ConnectionFailed("Direct connect timeout".to_string()));
+            }
+        }
     }
 
     pub async fn send_audio(&mut self, samples: &[i16]) -> Result<(), ClientError> {

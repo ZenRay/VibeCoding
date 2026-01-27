@@ -18,6 +18,23 @@ use crate::input::injector::TextInjector;
 use crate::network::client::ScribeClient;
 use crate::network::protocol::{ConnectionConfig, ServerMessage};
 
+fn build_connection_config(config: &AppConfig) -> ConnectionConfig {
+    ConnectionConfig {
+        endpoint: "wss://api.elevenlabs.io/v1/speech-to-text/realtime".to_string(),
+        api_key: config.api_key.clone().unwrap_or_default(),
+        model_id: "scribe_v2_realtime".to_string(),
+        audio_format: "pcm_16000".to_string(),
+        sample_rate: 16_000,
+        commit_strategy: "vad".to_string(),
+        language_code: if config.language == "auto" {
+            None
+        } else {
+            Some(config.language.clone())
+        },
+        proxy_url: config.proxy_url.clone().filter(|value| !value.trim().is_empty()),
+    }
+}
+
 #[derive(Default)]
 pub struct AppState {
     is_recording: Mutex<bool>,
@@ -88,18 +105,10 @@ pub async fn start_transcription(
     })
     .map_err(|e| format!("{e}"))?;
 
+    let ws_config = build_connection_config(&config);
     let ws_config = ConnectionConfig {
-        endpoint: "wss://api.elevenlabs.io/v1/speech-to-text/realtime".to_string(),
         api_key,
-        model_id: "scribe_v2_realtime".to_string(),
-        audio_format: "pcm_16000".to_string(),
-        sample_rate: 16_000,
-        commit_strategy: "vad".to_string(),
-        language_code: if config.language == "auto" {
-            None
-        } else {
-            Some(config.language.clone())
-        },
+        ..ws_config
     };
     let _ = app_handle.emit(
         "connection_status",
@@ -357,6 +366,36 @@ pub async fn start_transcription(
         info!(event = "ws_task_exit");
     });
     Ok(())
+}
+
+pub async fn check_connectivity(app_handle: AppHandle) -> Result<(), String> {
+    let config = config_store::load_config(&app_handle);
+    if config.api_key.as_deref().unwrap_or("").is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let _ = app_handle.emit(
+        "connection_status",
+        serde_json::json!({ "state": "checking" }),
+    );
+    let ws_config = build_connection_config(&config);
+    let mut ws_client = ScribeClient::new(ws_config);
+    match ws_client.connect().await {
+        Ok(()) => {
+            let _ = app_handle.emit(
+                "connection_status",
+                serde_json::json!({ "state": "reachable" }),
+            );
+            Ok(())
+        }
+        Err(err) => {
+            warn!(event = "ws_connect_error", error = %err);
+            let _ = app_handle.emit(
+                "connection_status",
+                serde_json::json!({ "state": "failed" }),
+            );
+            Err(err.to_string())
+        }
+    }
 }
 
 pub async fn stop_transcription(

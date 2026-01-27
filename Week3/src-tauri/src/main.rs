@@ -5,6 +5,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 use tauri_app_lib::config::AppConfig;
 use tauri_app_lib::config::store::load_config;
 use tauri_app_lib::ui::commands::{
+    check_connectivity as check_connectivity_impl,
     get_config as get_config_impl,
     save_config as save_config_impl,
     start_transcription as start_transcription_impl,
@@ -47,6 +48,11 @@ async fn save_config_cmd(
     save_config_impl(&app_handle, state.inner(), config).await
 }
 
+#[tauri::command]
+async fn check_connectivity_cmd(app_handle: AppHandle) -> Result<(), String> {
+    check_connectivity_impl(app_handle).await
+}
+
 fn main() {
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     init_logger();
@@ -84,7 +90,8 @@ fn main() {
             start_transcription,
             stop_transcription,
             get_config_cmd,
-            save_config_cmd
+            save_config_cmd,
+            check_connectivity_cmd
         ])
         .run(tauri::generate_context!())
     {

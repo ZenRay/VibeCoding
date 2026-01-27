@@ -19,6 +19,7 @@ pub struct ConnectionConfig {
     pub sample_rate: u32,
     pub commit_strategy: String,
     pub language_code: Option<String>,
+    pub proxy_url: Option<String>,
 }
 
 impl ConnectionConfig {
@@ -153,6 +154,7 @@ mod tests {
             sample_rate: 16_000,
             commit_strategy: "vad".to_string(),
             language_code: None,
+            proxy_url: None,
         };
         let url = config.build_url();
         assert!(url.contains("model_id=scribe"));

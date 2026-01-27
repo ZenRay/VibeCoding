@@ -4,6 +4,7 @@ export interface SettingsValue {
   apiKey: string;
   language: string;
   hotkey: string;
+  proxyUrl: string;
 }
 
 interface SettingsPanelProps {
@@ -15,6 +16,7 @@ export function SettingsPanel({ value, onSave }: SettingsPanelProps) {
   const [apiKey, setApiKey] = useState(value.apiKey);
   const [language, setLanguage] = useState(value.language);
   const [hotkey, setHotkey] = useState(value.hotkey);
+  const [proxyUrl, setProxyUrl] = useState(value.proxyUrl);
 
   return (
     <section className="settings">
@@ -42,9 +44,17 @@ export function SettingsPanel({ value, onSave }: SettingsPanelProps) {
           onChange={(event) => setHotkey(event.target.value)}
         />
       </label>
+      <label>
+        Proxy (optional)
+        <input
+          value={proxyUrl}
+          onChange={(event) => setProxyUrl(event.target.value)}
+          placeholder="socks5://127.0.0.1:7890"
+        />
+      </label>
       <button
         type="button"
-        onClick={() => onSave({ apiKey, language, hotkey })}
+        onClick={() => onSave({ apiKey, language, hotkey, proxyUrl })}
       >
         Save
       </button>

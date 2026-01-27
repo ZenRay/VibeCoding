@@ -12,6 +12,7 @@ fn audio_resample_and_protocol_roundtrip() {
         sample_rate: 16_000,
         commit_strategy: "vad".to_string(),
         language_code: None,
+        proxy_url: None,
     };
     let url = config.build_url();
     assert!(url.contains("model_id=scribe_v2_realtime"));
