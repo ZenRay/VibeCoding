@@ -146,10 +146,6 @@ cd ~/Documents/VibeCoding/Week1/env
   - Phase 7: Error Handling & Logging (日志轮转, 完整文档) - 200 LOC
   - **Status**: Production build ready, recommended to complete plugin integration before public release
 - **2026-01-25**: 001-scribeflow-voice-system Phase 5 完成 - Tauri Commands & Integration (5 commands, Event system, 650 LOC)
-- **2026-01-25**: 001-scribeflow-voice-system Phase 2-4 完成 - 音频系统 + WebSocket 客户端 + 文本注入 (3,320 LOC, 62 tests)
-- **2026-01-24**: 001-scribeflow-voice-system Phase 1 - 项目初始化 (Rust 2021 + TypeScript 5.3, Linux platform support)
-- **2026-01-20**: Week2 - Database query tool features (MySQL support, export)
-- **2026-01-18**: Week1 - Ticket management system
 
 ---
 
