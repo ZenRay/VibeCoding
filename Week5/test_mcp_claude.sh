@@ -7,13 +7,20 @@ echo "🚀 启动 MCP 集成测试 (Claude CLI)"
 echo "=================================="
 echo ""
 
+# ⚠️ 重要：清除代理设置（阿里百炼不需要代理）
+unset HTTP_PROXY
+unset HTTPS_PROXY
+unset http_proxy
+unset https_proxy
+unset ALL_PROXY
+unset all_proxy
+
+echo "✅ 已清除代理设置"
+
 # 设置环境变量
 export TEST_DB_PASSWORD="testpass123"
 
-# 注意：阿里百炼是国内服务，不需要代理
-# 如果需要代理访问其他服务，可以取消注释：
-# export HTTP_PROXY="http://127.0.0.1:7890"
-# export HTTPS_PROXY="http://127.0.0.1:7890"
+echo "✅ 环境变量已设置"
 
 # 检查数据库
 echo "📊 检查测试数据库..."
