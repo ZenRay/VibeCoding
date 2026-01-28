@@ -17,6 +17,9 @@ htmlcov/
 *.log
 logs/
 
+# Configuration files (contain sensitive info)
+config/config.yaml
+
 .DS_Store
 Thumbs.db
 *.swp

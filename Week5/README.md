@@ -46,13 +46,15 @@ uv pip install -e .
 
 ### Configuration
 
-1. Create configuration file:
+1. **Create configuration file** (required, contains sensitive info):
 
 ```bash
 cp config/config.example.yaml config/config.yaml
 ```
 
-2. Edit `config/config.yaml` with your database credentials:
+⚠️ **Important**: `config.yaml` is in `.gitignore` and contains sensitive information (API keys, database passwords). Never commit it to version control!
+
+2. **Edit `config/config.yaml`** with your settings:
 
 ```yaml
 databases:
@@ -61,19 +63,29 @@ databases:
     port: 5432
     database: mydb
     user: postgres
-    password_env_var: DB_PASSWORD
+    password_env_var: DB_PASSWORD  # Password from environment
     min_pool_size: 2
     max_pool_size: 10
 
 openai:
-  api_key_env_var: OPENAI_API_KEY
-  model: gpt-4o-mini
+  api_key_env_var: OPENAI_API_KEY  # API key from environment
+  
+  # Choose your AI service (uncomment one):
+  
+  # OpenAI (default)
+  model: gpt-4o-mini-2024-07-18
+  base_url: null
+  
+  # Alibaba DashScope (Qwen)
+  # model: qwen-turbo
+  # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  
   temperature: 0.0
   max_tokens: 2000
   timeout: 30.0
 ```
 
-3. Set environment variables:
+3. **Set environment variables**:
 
 ```bash
 export DB_PASSWORD="your_database_password"
