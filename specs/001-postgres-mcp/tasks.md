@@ -141,12 +141,12 @@
 
 ### MCP 接口（US1, US3, US4 工具暴露）
 
-- [ ] T046 [P] 实现 FastMCP 服务器入口（src/postgres_mcp/server.py - lifespan 管理, 共享上下文）
-- [ ] T047 [P] 实现 MCP 工具 generate_sql（src/postgres_mcp/mcp/tools.py - 输入验证, 错误处理）
-- [ ] T048 [P] 实现 MCP 工具 list_databases（src/postgres_mcp/mcp/tools.py）
-- [ ] T049 [P] 实现 MCP 工具 refresh_schema（src/postgres_mcp/mcp/tools.py）
-- [ ] T050 [P] 实现 MCP 资源 schema://{database}（src/postgres_mcp/mcp/resources.py - 动态 URI）
-- [ ] T051 [P] 实现 MCP 资源 schema://{database}/{table}（src/postgres_mcp/mcp/resources.py）
+- [x] T046 [P] 实现 FastMCP 服务器入口（src/postgres_mcp/server.py - lifespan 管理, 共享上下文）
+- [x] T047 [P] 实现 MCP 工具 generate_sql（src/postgres_mcp/mcp/tools.py - 输入验证, 错误处理）
+- [x] T048 [P] 实现 MCP 工具 list_databases（src/postgres_mcp/mcp/tools.py）
+- [x] T049 [P] 实现 MCP 工具 refresh_schema（src/postgres_mcp/mcp/tools.py）
+- [x] T050 [P] 实现 MCP 资源 schema://{database}（src/postgres_mcp/mcp/resources.py - 动态 URI）
+- [x] T051 [P] 实现 MCP 资源 schema://{database}/{table}（src/postgres_mcp/mcp/resources.py）
 - [ ] T052 集成测试 MCP 工具（tests/integration/test_mcp_tools.py - 完整工具调用流程）
 
 **Checkpoint Phase 3**: 核心功能完成 - 可生成 SQL, 缓存 schema, 验证安全性

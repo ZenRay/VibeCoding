@@ -1,0 +1,6 @@
+"""Main entry point for postgres-mcp package."""
+
+from postgres_mcp.server import run
+
+if __name__ == "__main__":
+    run()
