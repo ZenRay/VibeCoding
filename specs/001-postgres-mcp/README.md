@@ -1,8 +1,9 @@
 # PostgreSQL 自然语言查询 MCP 服务器
 
 **项目 ID**: 001-postgres-mcp
-**状态**: 规格阶段（已完成）
+**状态**: Phase 3 完成 - 生产就绪 🚀
 **创建日期**: 2026-01-28
+**最后更新**: 2026-01-29
 
 ## 概述
 
@@ -22,14 +23,31 @@
 - [功能规格说明](./spec.md) - 详细的业务需求和用户场景
 - [质量检查清单](./checklists/requirements.md) - 规格验证结果
 
-## 下一步
+## 项目进度
+
+- ✅ **Phase 1: Setup** - 完成 (8/8 tasks)
+- ✅ **Phase 2: Foundational** - 完成 (14/14 tasks, 87% coverage)
+- ✅ **Phase 3: P1 User Stories** - 完成 (26/26 tasks, 81% coverage)
+  - ✅ US1: SQL Generation (AI-powered)
+  - ✅ US3: Schema Cache (自动刷新)
+  - ✅ US4: SQL Validation (安全检查)
+  - ✅ MCP Interface (3 tools + 2 resources)
+- 📅 **Phase 4-5: 增强功能** - 待实施
+
+**当前状态**: MVP 完成，生产就绪 🚀
+
+## 快速开始
 
 ```bash
-# 进入计划阶段
-/speckit.plan
+# 查看详细状态
+cat specs/001-postgres-mcp/CURRENT_STATUS.md
 
-# 或先澄清需求（如需要）
-/speckit.clarify
+# 启动服务器
+cd Week5
+python -m postgres_mcp
+
+# 运行测试
+pytest tests/unit/ -v
 ```
 
 ## 技术栈

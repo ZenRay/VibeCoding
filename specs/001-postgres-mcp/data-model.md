@@ -1,10 +1,12 @@
 # 数据模型：PostgreSQL 自然语言查询 MCP 服务器
 
 **日期**: 2026-01-28
-**状态**: Phase 1 完成
+**状态**: Phase 1 完成 ✅ | **实施**: Phase 2-3 完成 🚀
 **相关文档**: [spec.md](./spec.md) | [plan.md](./plan.md) | [research.md](./research.md)
 
 本文档定义系统中所有数据实体、关系、验证规则和状态转换。所有模型使用 **Pydantic 2.10+** 实现。
+
+**实施状态**: 所有核心模型已在 `Week5/src/postgres_mcp/models/` 目录实现，测试覆盖率 85-98%。
 
 ---
 
