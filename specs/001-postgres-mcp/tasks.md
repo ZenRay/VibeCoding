@@ -82,7 +82,7 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T023 [P] [US1] 契约测试 generate_sql 工具 ⏸️ **DEFERRED** (tests/contract/test_mcp_protocol.py - 输入/输出 schema 验证)
+- [x] T023 [P] [US1] 契约测试 generate_sql 工具 ✅ **COMPLETE** (tests/contract/test_mcp_protocol.py - 输入/输出 schema 验证)
 - [ ] T024 [P] [US1] 集成测试 SQL 生成流程 ⏸️ **DEFERRED** (tests/integration/test_sql_generation.py - 端到端生成)
 
 #### Implementation
@@ -105,8 +105,8 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T032 [P] [US3] 契约测试 list_databases 工具 ⏸️ **DEFERRED** (tests/contract/test_mcp_protocol.py - 输出 schema 验证)
-- [ ] T033 [P] [US3] 契约测试 refresh_schema 工具 ⏸️ **DEFERRED** (tests/contract/test_mcp_protocol.py)
+- [x] T032 [P] [US3] 契约测试 list_databases 工具 ✅ **COMPLETE** (tests/contract/test_mcp_protocol.py - 输出 schema 验证)
+- [x] T033 [P] [US3] 契约测试 refresh_schema 工具 ✅ **COMPLETE** (tests/contract/test_mcp_protocol.py)
 - [ ] T034 [P] [US3] 集成测试 schema 缓存 ⏸️ **DEFERRED** (tests/integration/test_schema_cache.py - 真实数据库 schema 提取)
 
 #### Implementation
@@ -165,7 +165,7 @@
 
 #### Tests (TDD - 先写测试)
 
-- [x] T053 [P] [US2] 契约测试 execute_query 工具 ⏸️ **DEFERRED** (tests/contract/test_mcp_protocol.py)
+- [x] T053 [P] [US2] 契约测试 execute_query 工具 ✅ **COMPLETE** (tests/contract/test_mcp_protocol.py)
 - [x] T054 [P] [US2] 集成测试查询执行 (tests/integration/test_query_execution.py - 已创建，marked as skip for manual testing)
 
 #### Implementation
@@ -203,7 +203,7 @@
 #### Tests (TDD - 先写测试)
 
 - [x] T066 [P] 单元测试 JSONL Writer（tests/unit/test_jsonl_writer.py - 异步缓冲, 日志轮转）✅ COMPLETE
-- [ ] T067 [P] 契约测试 query_history 工具（tests/contract/test_mcp_protocol.py）⏸️ DEFERRED
+- [x] T067 [P] 契约测试 query_history 工具 ✅ **COMPLETE** (tests/contract/test_mcp_protocol.py)
 
 #### Implementation
 

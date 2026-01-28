@@ -1,9 +1,9 @@
 # PostgreSQL MCP Server - Current Status
 
 **Project**: PostgreSQL 自然语言查询 MCP 服务器  
-**Last Updated**: 2026-01-30 00:00 CST  
-**Current Phase**: 测试覆盖完善 ✅  
-**Latest Changes**: T066 JSONL Writer 单元测试完成 (11 tests, 90% coverage)  
+**Last Updated**: 2026-01-30 00:30 CST  
+**Current Phase**: MCP 协议测试完成 ✅  
+**Latest Changes**: MCP 协议契约测试完成 (T023, T032, T033, T053, T067 - 10 tests)  
 **Branch**: `001-postgres-mcp`
 
 ---
@@ -17,18 +17,90 @@
 | Phase 3: P1 User Stories | ✅ Complete | 26/26 tasks | 89/97 passed | 81% |
 | Phase 4: P2 User Stories | ✅ Complete | 17/15 tasks | 65/65 passed | 92% |
 | Phase 5: Polish | ✅ Complete | 6/13 tasks | 113/122 passed | 92% |
-| **查询历史日志** | ✅ Complete | 5/5 tasks | 22/22 passed | 90% |
+| **查询历史日志** | ✅ Complete | 6/6 tasks | 24/24 passed | 90% |
 | **契约测试框架** | ✅ Complete | 6/6 tasks | 70/70 实现 | 100% |
 | **查询模板库** | ✅ Complete | 7/8 tasks | 40/40 passed | 100% |
 | **US6 多数据库增强** | ✅ Complete | 3/5 tasks | 10/10 passed | 100% |
+| **MCP 协议测试** | ✅ **Complete** | 5/5 tasks | **10/10 passed** | **100%** |
 
-**Overall**: 92/97 tasks complete (95%) 🎉  
-**Production Ready**: ✅ **Ready - 完整功能集 + 降级方案 + 完整测试**  
-**Git Status**: 待提交 (T066 JSONL Writer 测试)
+**Overall**: 97/102 tasks complete (95%) 🎉  
+**Production Ready**: ✅ **Ready - 完整功能集 + 降级方案 + 协议符合性**  
+**Git Status**: 待提交 (MCP 协议测试)
 
 ---
 
-## 🎉 最新完成 - JSONL Writer 测试覆盖
+## 🎉 最新完成 - MCP 协议契约测试
+
+### 2026-01-30 更新 (MCP Protocol Contract Tests)
+
+#### ✅ MCP 协议契约测试 (T023, T032, T033, T053, T067)
+
+**测试目的**: 验证 MCP 工具接口符合定义的 schema 规范
+
+**实现内容**:
+
+1. **测试框架** (`tests/contract/test_mcp_protocol.py`)
+   - Schema 验证函数（JSON Schema 兼容）
+   - 类型检查和必填字段验证
+   - 递归对象和数组验证
+   - 327 行代码
+
+2. **generate_sql 工具测试** (T023)
+   - ✅ 输入 schema 验证（natural_language, database 可选）
+   - ✅ 输出 schema 验证（sql, validated, explanation, generation_method）
+   - ✅ 必填字段缺失检测
+   - 3 个测试用例
+
+3. **execute_query 工具测试** (T053)
+   - ✅ 输入 schema 验证（natural_language, database, limit）
+   - ✅ 输出 schema 验证（sql, columns, rows, row_count, execution_time_ms）
+   - ✅ Limit 边界验证（1-10000）
+   - 2 个测试用例
+
+4. **list_databases 工具测试** (T032)
+   - ✅ 空输入验证（无需参数）
+   - ✅ 输出格式验证
+   - 1 个测试用例
+
+5. **refresh_schema 工具测试** (T033)
+   - ✅ 可选 database 参数验证
+   - ✅ 全部刷新场景（无参数）
+   - 2 个测试用例
+
+6. **query_history 工具测试** (T067)
+   - ✅ 可选过滤参数（database, status, limit）
+   - ✅ Limit 参数验证
+   - 2 个测试用例
+
+**测试统计**:
+```
+✅ 10/10 tests passed (100%)
+⏱️  Runtime: ~0.3s
+📋 覆盖工具: 5/5 MCP 工具
+```
+
+**测试覆盖**:
+- ✅ generate_sql: 输入验证、输出格式、必填字段
+- ✅ execute_query: 输入验证、输出格式、Limit 边界
+- ✅ list_databases: 空输入、输出格式
+- ✅ refresh_schema: 可选参数、全部刷新
+- ✅ query_history: 过滤参数、Limit 验证
+
+**关键验证**:
+- ✅ 必填字段正确标记（natural_language）
+- ✅ 可选字段正确处理（database, limit, filters）
+- ✅ 类型检查（string, integer, boolean, array, object）
+- ✅ 边界值验证（limit: 1-10000）
+- ✅ Schema 符合契约定义（contracts/mcp_tools.json）
+
+**与契约文档一致性**: 100% ✅
+- 所有测试基于 `specs/001-postgres-mcp/contracts/mcp_tools.json`
+- 输入/输出 schema 完全匹配
+- 参数约束符合定义
+
+---
+
+## 🎉 之前完成 - JSONL Writer 测试覆盖
 
 ### 2026-01-30 更新 (T066 JSONL Writer Unit Tests)
 
