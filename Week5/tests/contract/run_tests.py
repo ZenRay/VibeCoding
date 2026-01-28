@@ -4,9 +4,26 @@ Automated test runner for contract testing.
 This script executes all defined test cases and generates a comprehensive report.
 """
 
+# ruff: noqa: E402
+# E402: Module level import not at top of file
+# We need to clear proxy environment variables BEFORE importing httpx-dependent modules
+
 import asyncio
+import os
 import time
 from pathlib import Path
+
+# CRITICAL: Clear proxy settings BEFORE any imports that might use httpx/requests
+# This must be done at module level before OpenAI client is imported
+for proxy_var in [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+]:
+    os.environ.pop(proxy_var, None)
 
 from postgres_mcp.ai.openai_client import OpenAIClient
 from postgres_mcp.config import Config

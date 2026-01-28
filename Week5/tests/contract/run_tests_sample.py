@@ -4,12 +4,23 @@ Quick sample test runner for validation.
 Tests only 3 cases from L1 to verify the setup.
 """
 
+# ruff: noqa: E402
+# E402: Module level import not at top of file
+# We need to clear proxy environment variables BEFORE importing httpx-dependent modules
+
 import asyncio
 import os
 import time
 
 # Clear proxy environment variables BEFORE any imports
-for var in ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy']:
+for var in [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+]:
     os.environ.pop(var, None)
 
 from postgres_mcp.ai.openai_client import OpenAIClient
@@ -78,7 +89,7 @@ async def main():
     report.start_time = time.time()
 
     # Run only first 3 L1 tests
-    print(f"Running 3 sample L1 Basic Query tests...")
+    print("Running 3 sample L1 Basic Query tests...")
     for test_case in L1_TEST_CASES[:3]:
         start_time = time.time()
         try:
