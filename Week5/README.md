@@ -209,8 +209,10 @@ uv pip install -e ".[dev]"
 
 ### Running Tests
 
+#### Unit Tests
+
 ```bash
-# Run all tests
+# Run all unit tests
 pytest tests/unit/ -v
 
 # Run with coverage
@@ -221,6 +223,38 @@ make up  # Start test databases
 pytest tests/integration/ -v
 make down  # Stop test databases
 ```
+
+#### Contract Tests (NL-to-SQL Accuracy) 🎯 **NEW**
+
+契约测试验证自然语言到 SQL 转换的准确性。包含 70 个测试用例，覆盖从基础查询到高级特性。
+
+**快速开始**：
+
+```bash
+# 进入契约测试目录
+cd tests/contract
+
+# 运行样例测试（3个用例，快速验证，~15秒）
+./run_contract_tests.sh sample
+
+# 运行完整测试（70个用例，约4-5分钟）
+./run_contract_tests.sh full
+```
+
+**测试覆盖**：
+- **L1 基础查询**（15个用例）- 目标准确率 ≥95%
+- **L2 多表关联**（15个用例）- 目标准确率 ≥90%
+- **L3 聚合分析**（12个用例）- 目标准确率 ≥85%
+- **L4 复杂逻辑**（10个用例）- 目标准确率 ≥75%
+- **L5 高级特性**（8个用例）- 目标准确率 ≥70%
+- **S1 安全测试**（10个用例）- 目标准确率 100%
+
+**详细文档**：`tests/contract/README.md`
+
+**注意事项**：
+- 测试脚本会自动清除代理设置以避免 API 连接问题
+- 完整测试因 API 频率限制需要 4-5 分钟
+- 测试结果自动保存到 `/tmp/contract_test_results_*.txt`
 
 ### Code Quality
 
@@ -336,6 +370,18 @@ Week5/
 │   │   ├── test_jsonl_writer.py  # Phase 4 (NEW)
 │   │   └── ...
 │   ├── integration/             # Integration tests
+│   ├── contract/                # Contract tests (70 test cases) 🎯 NEW
+│   │   ├── test_framework.py    # Test framework classes
+│   │   ├── test_l1_basic.py     # L1 基础查询（15个用例）
+│   │   ├── test_l2_join.py      # L2 多表关联（15个用例）
+│   │   ├── test_l3_aggregate.py # L3 聚合分析（12个用例）
+│   │   ├── test_l4_complex.py   # L4 复杂逻辑（10个用例）
+│   │   ├── test_l5_advanced.py  # L5 高级特性（8个用例）
+│   │   ├── test_s1_security.py  # S1 安全测试（10个用例）
+│   │   ├── run_tests.py         # 完整测试执行器
+│   │   ├── run_tests_sample.py  # 样例测试执行器
+│   │   ├── run_contract_tests.sh # 🚀 测试运行脚本
+│   │   └── README.md            # 测试文档
 │   └── conftest.py              # Test configuration
 ├── fixtures/                    # Test databases
 │   ├── docker-compose.yml
@@ -413,7 +459,9 @@ MIT License - see LICENSE file for details
 ---
 
 **Status**: Production Ready 🚀  
-**Version**: 0.6.0  
+**Version**: 0.7.0  
 **Last Updated**: 2026-01-29  
-**Test Status**: ✅ 113/122 passed (92.6%)  
+**Test Status**: 
+- ✅ Unit Tests: 113/122 passed (92.6%)
+- ✅ Contract Tests: 70 test cases implemented (L1-L5 + S1)
 **Coverage**: 90-93% (新代码)

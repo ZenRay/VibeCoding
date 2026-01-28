@@ -9,7 +9,13 @@ import re
 from dataclasses import dataclass
 
 import structlog
-from openai import APIError, APITimeoutError, AsyncOpenAI, RateLimitError
+from openai import (
+    APIConnectionError,
+    APIError,
+    APITimeoutError,
+    AsyncOpenAI,
+    RateLimitError,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -174,10 +180,17 @@ class OpenAIClient:
                     continue
                 raise AIServiceUnavailableError("OpenAI API rate limit exceeded") from e
 
+            except APIConnectionError as e:
+                logger.error("openai_connection_error", attempt=attempt + 1, error=str(e))
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2.0 * (attempt + 1))
+                    continue
+                raise AIServiceUnavailableError(f"OpenAI API connection error: {e}") from e
+
             except APIError as e:
                 logger.error("openai_api_error", attempt=attempt + 1, error=str(e))
-                if attempt < max_retries - 1 and e.status_code >= 500:
-                    # Only retry on server errors
+                # Only retry on server errors (status_code >= 500)
+                if attempt < max_retries - 1 and hasattr(e, "status_code") and e.status_code >= 500:
                     await asyncio.sleep(1.0 * (attempt + 1))
                     continue
                 raise AIServiceUnavailableError(f"OpenAI API error: {e}") from e
