@@ -1,6 +1,6 @@
-"""Response Parser 实现。
+"""Response parser implementation.
 
-解析 OpenAI API 的响应。
+Parses OpenAI API responses.
 """
 
 import json
@@ -13,7 +13,7 @@ logger = structlog.get_logger(__name__)
 
 @dataclass
 class ParsedResponse:
-    """解析后的响应。"""
+    """Parsed response."""
 
     sql: str
     explanation: str
@@ -21,22 +21,22 @@ class ParsedResponse:
 
 
 class ResponseParser:
-    """响应解析器。
+    """Response parser.
 
-    解析 OpenAI API 返回的 JSON 响应。
+    Parses JSON responses from OpenAI API.
     """
 
     def parse(self, content: str) -> ParsedResponse:
-        """解析响应内容。
+        """Parse response content.
 
         Args:
-            content: OpenAI 返回的内容
+            content: Content returned by OpenAI
 
         Returns:
-            ParsedResponse: 解析后的响应
+            ParsedResponse: Parsed response object
 
         Raises:
-            ValueError: 解析失败
+            ValueError: If parsing fails
         """
         try:
             data = json.loads(content)
@@ -48,7 +48,7 @@ class ResponseParser:
             )
         except json.JSONDecodeError as e:
             logger.error("parse_failed", content=content[:200], error=str(e))
-            raise ValueError(f"无法解析 JSON 响应: {e}") from e
+            raise ValueError(f"Failed to parse JSON response: {e}") from e
         except Exception as e:
             logger.error("unexpected_parse_error", error=str(e))
-            raise ValueError(f"解析响应时出错: {e}") from e
+            raise ValueError(f"Error parsing response: {e}") from e

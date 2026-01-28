@@ -1,6 +1,6 @@
-"""Prompt 构建器实现。
+"""Prompt builder implementation.
 
-构建用于 SQL 生成的系统和用户提示词。
+Builds system and user prompts for SQL generation.
 """
 
 import structlog
@@ -11,9 +11,9 @@ logger = structlog.get_logger(__name__)
 
 
 class PromptBuilder:
-    """Prompt 构建器。
+    """Prompt builder.
 
-    负责构建 OpenAI API 的系统和用户提示词。
+    Responsible for building system and user prompts for OpenAI API.
     """
 
     SYSTEM_PROMPT = """你是一个专业的 PostgreSQL SQL 查询专家。
@@ -45,10 +45,10 @@ class PromptBuilder:
 """
 
     def build_system_prompt(self) -> str:
-        """构建系统提示词。
+        """Build system prompt.
 
         Returns:
-            str: 系统提示词
+            str: System prompt string
         """
         return self.SYSTEM_PROMPT
 
@@ -59,72 +59,74 @@ class PromptBuilder:
         examples: list[dict[str, str]] | None = None,
         max_tables: int = 10,
     ) -> str:
-        """构建用户提示词。
+        """Build user prompt.
 
         Args:
-            natural_language: 自然语言查询
-            schema: 数据库 schema
-            examples: Few-shot 示例列表
-            max_tables: 最多包含的表数量（token 优化）
+            natural_language: Natural language query
+            schema: Database schema
+            examples: Few-shot example list
+            max_tables: Maximum number of tables to include (token optimization)
 
         Returns:
-            str: 用户提示词
+            str: User prompt string
         """
-        # 选择相关表
+        # Select relevant tables
         relevant_tables = self._select_relevant_tables(
             natural_language, schema, max_count=max_tables
         )
 
-        # 构建 DDL
+        # Build DDL
         ddl = self._schema_to_ddl(schema, relevant_tables)
 
-        # 构建提示词
-        prompt_parts = ["# 数据库 Schema\n", ddl]
+        # Build prompt
+        prompt_parts = ["# Database Schema\n", ddl]
 
-        # 添加示例（如果有）
+        # Add examples (if any)
         if examples:
-            prompt_parts.append("\n# 查询示例\n")
+            prompt_parts.append("\n# Query Examples\n")
             for i, example in enumerate(examples, 1):
                 prompt_parts.append(
-                    f"\n示例 {i}:\n" f'自然语言: "{example["nl"]}"\n' f'SQL: {example["sql"]}\n'
+                    f"\nExample {i}:\n"
+                    f'Natural Language: "{example["nl"]}"\n'
+                    f'SQL: {example["sql"]}\n'
                 )
 
-        # 添加用户查询
+        # Add user query
         prompt_parts.append(
-            f"\n# 用户查询\n\n"
-            f"请为以下自然语言生成 PostgreSQL SELECT 查询：\n\n"
+            f"\n# User Query\n\n"
+            f"Generate PostgreSQL SELECT query for the following natural language:\n\n"
             f'"{natural_language}"\n\n'
-            f"生成准确的 SQL、简短解释和任何假设。"
+            f"Generate accurate SQL, brief explanation, and any assumptions."
         )
 
         return "".join(prompt_parts)
 
     def build_retry_prompt(self, original_prompt: str, validation_error: str) -> str:
-        """构建重试提示词（验证失败后）。
+        """Build retry prompt (after validation failure).
 
         Args:
-            original_prompt: 原始提示词
-            validation_error: 验证错误信息
+            original_prompt: Original prompt
+            validation_error: Validation error message
 
         Returns:
-            str: 增强的提示词
+            str: Enhanced prompt string
         """
         return (
             f"{original_prompt}\n\n"
-            f"**重要**: 上次生成的 SQL 验证失败:\n"
+            f"**IMPORTANT**: Previous SQL validation failed:\n"
             f"{validation_error}\n\n"
-            f"请重新生成，确保只生成 SELECT 语句，不包含任何修改操作。"
+            f"Please regenerate ensuring ONLY SELECT statement with no modification operations."
         )
 
     def _schema_to_ddl(self, schema: DatabaseSchema, relevant_tables: list[str]) -> str:
-        """将 schema 转换为 DDL 格式。
+        """Convert schema to DDL format.
 
         Args:
-            schema: 数据库 schema
-            relevant_tables: 相关表列表
+            schema: Database schema
+            relevant_tables: List of relevant tables
 
         Returns:
-            str: DDL 格式的 schema
+            str: DDL-formatted schema
         """
         ddl_parts = []
 
@@ -151,15 +153,15 @@ class PromptBuilder:
     def _select_relevant_tables(
         self, natural_language: str, schema: DatabaseSchema, max_count: int = 10
     ) -> list[str]:
-        """选择与查询相关的表。
+        """Select tables relevant to the query.
 
         Args:
-            natural_language: 自然语言查询
-            schema: 数据库 schema
-            max_count: 最多返回的表数量
+            natural_language: Natural language query
+            schema: Database schema
+            max_count: Maximum number of tables to return
 
         Returns:
-            list[str]: 相关表名列表
+            list[str]: List of relevant table names
         """
         nl_lower = natural_language.lower()
         scored_tables = []
@@ -167,20 +169,20 @@ class PromptBuilder:
         for table_name in schema.tables.keys():
             score = 0
 
-            # 表名直接匹配
+            # Direct table name match
             if table_name in nl_lower:
                 score += 10
 
-            # 表名（去下划线）匹配
+            # Table name (without underscores) match
             if table_name.replace("_", " ") in nl_lower:
                 score += 8
 
-            # 单词部分匹配
+            # Partial word match
             for word in table_name.split("_"):
                 if word in nl_lower:
                     score += 2
 
-            # 检查列名匹配
+            # Check column name match
             table = schema.tables[table_name]
             for col in table.columns:
                 if col.name in nl_lower:
@@ -188,11 +190,11 @@ class PromptBuilder:
 
             scored_tables.append((score, table_name))
 
-        # 排序并返回前 N 个
+        # Sort and return top N
         scored_tables.sort(reverse=True, key=lambda x: x[0])
         relevant = [name for score, name in scored_tables[:max_count] if score > 0]
 
-        # 如果没有匹配，返回所有表（限制数量）
+        # If no matches, return all tables (limited count)
         if not relevant:
             relevant = list(schema.tables.keys())[:max_count]
 

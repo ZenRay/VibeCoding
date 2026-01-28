@@ -1,9 +1,9 @@
-"""OpenAI 集成模块。
+"""OpenAI integration module.
 
-本模块提供与 OpenAI API 的集成功能，包括：
-- OpenAI 客户端封装
-- Prompt 构建器
-- AI 响应解析器
+Provides integration with OpenAI API, including:
+- OpenAI client wrapper
+- Prompt builder
+- AI response parser
 """
 
 from postgres_mcp.ai.openai_client import AIResponse, AIServiceUnavailableError, OpenAIClient
