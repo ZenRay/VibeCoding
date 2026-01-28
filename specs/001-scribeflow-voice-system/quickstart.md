@@ -1,7 +1,7 @@
 # QuickStart: ScribeFlow 开发环境搭建指南
 
-**版本**: 1.1.0
-**日期**: 2026-01-24
+**版本**: 1.2.0
+**日期**: 2026-01-27
 **目标平台**: macOS 10.15+ / Linux (Ubuntu 22.04+, Fedora 38+)
 
 本文档提供 ScribeFlow 实时语音听写系统的开发环境搭建和快速上手指南。
@@ -50,7 +50,7 @@
 | **macOS** | 10.15+ (Catalina) | ✅ | Tier 1 支持 |
 | **Xcode Command Line Tools** | 最新 | ✅ | 编译 Rust 代码 |
 | **Rust** | 1.77+ | ✅ | 使用 rustup 安装 |
-| **Node.js** | 18 LTS | ✅ | 前端构建工具 |
+| **Node.js** | 20.19+ | ✅ | 前端构建工具 |
 | **Git** | 2.x | ✅ | 版本控制 |
 
 #### Linux (Ubuntu/Fedora/Arch)
@@ -60,7 +60,7 @@
 | **发行版** | Ubuntu 22.04+ / Fedora 38+ | ✅ | Tier 1 支持 (X11) |
 | **显示服务器** | X11 (推荐) / Wayland (降级) | - | Wayland 功能受限 |
 | **Rust** | 1.77+ | ✅ | 使用 rustup 安装 |
-| **Node.js** | 18 LTS | ✅ | 使用 nvm 安装 |
+| **Node.js** | 20.19+ | ✅ | 使用 nvm 安装 |
 | **Git** | 2.x | ✅ | 版本控制 |
 | **PulseAudio** | - | 推荐 | 音频混合 |
 | **GNOME Keyring / KWallet** | - | 推荐 | 密钥安全存储 |
@@ -214,13 +214,13 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 # 重新加载 shell 配置
 source ~/.bashrc  # 或 source ~/.zshrc (macOS)
 
-# 安装 Node.js 18 LTS
-nvm install 18
-nvm use 18
-nvm alias default 18
+# 安装 Node.js 20.19
+nvm install 20.19
+nvm use 20.19
+nvm alias default 20.19
 
 # 验证
-node --version  # v18.x.x
+node --version  # v20.19.x
 npm --version   # 9.x.x or 10.x.x
 ```
 
@@ -228,10 +228,10 @@ npm --version   # 9.x.x or 10.x.x
 
 ```bash
 # macOS (使用 Homebrew)
-brew install node@18
+brew install node@20
 
 # Ubuntu
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Fedora
@@ -263,15 +263,7 @@ cargo --version
 # 应该显示 cargo 1.77.0 或更高
 ```
 
-配置 Rust 2024 edition (项目要求):
-
-```bash
-# 更新到最新稳定版
-rustup update stable
-
-# 设置默认工具链
-rustup default stable
-```
+项目使用 Rust 2021 edition，无需额外配置 edition。
 
 ---
 
@@ -286,17 +278,17 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 # 重新加载 shell 配置
 source ~/.bashrc  # 或 ~/.zshrc
 
-# 安装 Node.js 18 LTS
-nvm install 18
-nvm use 18
-nvm alias default 18
+# 安装 Node.js 20.19
+nvm install 20.19
+nvm use 20.19
+nvm alias default 20.19
 ```
 
 验证安装:
 
 ```bash
 node --version
-# 应该显示 v18.x.x
+# 应该显示 v20.19.x
 
 npm --version
 # 应该显示 9.x.x 或更高
@@ -318,121 +310,33 @@ xcode-select --install
 
 ## 项目初始化
 
-**重要说明**: ScribeFlow 项目使用分离的文档和代码目录:
-- **项目根目录**: `~/Documents/VibeCoding/Week3` (源代码在这里)
-- **规范文档**: `~/Documents/VibeCoding/specs/001-scribeflow-voice-system` (设计文档)
+**重要说明**: 代码与规范分离:
+- **项目根目录**: `~/Documents/VibeCoding/Week3`
+- **规范文档**: `~/Documents/VibeCoding/specs/001-scribeflow-voice-system`
 
-### 1. 导航到项目目录
-
-```bash
-# 进入项目根目录
-cd ~/Documents/VibeCoding/Week3
-
-# 确认分支
-git branch
-# 应该显示: * 001-scribeflow-voice-system
-
-# 查看项目结构
-ls -la
-# 应该看到: .specify/, CLAUDE.md, docs/, instructions/ 等
-```
-
-**注意**: 如果您是从仓库克隆,请使用:
+### 1. 克隆与切换分支
 
 ```bash
-# 克隆整个 VibeCoding 仓库
 git clone https://github.com/your-org/VibeCoding.git
-
-# 进入 Week3 工作目录
 cd VibeCoding/Week3
-
-# 切换到功能分支
 git checkout 001-scribeflow-voice-system
 ```
 
-### 2. 初始化 Tauri 项目 (首次设置)
-
-**如果 Week3 目录下尚未创建 Tauri 项目**,需要先初始化:
+### 2. 安装依赖
 
 ```bash
-# 确认在 Week3 目录
-cd ~/Documents/VibeCoding/Week3
-pwd  # 应该输出: /home/ray/Documents/VibeCoding/Week3
-
-# 创建 Tauri 项目
-npm create tauri-app@latest
-
-# 按提示操作:
-# - Project name: scribeflow (或直接回车使用当前目录)
-# - Choose template: React
-# - Add TypeScript: Yes
-# - Package manager: npm
-
-# 项目将在当前目录 (Week3) 下创建标准 Tauri 结构
-```
-
-### 3. 安装 Rust 依赖
-
-```bash
-# 确认在 Week3 根目录
-cd ~/Documents/VibeCoding/Week3
-
-# 进入 Rust 后端目录
-cd src-tauri
-
-# 构建项目 (首次会下载所有依赖,耗时较长)
-cargo build
-
-# 预期输出:
-#   Compiling cpal v0.16.0
-#   Compiling rubato v0.16.2
-#   Compiling tokio-tungstenite v0.28.0
-#   ...
-#   Finished dev [unoptimized + debuginfo] target(s) in 2m 30s
-```
-
-**首次构建时间**: 约 2-5 分钟 (取决于网络速度和 CPU 性能)
-
-### 4. 安装 Node.js 依赖
-
-```bash
-# 返回 Week3 根目录
-cd ~/Documents/VibeCoding/Week3
-
-# 安装前端依赖
+# 前端依赖
 npm install
 
-# 预期输出:
-#   added 1234 packages in 30s
+# 后端依赖
+cargo build --manifest-path src-tauri/Cargo.toml
 ```
 
-### 5. 验证项目结构
+### 3. 验证项目结构
 
 ```bash
-# 在 Week3 目录下
 cd ~/Documents/VibeCoding/Week3
-tree -L 2 -I 'node_modules|target'
-
-# 应该看到:
-# Week3/
-# ├── .specify/                # 项目工具和模板 (已存在)
-# ├── CLAUDE.md                # Agent 指导 (已存在)
-# ├── docs/                    # 项目文档 (已存在)
-# ├── instructions/            # 技术参考 (已存在)
-# ├── src/                     # React 前端源码 (新创建)
-# │   ├── App.tsx
-# │   ├── components/
-# │   └── ...
-# ├── src-tauri/               # Rust 后端源码 (新创建)
-# │   ├── src/
-# │   ├── Cargo.toml
-# │   └── ...
-# ├── package.json             # Node.js 依赖 (新创建)
-# ├── tsconfig.json            # TypeScript 配置 (新创建)
-# └── tauri.conf.json          # Tauri 配置 (新创建)
-# ├── package.json
-# ├── tsconfig.json
-# └── README.md
+ls -la
 ```
 
 ---
@@ -1123,6 +1027,6 @@ wscat -c "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_
 
 ---
 
-**QuickStart 版本**: 1.0.0
-**最后更新**: 2026-01-24
+**QuickStart 版本**: 1.2.0
+**最后更新**: 2026-01-27
 **状态**: Complete
