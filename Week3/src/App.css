@@ -1,0 +1,178 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #0f1115;
+  color: #e6e6e6;
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.overlay-slot {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.hotkey-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+.connection-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.wayland-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #c084fc;
+}
+
+.permission-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #f87171;
+}
+
+.status-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #93c5fd;
+}
+
+.controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.overlay {
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  width: min(640px, 90vw);
+}
+
+.overlay-title {
+  font-weight: 600;
+}
+
+.overlay-text {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waveform {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.waveform-track {
+  height: 120px;
+  width: 120px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.waveform-bar {
+  width: 80px;
+  background: #4ade80;
+  transition: height 0.1s linear;
+  border-radius: 8px;
+  margin: 0 auto;
+}
+
+.waveform-label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.transcript {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.transcript-line {
+  margin: 0.25rem 0;
+  line-height: 1.4rem;
+  min-height: 1.4rem;
+  max-height: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transcript-partial {
+  opacity: 0.7;
+  line-height: 1.4rem;
+  min-height: 1.4rem;
+  max-height: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings {
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.settings input,
+.settings select {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+}
+
+.about {
+  display: grid;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 10;
+}
+
+.modal {
+  background: #151922;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: min(90vw, 480px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
