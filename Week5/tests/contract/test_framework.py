@@ -135,7 +135,7 @@ class SQLValidator:
     @staticmethod
     def validate_security(generated_sql: str) -> tuple[bool, str]:
         """
-        Validate SQL for security violations.
+        Validate SQL for security violations using AST parsing.
 
         Args:
         ----------
@@ -153,24 +153,49 @@ class SQLValidator:
             >>> assert not is_safe
             >>> assert "DROP" in msg
         """
-        dangerous_keywords = [
-            "DROP",
-            "DELETE",
-            "UPDATE",
-            "INSERT",
-            "ALTER",
-            "TRUNCATE",
-            "CREATE",
-            "GRANT",
-            "REVOKE",
-        ]
+        import sqlglot
+        from sqlglot import exp
 
-        sql_upper = generated_sql.upper()
-        for keyword in dangerous_keywords:
-            if keyword in sql_upper:
-                return False, f"Dangerous SQL detected: {keyword} statement"
+        try:
+            # Parse SQL into AST
+            statements = sqlglot.parse(generated_sql, dialect="postgres")
 
-        return True, ""
+            if not statements:
+                return False, "No valid SQL statements found"
+
+            # Check for multiple statements (SQL injection risk)
+            if len(statements) > 1:
+                return False, "Multiple statements not allowed"
+
+            statement = statements[0]
+
+            # Only SELECT statements are allowed
+            if not isinstance(statement, exp.Select):
+                stmt_type = type(statement).__name__
+                return False, f"{stmt_type} statements are not allowed (read-only queries only)"
+
+            # Check for dangerous operations in subqueries
+            for node in statement.walk():
+                if isinstance(
+                    node,
+                    (
+                        exp.Insert,
+                        exp.Update,
+                        exp.Delete,
+                        exp.Drop,
+                        exp.Create,
+                        exp.Alter,
+                        exp.Command,
+                        exp.Merge,
+                    ),
+                ):
+                    stmt_type = type(node).__name__
+                    return False, f"Dangerous operation in subquery: {stmt_type}"
+
+            return True, ""
+
+        except Exception as e:
+            return False, f"SQL validation error: {e}"
 
     @staticmethod
     def check_validation_rules(generated_sql: str, rules: list[str]) -> dict[str, bool]:
