@@ -111,11 +111,11 @@
 
 #### Implementation
 
-- [ ] T035 [P] [US3] 实现 SchemaInspector（src/postgres_mcp/db/schema_inspector.py - 提取表/列/索引/外键, asyncpg）
-- [ ] T036 [US3] 实现 SchemaCache（src/postgres_mcp/core/schema_cache.py - 内存缓存, asyncio.Lock, 刷新逻辑）
-- [ ] T037 [P] [US3] 实现周期性 schema 刷新（src/postgres_mcp/core/schema_cache.py - 后台任务, 5 分钟轮询）
-- [ ] T038 [P] [US3] 单元测试 SchemaInspector（tests/unit/test_schema_inspector.py - mock asyncpg 查询）
-- [ ] T039 [US3] 单元测试 SchemaCache（tests/unit/test_schema_cache.py - 缓存逻辑, 并发访问）
+- [x] T035 [P] [US3] 实现 SchemaInspector（src/postgres_mcp/db/schema_inspector.py - 提取表/列/索引/外键, asyncpg）
+- [x] T036 [US3] 实现 SchemaCache（src/postgres_mcp/core/schema_cache.py - 内存缓存, asyncio.Lock, 刷新逻辑）
+- [x] T037 [P] [US3] 实现周期性 schema 刷新（src/postgres_mcp/core/schema_cache.py - 后台任务, 5 分钟轮询）
+- [x] T038 [P] [US3] 单元测试 SchemaInspector（tests/unit/test_schema_inspector.py - mock asyncpg 查询）
+- [x] T039 [US3] 单元测试 SchemaCache（tests/unit/test_schema_cache.py - 缓存逻辑, 并发访问）
 
 ---
 

@@ -1,15 +1,7 @@
-"""
-Database access layer package.
+"""Database connection and schema inspection."""
 
-Args:
-----------
-    None
+from postgres_mcp.db.schema_inspector import SchemaInspector
 
-Returns:
-----------
-    None
-
-Raises:
-----------
-    None
-"""
+__all__ = [
+    "SchemaInspector",
+]

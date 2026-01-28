@@ -80,6 +80,32 @@ class IndexSchema(BaseModel, frozen=True):
     index_type: str = "btree"
 
 
+class ForeignKeySchema(BaseModel, frozen=True):
+    """
+    Foreign key schema details.
+
+    Args:
+    ----------
+        name: Constraint name
+        column: Source column name
+        foreign_table: Referenced table name
+        foreign_column: Referenced column name
+
+    Returns:
+    ----------
+        None
+
+    Raises:
+    ----------
+        None
+    """
+
+    name: str
+    column: str
+    foreign_table: str
+    foreign_column: str
+
+
 class TableSchema(BaseModel, frozen=True):
     """
     Table schema details.
@@ -89,6 +115,7 @@ class TableSchema(BaseModel, frozen=True):
         name: Table name.
         columns: Column schemas.
         indexes: Index schemas.
+        foreign_keys: Foreign key schemas.
         row_count_estimate: Estimated row count.
         sample_data: Sample rows for the table.
 
@@ -104,6 +131,7 @@ class TableSchema(BaseModel, frozen=True):
     name: str
     columns: list[ColumnSchema]
     indexes: list[IndexSchema] = Field(default_factory=list)
+    foreign_keys: list[ForeignKeySchema] = Field(default_factory=list)
     row_count_estimate: int | None = None
     sample_data: list[dict[str, Any]] = Field(default_factory=list, max_length=3)
 
@@ -130,9 +158,9 @@ class TableSchema(BaseModel, frozen=True):
 
     @computed_field
     @property
-    def foreign_keys(self) -> list[dict[str, str]]:
+    def foreign_key_relationships(self) -> list[dict[str, str]]:
         """
-        Compute foreign key relationships.
+        Compute foreign key relationships (compatibility property).
 
         Args:
         ----------
@@ -148,6 +176,18 @@ class TableSchema(BaseModel, frozen=True):
         """
 
         relationships: list[dict[str, str]] = []
+
+        # From ForeignKeySchema list
+        for fk in self.foreign_keys:
+            relationships.append(
+                {
+                    "column": fk.column,
+                    "ref_table": fk.foreign_table,
+                    "ref_column": fk.foreign_column,
+                }
+            )
+
+        # From column-level foreign keys (backward compatibility)
         for column in self.columns:
             if column.foreign_key_table:
                 relationships.append(
@@ -242,7 +282,7 @@ class DatabaseSchema(BaseModel):
                     column_def += " PRIMARY KEY"
                 column_lines.append(column_def)
 
-            for fk in table.foreign_keys:
+            for fk in table.foreign_key_relationships:
                 fk_def = (
                     f"  FOREIGN KEY ({fk['column']}) "
                     f"REFERENCES {fk['ref_table']}({fk['ref_column']})"

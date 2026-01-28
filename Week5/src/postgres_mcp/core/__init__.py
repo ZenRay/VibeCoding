@@ -8,6 +8,10 @@ This module contains core business logic implementations:
 - Template Matcher
 """
 
+from postgres_mcp.core.schema_cache import (
+    SchemaCache,
+    SchemaCacheError,
+)
 from postgres_mcp.core.sql_generator import (
     GenerationMethod,
     SQLGenerationError,
@@ -26,4 +30,6 @@ __all__ = [
     "SQLValidator",
     "ValidationResult",
     "ValidationError",
+    "SchemaCache",
+    "SchemaCacheError",
 ]
