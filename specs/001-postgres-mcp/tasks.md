@@ -202,8 +202,8 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T066 [P] 单元测试 JSONL Writer（tests/unit/test_jsonl_writer.py - 异步缓冲, 日志轮转）
-- [ ] T067 [P] 契约测试 query_history 工具（tests/contract/test_mcp_protocol.py）
+- [x] T066 [P] 单元测试 JSONL Writer（tests/unit/test_jsonl_writer.py - 异步缓冲, 日志轮转）✅ COMPLETE
+- [ ] T067 [P] 契约测试 query_history 工具（tests/contract/test_mcp_protocol.py）⏸️ DEFERRED
 
 #### Implementation
 
