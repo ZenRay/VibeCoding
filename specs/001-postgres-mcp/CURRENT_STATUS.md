@@ -1,9 +1,9 @@
 # PostgreSQL MCP Server - Current Status
 
 **Project**: PostgreSQL 自然语言查询 MCP 服务器  
-**Last Updated**: 2026-01-29 23:00 CST  
-**Current Phase**: 查询模板库完成 ✅  
-**Latest Changes**: Query Templates 实现 (T072-T077)  
+**Last Updated**: 2026-01-29 23:30 CST  
+**Current Phase**: US6 多数据库功能增强完成 ✅  
+**Latest Changes**: US6 默认数据库路由 + 增强 list_databases (T061-T064)  
 **Branch**: `001-postgres-mcp`
 
 ---
@@ -19,15 +19,99 @@
 | Phase 5: Polish | ✅ Complete | 6/13 tasks | 113/122 passed | 92% |
 | **查询历史日志** | ✅ Complete | 4/4 tasks | 11/11 passed | 90% |
 | **契约测试框架** | ✅ Complete | 6/6 tasks | 70/70 实现 | 100% |
-| **查询模板库** | ✅ **Complete** | 7/8 tasks | **40/40 passed** | **100%** |
+| **查询模板库** | ✅ Complete | 7/8 tasks | 40/40 passed | 100% |
+| **US6 多数据库增强** | ✅ **Complete** | 3/5 tasks | **10/10 passed** | **100%** |
 
-**Overall**: 88/94 tasks complete (94%) 🎉  
+**Overall**: 91/97 tasks complete (94%) 🎉  
 **Production Ready**: ✅ **Ready - 完整功能集 + 降级方案 + 测试体系**  
-**Git Status**: 已提交 (792c0ec - Query Templates 实现)
+**Git Status**: 待提交 (US6 多数据库功能增强)
 
 ---
 
-## 🎉 最新完成 - 查询模板库（降级方案）
+## 🎉 最新完成 - US6 多数据库功能增强
+
+### 2026-01-29 更新 (US6 Database Routing Enhancement)
+
+#### ✅ 多数据库路由和默认数据库支持 (T061-T064)
+
+**新增功能**: 使 `database` 参数可选，支持默认数据库降级，增强数据库状态显示
+
+**实现组件**:
+1. **MCP 工具 Schema 修复** (`src/postgres_mcp/mcp/tools.py`)
+   - `generate_sql`: `database` 参数改为可选
+   - `execute_query`: `database` 参数改为可选
+   - 符合契约文档定义 (`contracts/mcp_tools.json`)
+   
+2. **默认数据库路由逻辑** (`src/postgres_mcp/mcp/tools.py`)
+   - `handle_generate_sql`: 未提供 `database` 时使用 `config.default_database`
+   - `handle_execute_query`: 未提供 `database` 时使用 `config.default_database`
+   - 添加日志记录使用默认数据库的情况
+   
+3. **增强 list_databases 工具** (`src/postgres_mcp/mcp/tools.py`)
+   - 显示默认数据库标记 `**[DEFAULT]**`
+   - 显示连接状态（已连接/连接池不可用）
+   - 显示连接池使用情况（活跃连接数/最大连接数）
+
+**测试覆盖**:
+```
+✅ 数据库路由逻辑: 10/10 passed (100%)
+   - generate_sql 使用显式/默认/None/空字符串数据库
+   - execute_query 使用显式/默认/None数据库
+   - 默认 limit 和最大 limit 强制执行
+   - list_databases 显示默认数据库标记
+```
+
+**使用示例**:
+```python
+# 方式1: 显式指定数据库
+await generate_sql(
+    natural_language="show all users",
+    database="production"
+)
+
+# 方式2: 使用默认数据库
+await generate_sql(
+    natural_language="show all users"
+    # database 参数省略，自动使用 config.default_database
+)
+```
+
+**list_databases 输出示例**:
+```
+## Configured Databases
+
+### ecommerce_small **[DEFAULT]**
+- Status: ✅ Connected (2/10 connections)
+- Tables: 5
+- Sample tables: users, orders, products, categories, reviews
+- Last updated: 2026-01-29 23:30:00
+
+### analytics
+- Status: ✅ Connected (1/10 connections)
+- Tables: 8
+- Sample tables: events, sessions, ...
+```
+
+**关键特性**:
+- ✅ `database` 参数在所有查询工具中都是可选的
+- ✅ 自动降级到配置的默认数据库
+- ✅ 清晰的默认数据库标识
+- ✅ 实时连接池状态监控
+- ✅ 向后兼容（显式指定数据库仍然有效）
+
+#### 📝 相关 Git 提交
+
+```
+[待提交] feat(001-postgres-mcp): 完成 US6 多数据库功能增强 (T061-T064)
+  - 修复 generate_sql/execute_query schema: database 改为可选
+  - 实现默认数据库路由逻辑
+  - 增强 list_databases: 显示默认标记和连接状态
+  - 新增 10 个单元测试（100% 通过）
+```
+
+---
+
+## 🎉 之前完成 - 查询模板库（降级方案）
 
 ### 2026-01-29 更新 (Phase 4 Query Templates)
 

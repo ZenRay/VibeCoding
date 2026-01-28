@@ -49,10 +49,13 @@ def register_tools(server: Server) -> None:
                         },
                         "database": {
                             "type": "string",
-                            "description": "Target database name",
+                            "description": (
+                                "Target database name "
+                                "(optional, uses default if not specified)"
+                            ),
                         },
                     },
-                    "required": ["natural_language", "database"],
+                    "required": ["natural_language"],
                 },
             ),
             Tool(
@@ -71,7 +74,10 @@ def register_tools(server: Server) -> None:
                         },
                         "database": {
                             "type": "string",
-                            "description": "Target database name",
+                            "description": (
+                                "Target database name "
+                                "(optional, uses default if not specified)"
+                            ),
                         },
                         "limit": {
                             "type": "integer",
@@ -80,7 +86,7 @@ def register_tools(server: Server) -> None:
                             "maximum": 10000,
                         },
                     },
-                    "required": ["natural_language", "database"],
+                    "required": ["natural_language"],
                 },
             ),
             Tool(
@@ -232,8 +238,13 @@ async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextC
     if not natural_language:
         return [TextContent(type="text", text="❌ Error: natural_language is required")]
 
+    # Use default database if not specified
     if not database:
-        return [TextContent(type="text", text="❌ Error: database is required")]
+        database = ctx.config.default_database
+        logger.info(
+            "using_default_database",
+            database=database,
+        )
 
     logger.info(
         "generate_sql_called",
@@ -324,8 +335,13 @@ async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[Text
     if not natural_language:
         return [TextContent(type="text", text="❌ Error: natural_language is required")]
 
+    # Use default database if not specified
     if not database:
-        return [TextContent(type="text", text="❌ Error: database is required")]
+        database = ctx.config.default_database
+        logger.info(
+            "using_default_database",
+            database=database,
+        )
 
     # Enforce max limit
     if limit > 10000:
@@ -436,6 +452,7 @@ async def handle_list_databases(ctx: Any) -> list[TextContent]:
 
     try:
         databases = ctx.schema_cache.list_databases()
+        default_database = ctx.config.default_database
 
         if not databases:
             return [TextContent(type="text", text="⚠️ No databases configured")]
@@ -443,30 +460,51 @@ async def handle_list_databases(ctx: Any) -> list[TextContent]:
         response_parts = ["## Configured Databases\n"]
 
         for db_name in databases:
+            # Check if this is the default database
+            is_default = db_name == default_database
+            default_marker = " **[DEFAULT]**" if is_default else ""
+
             try:
                 schema = await ctx.schema_cache.get_schema(db_name)
+                
+                # Check connection status
+                try:
+                    pool = await ctx.pool_manager.get_pool(db_name)
+                    pool_size = pool.get_size() if hasattr(pool, 'get_size') else "N/A"
+                    pool_max = pool.get_max_size() if hasattr(pool, 'get_max_size') else "N/A"
+                    connection_status = f"✅ Connected ({pool_size}/{pool_max} connections)"
+                except Exception as pool_error:
+                    logger.debug(
+                        "pool_status_check_failed",
+                        database=db_name,
+                        error=str(pool_error),
+                    )
+                    connection_status = "⚠️ Pool unavailable"
+                
                 if schema:
                     table_count = len(schema.tables)
                     table_names = ", ".join(list(schema.tables.keys())[:5])
                     if len(schema.tables) > 5:
                         table_names += f", ... (+{len(schema.tables) - 5} more)"
 
-                    response_parts.append(f"\n### {db_name}")
+                    response_parts.append(f"\n### {db_name}{default_marker}")
+                    response_parts.append(f"- Status: {connection_status}")
                     response_parts.append(f"- Tables: {table_count}")
                     response_parts.append(f"- Sample tables: {table_names}")
                     response_parts.append(
                         f"- Last updated: {schema.last_updated.strftime('%Y-%m-%d %H:%M:%S')}"
                     )
                 else:
-                    response_parts.append(f"\n### {db_name}")
-                    response_parts.append("- Status: ⚠️ Schema not loaded")
+                    response_parts.append(f"\n### {db_name}{default_marker}")
+                    response_parts.append(f"- Status: {connection_status}")
+                    response_parts.append("- Schema: ⚠️ Not loaded")
             except Exception as e:
                 logger.warning(
                     "get_schema_failed",
                     database=db_name,
                     error=str(e),
                 )
-                response_parts.append(f"\n### {db_name}")
+                response_parts.append(f"\n### {db_name}{default_marker}")
                 response_parts.append(f"- Status: ❌ Error: {str(e)}")
 
         logger.info("list_databases_success", database_count=len(databases))

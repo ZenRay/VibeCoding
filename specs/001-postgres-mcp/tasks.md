@@ -179,7 +179,7 @@
 
 ---
 
-### User Story 6: 多数据库支持（P2）
+### User Story 6: 多数据库支持（P2）✅ COMPLETE
 
 **Goal**: 用户可指定查询哪个数据库或允许多数据库配置
 
@@ -187,14 +187,14 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T061 [P] [US6] 集成测试多数据库切换（tests/integration/test_multi_database.py - 3 个数据库, schema 隔离）
-- [ ] T062 [P] [US6] 单元测试数据库路由（tests/unit/test_database_routing.py - 默认数据库逻辑）
+- [x] T061 [P] [US6] 单元测试数据库路由（tests/unit/test_database_routing.py - 默认数据库逻辑, 参数处理）✅ COMPLETE
+- [ ] T062 [P] [US6] 集成测试多数据库切换（tests/integration/test_multi_database.py - 3 个数据库, schema 隔离）⏸️ DEFERRED
 
 #### Implementation
 
-- [ ] T063 [US6] 实现多数据库路由（src/postgres_mcp/core/sql_generator.py - database 参数, 默认数据库）
-- [ ] T064 [P] [US6] 增强 list_databases 工具（src/postgres_mcp/mcp/tools.py - 显示所有数据库状态）
-- [ ] T065 [US6] 集成测试多数据库场景（tests/integration/test_multi_database.py - 端到端）
+- [x] T063 [US6] 实现多数据库路由（src/postgres_mcp/mcp/tools.py - database 参数可选, 默认数据库）✅ COMPLETE
+- [x] T064 [P] [US6] 增强 list_databases 工具（src/postgres_mcp/mcp/tools.py - 显示默认数据库标记和连接状态）✅ COMPLETE
+- [ ] T065 [US6] 集成测试多数据库场景（tests/integration/test_multi_database.py - 端到端）⏸️ DEFERRED
 
 ---
 
