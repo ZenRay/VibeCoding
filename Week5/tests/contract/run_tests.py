@@ -71,7 +71,12 @@ async def run_contract_tests() -> TestReport:
 
     # Initialize components
     config = Config.load()
-    openai_client = OpenAIClient(config.openai)
+    openai_client = OpenAIClient(
+        api_key=config.openai.api_key,
+        model=config.openai.model,
+        base_url=config.openai.base_url,
+        timeout=config.openai.timeout,
+    )
     pool_manager = PoolManager(config.databases)
     await pool_manager.initialize()
 

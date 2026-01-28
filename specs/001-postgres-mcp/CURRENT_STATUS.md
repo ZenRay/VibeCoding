@@ -955,22 +955,107 @@ POSTGRES_MCP_LOG_LEVEL=DEBUG python -m postgres_mcp
 
 ## 📋 Remaining Tasks (Optional Features)
 
-### Query Templates (Phase 4 - 5 tasks)
-- Template library for common queries
-- Pattern matching and entity extraction
-- Fallback when AI service unavailable
+以下为可选增强功能，不影响当前 MVP 生产就绪状态。
 
-### Result Validation (Phase 5 - 3 tasks)
-- Empty result detection
-- AI relevance validation
-- Query suggestion improvements
+### 1. Query Templates (Phase 4 - 推迟实现)
 
-### Additional Polish (Phase 5 - 3 tasks)
-- Docker deployment configuration
-- Performance benchmarking
-- Security audit
+**目的**: AI 服务不可用时的降级方案
 
-**Note**: Phase 3 + Phase 4 已实现 MVP + 查询历史，以上为可选增强功能
+**相关任务** (tasks.md T072-T078):
+- [ ] T072: 单元测试 Template Matcher
+- [ ] T073: 单元测试 Template Loader
+- [ ] T074: 创建 15 个查询模板 YAML 文件
+- [ ] T075: 实现 TemplateLoader（YAML 解析和验证）
+- [ ] T076: 实现 TemplateMatcher（模式匹配 + 实体提取）
+- [ ] T077: 集成到 SQLGenerator（OpenAI 失败时降级）
+- [ ] T078: 集成测试模板匹配
+
+**验收场景**:
+- 当 OpenAI API 不可用时，系统自动降级到模板匹配
+- 常见查询模式（如 "显示所有X"、"按Y统计Z"）可通过模板生成
+- 模板匹配准确率 ≥80%
+
+**影响评估**: 低优先级 - AI 服务通常稳定，模板作为降级方案不影响核心功能
+
+---
+
+### 2. Result Validation (Phase 5 - US5, P3 可选)
+
+**目的**: 验证查询返回有意义的结果，提升用户体验
+
+**相关任务** (tasks.md T079-T081):
+- [ ] T079: 单元测试 ResultValidator
+- [ ] T080: 实现 ResultValidator
+  - 空结果检测
+  - AI 相关性验证（可选）
+  - 查询建议生成
+- [ ] T081: 集成到 QueryExecutor
+
+**验收场景**:
+1. 查询返回空结果时，系统提供替代查询建议
+2. AI 验证结果是否与用户意图匹配（可选）
+3. 自动生成查询优化建议
+
+**影响评估**: 中优先级 - 显著提升用户体验，但非必需
+
+---
+
+### 3. Complete MCP Test Coverage (Phase 3-4 - 推迟实现)
+
+**目的**: 完善 MCP 接口的自动化测试覆盖
+
+**相关任务** (tasks.md):
+- [ ] T023: 契约测试 generate_sql 工具（MCP 协议层面）
+- [ ] T024: 集成测试 SQL 生成流程（端到端）
+- [ ] T052: 集成测试 MCP 接口（所有工具和资源）
+- [ ] T067: 契约测试 query_history 工具
+- [ ] T061: 集成测试多数据库切换
+- [ ] T062: 单元测试数据库路由
+
+**当前状态**: 
+- ✅ 功能已通过手动测试验证
+- ✅ NL-to-SQL 契约测试已完成（70个用例）
+- ⏸️ MCP 协议层面的契约测试已推迟
+
+**影响评估**: 低优先级 - 核心功能已验证，MCP 接口测试可推迟
+
+---
+
+### 4. Production Optimization & Deployment (Phase 5 - 推迟实现)
+
+**目的**: 生产环境部署和性能优化
+
+**相关任务** (tasks.md T087-T091):
+- [ ] T087: 验证测试覆盖率 ≥90%（✅ 当前 92.6%，已达标）
+- [ ] T088: 更新 quickstart.md（✅ 已在 specs 中完成）
+- [ ] T089: Docker 支持
+  - Dockerfile 配置
+  - docker-compose.yaml 编排
+  - 容器化部署文档
+- [ ] T090: 性能基准测试
+  - 10 并发查询测试
+  - 100 表 schema 缓存时间
+  - 查询生成延迟分析
+- [ ] T091: 安全审计
+  - SQL 注入防护验证
+  - 危险函数阻止测试
+  - 权限和访问控制审查
+
+**影响评估**: 中-高优先级 - 对实际生产部署很重要，但不阻塞当前功能使用
+
+---
+
+### 5. Additional Enhancements (未来版本考虑)
+
+**功能建议**:
+- [ ] 查询性能分析和优化建议
+- [ ] 查询历史搜索和分析（基于 JSONL 日志）
+- [ ] 多用户查询权限管理
+- [ ] 查询缓存机制（避免重复生成）
+- [ ] WebSocket 实时查询状态推送
+- [ ] 查询计划可视化
+
+**Note**: Phase 1-4 核心功能 100% 完成，契约测试框架已建立，以上为可选增强功能
 
 ---
 

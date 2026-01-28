@@ -1,6 +1,6 @@
 # 快速开始：PostgreSQL 自然语言查询 MCP 服务器
 
-**版本**: 0.1.0 (Phase 3 MVP)
+**版本**: 0.7.0
 **更新日期**: 2026-01-29
 **状态**: 生产就绪 🚀
 
@@ -13,6 +13,7 @@
 - ✅ 查询执行与结果返回
 - ✅ 查询历史日志 (JSONL 格式)
 - ✅ MCP 接口 (5 tools + 2 resources)
+- ✅ 契约测试框架 (70 测试用例) ✨ **NEW**
 
 ---
 
@@ -583,6 +584,38 @@ pytest tests/unit/test_sql_validator.py -v
 pytest --cov=src/postgres_mcp --cov-report=html
 open htmlcov/index.html
 ```
+
+### 契约测试（NL-to-SQL 准确性）✨ NEW
+
+验证自然语言到 SQL 的转换准确性：
+
+```bash
+cd tests/contract
+
+# 样例测试（3个用例，~15秒）
+./run_contract_tests.sh sample
+
+# 完整测试（70个用例，~5分钟）
+./run_contract_tests.sh full
+```
+
+**测试覆盖**:
+- **L1 基础查询** (15个) - 简单 SELECT、WHERE、ORDER BY
+- **L2 多表关联** (15个) - JOIN、子查询
+- **L3 聚合分析** (12个) - GROUP BY、HAVING、聚合函数
+- **L4 复杂逻辑** (10个) - CASE WHEN、复杂子查询、多条件过滤
+- **L5 高级特性** (8个) - 窗口函数、递归 CTE、JSONB、全文搜索
+- **S1 安全测试** (10个) - SQL 注入防护、只读验证
+
+**准确率目标**:
+- L1: ≥95%
+- L2: ≥90%
+- L3: ≥85%
+- L4: ≥75%
+- L5: ≥70%
+- S1: 100%（安全必须）
+
+**详细文档**: `tests/contract/README.md`
 
 ### 集成测试
 

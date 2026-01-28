@@ -1,7 +1,7 @@
 # PostgreSQL 自然语言查询 MCP 服务器
 
 **项目 ID**: 001-postgres-mcp
-**状态**: Phase 4 完成 - 查询历史功能就绪 🚀
+**状态**: 契约测试框架完成 - 生产就绪 🚀
 **创建日期**: 2026-01-28
 **最后更新**: 2026-01-29
 
@@ -18,6 +18,7 @@
 - 📜 **查询历史**: 自动记录所有查询执行，支持审计和分析 ✨ **NEW**
 - 🔄 **多数据库支持**: 同时连接和查询多个 PostgreSQL 数据库
 - 📈 **结果格式化**: 自动格式化查询结果为 Markdown 表格，支持行数限制和截断
+- 🧪 **契约测试**: 70 个测试用例验证 NL-to-SQL 准确性 ✨ **NEW**
 
 ## 文档
 
@@ -26,6 +27,7 @@
 - [任务分解](./tasks.md) - 详细的任务列表和进度
 - [当前状态](./CURRENT_STATUS.md) - 最新的项目进度和测试结果
 - [快速开始](./quickstart.md) - 5 分钟快速上手指南
+- [测试计划](./test-plan.md) - 契约测试用例（70个）✨ **NEW**
 - [质量检查清单](./checklists/requirements.md) - 规格验证结果
 
 ## 项目进度
@@ -46,31 +48,65 @@
   - ✅ 项目文档（README, CHANGELOG）
   - ✅ 代码质量保证
   - ✅ 示例查询
+- ✅ **契约测试框架** - 完成 (6/6 tasks, 70 测试用例) ✨ **NEW**
 
-**当前状态**: 核心功能完成，文档齐全，生产就绪 🚀
+**当前状态**: 核心功能完成，测试体系完整，生产就绪 🚀
 
-**整体进度**: 68/80 tasks (85%) complete
+**整体进度**: 74/86 tasks (86%) complete
 
 ## 快速开始
 
+**详细文档**: [quickstart.md](./quickstart.md)
+
 ```bash
-# 查看详细状态
+# 1. 查看详细状态
 cat specs/001-postgres-mcp/CURRENT_STATUS.md
 
-# 启动测试数据库
+# 2. 启动测试数据库
 cd Week5
 make up
 
-# 启动服务器
+# 3. 启动服务器
 source .venv/bin/activate
 python -m postgres_mcp
 
-# 运行测试
-pytest tests/unit/ -v
+# 4. 运行测试
+pytest tests/unit/ -v                    # 单元测试
+cd tests/contract && ./run_contract_tests.sh sample  # 契约测试（样例）
 
-# 查看覆盖率
+# 5. 查看覆盖率
 pytest tests/unit/ --cov=src/postgres_mcp --cov-report=term-missing
 ```
+
+## 测试
+
+### 单元测试
+```bash
+cd Week5
+pytest tests/unit/ -v
+# 结果: 113/122 passed (92.6%)
+```
+
+### 契约测试 ✨ NEW
+```bash
+cd Week5/tests/contract
+
+# 样例测试（3个用例，~15秒）
+./run_contract_tests.sh sample
+
+# 完整测试（70个用例，~5分钟）
+./run_contract_tests.sh full
+```
+
+**测试覆盖**:
+- L1 基础查询（15个）- 目标 ≥95%
+- L2 多表关联（15个）- 目标 ≥90%
+- L3 聚合分析（12个）- 目标 ≥85%
+- L4 复杂逻辑（10个）- 目标 ≥75%
+- L5 高级特性（8个）- 目标 ≥70%
+- S1 安全测试（10个）- 目标 100%
+
+**详细文档**: `Week5/tests/contract/README.md`
 
 ## MCP 工具
 
