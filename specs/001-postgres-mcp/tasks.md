@@ -127,14 +127,14 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T040 [P] [US4] 单元测试 SQL 验证器（tests/unit/test_sql_validator.py - 50+ 测试用例, DML/DDL 阻止, 危险函数黑名单）
-- [ ] T041 [P] [US4] Property-based 测试（tests/unit/test_sql_validator.py - Hypothesis 生成攻击向量）
+- [x] T040 [P] [US4] 单元测试 SQL 验证器（tests/unit/test_sql_validator.py - 50+ 测试用例, DML/DDL 阻止, 危险函数黑名单）
+- [x] T041 [P] [US4] Property-based 测试（tests/unit/test_sql_validator.py - Hypothesis 生成攻击向量）
 
 #### Implementation
 
-- [ ] T042 [US4] 实现 SQLValidator（src/postgres_mcp/core/sql_validator.py - SQLGlot AST 解析, 递归遍历, 危险函数黑名单）
-- [ ] T043 [P] [US4] 实现注释去除（src/postgres_mcp/core/sql_validator.py - 防注入）
-- [ ] T044 [P] [US4] 实现嵌套查询验证（src/postgres_mcp/core/sql_validator.py - CTE, 子查询）
+- [x] T042 [US4] 实现 SQLValidator（src/postgres_mcp/core/sql_validator.py - SQLGlot AST 解析, 递归遍历, 危险函数黑名单）
+- [x] T043 [P] [US4] 实现注释去除（src/postgres_mcp/core/sql_validator.py - 防注入）
+- [x] T044 [P] [US4] 实现嵌套查询验证（src/postgres_mcp/core/sql_validator.py - CTE, 子查询）
 - [ ] T045 [US4] 集成 SQLValidator 到 SQLGenerator（src/postgres_mcp/core/sql_generator.py - 验证失败重试）
 
 ---

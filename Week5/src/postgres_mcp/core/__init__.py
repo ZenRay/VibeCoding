@@ -1,11 +1,11 @@
-"""核心业务逻辑模块。
+"""Core business logic module.
 
-本模块包含核心业务逻辑实现：
-- SQL 生成器
-- SQL 验证器
-- Schema 缓存
-- 查询执行器
-- 模板匹配器
+This module contains core business logic implementations:
+- SQL Generator
+- SQL Validator
+- Schema Cache
+- Query Executor
+- Template Matcher
 """
 
 from postgres_mcp.core.sql_generator import (
@@ -13,9 +13,17 @@ from postgres_mcp.core.sql_generator import (
     SQLGenerationError,
     SQLGenerator,
 )
+from postgres_mcp.core.sql_validator import (
+    SQLValidator,
+    ValidationError,
+    ValidationResult,
+)
 
 __all__ = [
     "SQLGenerator",
     "GenerationMethod",
     "SQLGenerationError",
+    "SQLValidator",
+    "ValidationResult",
+    "ValidationError",
 ]
