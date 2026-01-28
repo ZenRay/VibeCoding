@@ -145,7 +145,7 @@ L2_TEST_CASES = [
             r"SELECT .* FROM reviews.*?WHERE.*?product_id.*?\)|"
             r"SELECT (DISTINCT )?.*?FROM products.*?(INNER )?JOIN.*?reviews.*?ON.*?product_id)"
         ),
-        validation_rules=["has_where_clause"],
+        validation_rules=[],  # 移除 has_where_clause - JOIN 方案不需要 WHERE
         description="EXISTS subquery or JOIN",
     ),
     TestCase(

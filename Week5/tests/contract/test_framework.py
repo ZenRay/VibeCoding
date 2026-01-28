@@ -172,10 +172,20 @@ class SQLValidator:
 
             statement = statements[0]
 
-            # Only SELECT statements are allowed
-            if not isinstance(statement, exp.Select):
+            # Allow SELECT and set operations (UNION, INTERSECT, EXCEPT)
+            allowed_types = (exp.Select, exp.Union, exp.Intersect, exp.Except)
+            if not isinstance(statement, allowed_types):
                 stmt_type = type(statement).__name__
                 return False, f"{stmt_type} statements are not allowed (read-only queries only)"
+
+            # For set operations (UNION, etc.), validate all branches
+            if isinstance(statement, (exp.Union, exp.Intersect, exp.Except)):
+                # Check each branch of the set operation
+                for branch in [statement.left, statement.right]:
+                    # Recursively validate each branch
+                    is_safe, error = SQLValidator.validate_security(branch.sql(dialect="postgres"))
+                    if not is_safe:
+                        return False, f"Unsafe operation in set branch: {error}"
 
             # Check for dangerous operations in subqueries
             for node in statement.walk():
