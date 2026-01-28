@@ -99,6 +99,7 @@ async def server_lifespan():
             temperature=config.openai.temperature,
             max_tokens=config.openai.max_tokens,
             timeout=config.openai.timeout,
+            base_url=config.openai.base_url,
         )
         logger.info("openai_client_initialized")
 

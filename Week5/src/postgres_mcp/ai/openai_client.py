@@ -50,6 +50,7 @@ class OpenAIClient:
         temperature: float = 0.0,
         max_tokens: int = 2000,
         timeout: float = 10.0,
+        base_url: str | None = None,
     ):
         """
         Initialize OpenAI client.
@@ -61,8 +62,16 @@ class OpenAIClient:
             temperature: Generation temperature (0.0 = deterministic)
             max_tokens: Maximum number of tokens
             timeout: Request timeout in seconds
+            base_url: Optional custom API base URL (for compatible services)
         """
-        self._client = AsyncOpenAI(api_key=api_key, timeout=timeout)
+        if base_url:
+            self._client = AsyncOpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                timeout=timeout
+            )
+        else:
+            self._client = AsyncOpenAI(api_key=api_key, timeout=timeout)
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens

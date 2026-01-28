@@ -59,6 +59,8 @@ class OpenAIConfig(BaseModel):
         model: OpenAI model identifier.
         temperature: Sampling temperature.
         max_tokens: Maximum tokens to generate.
+        base_url: Optional custom API base URL for compatible services.
+        timeout: Request timeout in seconds.
 
     Returns:
     ----------
@@ -73,6 +75,8 @@ class OpenAIConfig(BaseModel):
     model: str = Field(..., min_length=1)
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(1000, ge=1)
+    base_url: str | None = Field(None)  # Optional: For OpenAI-compatible services
+    timeout: float = Field(30.0, ge=1.0)  # Default 30s timeout
 
 
 class SchemaCacheConfig(BaseModel):

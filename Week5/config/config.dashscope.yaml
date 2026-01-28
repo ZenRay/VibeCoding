@@ -1,0 +1,49 @@
+# 阿里百炼（通义千问）配置示例
+
+server:
+  name: "postgres-mcp"
+  version: "0.4.0"
+
+databases:
+  - name: "ecommerce_small"
+    host: "localhost"
+    port: 5432
+    database: "ecommerce_small"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "disable"
+    min_pool_size: 2
+    max_pool_size: 10
+
+default_database: "ecommerce_small"
+
+# 阿里百炼配置
+openai:
+  api_key_env_var: "OPENAI_API_KEY"  # 或使用 "DASHSCOPE_API_KEY"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen-turbo"  # 推荐: qwen-turbo (快速), qwen-plus (平衡), qwen-max (高质量)
+  temperature: 0.0
+  max_tokens: 2000
+  timeout: 30.0
+
+schema_cache:
+  poll_interval_minutes: 5
+  load_sample_data: true
+  max_sample_rows: 3
+
+query:
+  default_limit: 1000
+  max_timeout_seconds: 30
+  enable_result_validation: false
+
+templates:
+  enabled: false
+  directory: "src/postgres_mcp/templates/queries"
+
+logging:
+  level: "INFO"
+  directory: "logs/queries"
+  retention_days: 30
+  max_file_size_mb: 100
+  buffer_size: 100
+  flush_interval_seconds: 5.0
