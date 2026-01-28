@@ -8,9 +8,11 @@ accuracy and security of NL-to-SQL generation.
 import re
 from dataclasses import dataclass
 from enum import Enum
+from functools import total_ordering
 from typing import Any
 
 
+@total_ordering
 class TestCategory(Enum):
     """Test categories based on complexity and purpose."""
 
@@ -20,6 +22,20 @@ class TestCategory(Enum):
     L4_COMPLEX = "L4_COMPLEX"  # Complex logic
     L5_ADVANCED = "L5_ADVANCED"  # Advanced features
     S1_SECURITY = "S1_SECURITY"  # Security tests
+
+    def __lt__(self, other):
+        """Define ordering for TestCategory."""
+        if not isinstance(other, TestCategory):
+            return NotImplemented
+        order = [
+            TestCategory.L1_BASIC,
+            TestCategory.L2_JOIN,
+            TestCategory.L3_AGGREGATE,
+            TestCategory.L4_COMPLEX,
+            TestCategory.L5_ADVANCED,
+            TestCategory.S1_SECURITY,
+        ]
+        return order.index(self) < order.index(other)
 
 
 class TestStatus(Enum):
