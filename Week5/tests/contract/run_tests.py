@@ -28,6 +28,7 @@ from tests.contract.test_l2_join import L2_TEST_CASES
 from tests.contract.test_l3_aggregate import L3_TEST_CASES
 from tests.contract.test_l4_complex import L4_TEST_CASES
 from tests.contract.test_l5_advanced import L5_TEST_CASES
+from tests.contract.test_s1_security import S1_TEST_CASES
 
 
 async def run_contract_tests() -> TestReport:
@@ -439,6 +440,111 @@ async def run_contract_tests() -> TestReport:
             )
             print(f"  ✗ {test_case.id}: FAILED")
             print(f"    Error: {str(e)}")
+
+        report.add_result(test_result)
+
+    print()
+
+    # Run S1 security tests
+    print(f"Running {len(S1_TEST_CASES)} S1 Security tests...")
+    for test_case in S1_TEST_CASES:
+        start_time = time.time()
+        try:
+            result = await sql_generator.generate(
+                natural_language=test_case.natural_language,
+                database_name=test_case.database,
+            )
+            execution_time = (time.time() - start_time) * 1000
+
+            # Security tests have special validation logic
+            is_safe, security_msg = test_validator.validate_security(result.sql)
+
+            if test_case.expected_behavior == "REJECT":
+                # Should be rejected - security violation expected
+                if not is_safe:
+                    status = TestStatus.PASSED
+                    error_msg = None
+                else:
+                    status = TestStatus.FAILED
+                    error_msg = "Expected security rejection but query was allowed"
+            elif test_case.expected_behavior == "SANITIZE":
+                # Should be sanitized - check if SQL is safe and matches pattern
+                if not is_safe:
+                    status = TestStatus.FAILED
+                    error_msg = f"Generated unsafe SQL: {security_msg}"
+                elif test_case.expected_sql:
+                    pattern_match = test_validator.matches_pattern(
+                        result.sql, test_case.expected_sql
+                    )
+                    if pattern_match:
+                        status = TestStatus.PASSED
+                        error_msg = None
+                    else:
+                        status = TestStatus.FAILED
+                        error_msg = "SQL pattern does not match expected (sanitization failed)"
+                else:
+                    status = TestStatus.PASSED
+                    error_msg = None
+            else:
+                # Standard security check
+                if is_safe:
+                    status = TestStatus.PASSED
+                    error_msg = None
+                else:
+                    status = TestStatus.FAILED
+                    error_msg = f"Security violation: {security_msg}"
+
+            test_result = TestResult(
+                test_id=test_case.id,
+                status=status,
+                generated_sql=result.sql if is_safe else "[BLOCKED]",
+                execution_time_ms=execution_time,
+                error_message=error_msg,
+                validation_details={
+                    "security_check": is_safe,
+                    "expected_behavior": test_case.expected_behavior,
+                    "security_message": security_msg if not is_safe else None,
+                },
+            )
+
+            status_symbol = "✓" if status == TestStatus.PASSED else "✗"
+            print(f"  {status_symbol} {test_case.id}: {status.value}")
+            if error_msg:
+                print(f"    Error: {error_msg}")
+                if is_safe:
+                    print(f"    Generated: {result.sql[:80]}...")
+
+        except Exception as e:
+            # Security tests may intentionally cause exceptions
+            error_str = str(e).lower()
+            if any(
+                keyword in error_str
+                for keyword in ["drop", "delete", "update", "insert", "alter", "truncate"]
+            ):
+                # Expected security exception
+                test_result = TestResult(
+                    test_id=test_case.id,
+                    status=TestStatus.PASSED,
+                    generated_sql="[BLOCKED BY VALIDATOR]",
+                    execution_time_ms=(time.time() - start_time) * 1000,
+                    error_message=None,
+                    validation_details={
+                        "security_check": False,
+                        "blocked_by_validator": True,
+                        "validator_message": str(e),
+                    },
+                )
+                print(f"  ✓ {test_case.id}: PASSED (blocked by validator)")
+            else:
+                # Unexpected exception
+                test_result = TestResult(
+                    test_id=test_case.id,
+                    status=TestStatus.FAILED,
+                    execution_time_ms=(time.time() - start_time) * 1000,
+                    error_message=str(e),
+                )
+                print(f"  ✗ {test_case.id}: FAILED")
+                print(f"    Error: {str(e)}")
 
         report.add_result(test_result)
 
