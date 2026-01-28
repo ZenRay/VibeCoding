@@ -26,14 +26,14 @@
 
 **Purpose**: 项目结构和基础依赖设置
 
-- [ ] T001 创建项目目录结构（src/postgres_mcp/{core,models,mcp,db,ai,utils,templates}/, tests/{unit,integration,contract}/, config/, logs/）
-- [ ] T002 初始化 pyproject.toml 配置（Python 3.12, UV 包管理器, 所有依赖项）
-- [ ] T003 [P] 配置 Ruff linting 和格式化规则（pyproject.toml [tool.ruff]）
-- [ ] T004 [P] 配置 Mypy 类型检查（pyproject.toml [tool.mypy] strict mode）
-- [ ] T005 [P] 配置 Pytest（pyproject.toml [tool.pytest.ini_options], tests/conftest.py）
-- [ ] T006 [P] 创建 .gitignore（Python, UV, logs, .env, __pycache__）
-- [ ] T007 创建配置文件模板（config/config.example.yaml）
-- [ ] T008 [P] 创建 README.md 基础文档
+- [x] T001 创建项目目录结构（src/postgres_mcp/{core,models,mcp,db,ai,utils,templates}/, tests/{unit,integration,contract}/, config/, logs/）
+- [x] T002 初始化 pyproject.toml 配置（Python 3.12, UV 包管理器, 所有依赖项）
+- [x] T003 [P] 配置 Ruff linting 和格式化规则（pyproject.toml [tool.ruff]）
+- [x] T004 [P] 配置 Mypy 类型检查（pyproject.toml [tool.mypy] strict mode）
+- [x] T005 [P] 配置 Pytest（pyproject.toml [tool.pytest.ini_options], tests/conftest.py）
+- [x] T006 [P] 创建 .gitignore（Python, UV, logs, .env, __pycache__）
+- [x] T007 创建配置文件模板（config/config.example.yaml）
+- [x] T008 [P] 创建 README.md 基础文档
 
 ---
 

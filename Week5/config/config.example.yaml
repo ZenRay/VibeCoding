@@ -1,0 +1,44 @@
+server:
+  name: "postgres-mcp"
+  version: "0.1.0"
+
+databases:
+  - name: "production"
+    host: "localhost"
+    port: 5432
+    database: "myapp"
+    user: "readonly_user"
+    password_env_var: "PROD_DB_PASSWORD"
+    ssl_mode: "require"
+    min_pool_size: 5
+    max_pool_size: 20
+
+default_database: "production"
+
+openai:
+  api_key_env_var: "OPENAI_API_KEY"
+  model: "gpt-4o-mini-2024-07-18"
+  temperature: 0.0
+  max_tokens: 1000
+
+schema_cache:
+  poll_interval_minutes: 5
+  load_sample_data: true
+  max_sample_rows: 3
+
+query:
+  default_limit: 1000
+  max_timeout_seconds: 30
+  enable_result_validation: false
+
+templates:
+  enabled: true
+  directory: "src/postgres_mcp/templates/queries"
+
+logging:
+  level: "INFO"
+  directory: "logs/queries"
+  retention_days: 30
+  max_file_size_mb: 100
+  buffer_size: 100
+  flush_interval_seconds: 5.0
