@@ -66,11 +66,7 @@ class OpenAIClient:
             base_url: Optional custom API base URL (for compatible services)
         """
         if base_url:
-            self._client = AsyncOpenAI(
-                api_key=api_key,
-                base_url=base_url,
-                timeout=timeout
-            )
+            self._client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
         else:
             self._client = AsyncOpenAI(api_key=api_key, timeout=timeout)
         self._model = model

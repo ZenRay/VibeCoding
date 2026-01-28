@@ -6,6 +6,7 @@ Main entry point for the PostgreSQL MCP server with lifespan management.
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import structlog
 from mcp.server import Server
@@ -22,6 +23,7 @@ from postgres_mcp.db.query_runner import QueryRunner
 from postgres_mcp.db.schema_inspector import SchemaInspector
 from postgres_mcp.mcp.resources import register_resources
 from postgres_mcp.mcp.tools import register_tools
+from postgres_mcp.utils.jsonl_writer import JSONLWriter
 
 logger = structlog.get_logger(__name__)
 
@@ -42,6 +44,7 @@ class ServerContext:
         self.pool_manager: PoolManager | None = None
         self.query_runner: QueryRunner | None = None
         self.query_executor: QueryExecutor | None = None
+        self.jsonl_writer: JSONLWriter | None = None
 
 
 # Global server context
@@ -116,6 +119,18 @@ async def server_lifespan():
         _context.query_runner = QueryRunner(timeout_seconds=30.0)
         logger.info("query_runner_initialized")
 
+        # Initialize JSONL writer for query history
+        log_dir = Path(config.logging.directory)
+        _context.jsonl_writer = JSONLWriter(
+            log_directory=log_dir,
+            buffer_size=config.logging.buffer_size,
+            flush_interval_seconds=config.logging.flush_interval_seconds,
+            max_file_size_mb=config.logging.max_file_size_mb,
+            retention_days=config.logging.retention_days,
+        )
+        await _context.jsonl_writer.start()
+        logger.info("jsonl_writer_initialized", log_directory=str(log_dir))
+
         # Initialize schema inspectors for each database
         inspectors = {}
         for db_config in config.databases:
@@ -149,6 +164,7 @@ async def server_lifespan():
             sql_generator=_context.sql_generator,
             pool_manager=_context.pool_manager,
             query_runner=_context.query_runner,
+            jsonl_writer=_context.jsonl_writer,
         )
         logger.info("query_executor_initialized")
 
@@ -164,8 +180,15 @@ async def server_lifespan():
     finally:
         # Comprehensive cleanup with error handling
         # Note: Only log if stdout is still available (not during forced termination)
-        
+
         cleanup_errors = []
+
+        # Stop JSONL writer and flush remaining buffer
+        if _context.jsonl_writer:
+            try:
+                await _context.jsonl_writer.stop()
+            except Exception as e:
+                cleanup_errors.append(f"jsonl_writer: {str(e)}")
 
         # Close connection pool manager
         if _context.pool_manager:

@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 class ConnectionStatus(str, Enum):
@@ -129,8 +129,5 @@ class DatabaseConnection(BaseModel, frozen=True):
         """
         password = os.environ.get(self.password_env_var)
         if not password:
-            raise ValueError(
-                f"environment variable {self.password_env_var} not set"
-            )
+            raise ValueError(f"environment variable {self.password_env_var} not set")
         return password
-

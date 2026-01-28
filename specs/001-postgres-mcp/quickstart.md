@@ -7,10 +7,12 @@
 本指南将帮助您在 5 分钟内启动并运行 PostgreSQL MCP 服务器。
 
 **已实现功能**:
-- ✅ 自然语言转 SQL (OpenAI GPT-4o-mini)
+- ✅ 自然语言转 SQL (OpenAI GPT-4o-mini / 阿里百炼)
 - ✅ SQL 安全验证 (只读强制)
 - ✅ Schema 自动缓存 (5 分钟刷新)
-- ✅ MCP 接口 (3 tools + 2 resources)
+- ✅ 查询执行与结果返回
+- ✅ 查询历史日志 (JSONL 格式)
+- ✅ MCP 接口 (5 tools + 2 resources)
 
 ---
 
@@ -522,8 +524,11 @@ pools:
 
 logging:
   level: "INFO"           # DEBUG/INFO/WARNING/ERROR
+  directory: "logs/queries"  # 查询历史日志目录
   buffer_size: 100        # 日志缓冲大小
-  flush_interval_seconds: 5.0
+  flush_interval_seconds: 5.0  # 刷新间隔
+  max_file_size_mb: 100   # 单个日志文件最大大小
+  retention_days: 30      # 日志保留天数
 ```
 
 ### 模板库自定义
@@ -618,23 +623,31 @@ asyncio.run(test())
 tail -f logs/application.log
 
 # 查询历史日志（JSONL）
-tail -f logs/queries/$(date +%Y-%m-%d).jsonl | jq '.'
+tail -f logs/queries/query_history_$(date +%Y%m%d)_000001.jsonl | jq '.'
+
+# 或使用 query_history MCP 工具直接查询
 ```
 
 ### 查询日志分析
 
 ```bash
+# 最近的查询历史日志文件
+ls -lt logs/queries/
+
 # 今天的成功查询数
-jq 'select(.status == "success")' logs/queries/$(date +%Y-%m-%d).jsonl | wc -l
+jq 'select(.status == "success")' logs/queries/query_history_*.jsonl | wc -l
 
 # 平均执行时间
-jq -s 'map(select(.execution_time_ms != null) | .execution_time_ms) | add / length' logs/queries/$(date +%Y-%m-% d).jsonl
+jq -s 'map(select(.execution_time_ms != null) | .execution_time_ms) | add / length' logs/queries/query_history_*.jsonl
 
 # 最慢的 10 个查询
-jq -s 'sort_by(.execution_time_ms) | reverse | .[0:10] | .[] | {sql, execution_time_ms}' logs/queries/$(date +%Y-%m-%d).jsonl
+jq -s 'sort_by(.execution_time_ms) | reverse | .[0:10] | .[] | {sql, execution_time_ms, database}' logs/queries/query_history_*.jsonl
 
 # 失败原因分布
-jq -s 'map(select(.status != "success")) | group_by(.error_message) | map({error: .[0].error_message, count: length})' logs/queries/$(date +%Y-%m-%d).jsonl
+jq -s 'map(select(.status != "success")) | group_by(.error_message) | map({error: .[0].error_message, count: length})' logs/queries/query_history_*.jsonl
+
+# 按数据库统计查询数量
+jq -s 'group_by(.database) | map({database: .[0].database, count: length})' logs/queries/query_history_*.jsonl
 ```
 
 ---

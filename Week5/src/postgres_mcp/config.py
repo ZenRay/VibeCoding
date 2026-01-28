@@ -96,16 +96,14 @@ class OpenAIConfig(BaseModel):
         # Priority 1: Direct api_key in config
         if self.api_key:
             return self.api_key
-        
+
         # Priority 2: From environment variable
         if self.api_key_env_var:
             key = os.environ.get(self.api_key_env_var)
             if key:
                 return key
-            raise ValueError(
-                f"environment variable {self.api_key_env_var} not set"
-            )
-        
+            raise ValueError(f"environment variable {self.api_key_env_var} not set")
+
         # No API key available
         raise ValueError("no API key configured (set api_key or api_key_env_var)")
 
@@ -208,9 +206,7 @@ class DatabaseConfig(BaseModel):
         """
         pwd = os.environ.get(self.password_env_var)
         if not pwd:
-            raise ValueError(
-                f"environment variable {self.password_env_var} not set"
-            )
+            raise ValueError(f"environment variable {self.password_env_var} not set")
         return pwd
 
 

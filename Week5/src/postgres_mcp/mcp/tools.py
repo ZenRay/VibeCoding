@@ -107,6 +107,41 @@ def register_tools(server: Server) -> None:
                     },
                 },
             ),
+            Tool(
+                name="query_history",
+                description=(
+                    "Retrieve query execution history from logs. "
+                    "Filter by database, status, or time range. "
+                    "Returns recent query logs with execution details."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "database": {
+                            "type": "string",
+                            "description": "Filter by database name (optional)",
+                        },
+                        "status": {
+                            "type": "string",
+                            "enum": [
+                                "success",
+                                "validation_failed",
+                                "execution_failed",
+                                "ai_failed",
+                            ],
+                            "description": "Filter by execution status (optional)",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": (
+                                "Maximum number of entries to return " "(default: 50, max: 500)"
+                            ),
+                            "minimum": 1,
+                            "maximum": 500,
+                        },
+                    },
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -129,7 +164,7 @@ def register_tools(server: Server) -> None:
             to prevent server crashes.
         """
         from postgres_mcp.server import get_context
-        
+
         ctx = get_context()
 
         logger.info("tool_call_started", tool=name, args=arguments)
@@ -143,6 +178,8 @@ def register_tools(server: Server) -> None:
                 result = await handle_list_databases(ctx)
             elif name == "refresh_schema":
                 result = await handle_refresh_schema(arguments, ctx)
+            elif name == "query_history":
+                result = await handle_query_history(arguments, ctx)
             else:
                 logger.warning("unknown_tool_called", tool=name)
                 result = [
@@ -164,10 +201,10 @@ def register_tools(server: Server) -> None:
                 error=str(e),
                 exc_info=True,
             )
-            
+
             # Return user-friendly error message
             error_msg = f"❌ Tool '{name}' failed: {type(e).__name__}: {str(e)}"
-            
+
             return [
                 TextContent(
                     type="text",
@@ -242,7 +279,7 @@ async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextC
 
         return [TextContent(type="text", text="\n".join(response_parts))]
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         error_msg = (
             "❌ SQL generation timed out (90s). "
             "The AI service may be slow or unavailable. Please try again."
@@ -358,7 +395,7 @@ async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[Text
 
         return [TextContent(type="text", text="\n".join(response_parts))]
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         error_msg = (
             "❌ Query execution timed out (120s). "
             "The query may be too complex or the AI service is slow. Please try again."
@@ -517,3 +554,182 @@ async def handle_refresh_schema(arguments: dict[str, Any], ctx: Any) -> list[Tex
                     text=f"❌ Failed to refresh schemas ({error_type}): {str(e)}",
                 )
             ]
+
+
+async def handle_query_history(arguments: dict[str, Any], ctx: Any) -> list[TextContent]:
+    """
+    Handle query_history tool call to retrieve query execution logs.
+
+    Args:
+    ----------
+        arguments: Tool arguments (database, status, limit)
+        ctx: Server context
+
+    Returns:
+    ----------
+        List of text content with formatted query history
+    """
+    database_filter = arguments.get("database")
+    status_filter = arguments.get("status")
+    limit = arguments.get("limit", 50)
+
+    logger.info(
+        "query_history_called",
+        database=database_filter,
+        status=status_filter,
+        limit=limit,
+    )
+
+    try:
+        if not ctx.jsonl_writer:
+            return [
+                TextContent(
+                    type="text",
+                    text="⚠️ Query history logging is not enabled",
+                )
+            ]
+
+        # Read log files from the log directory
+        import json
+
+        log_dir = ctx.jsonl_writer.log_directory
+        log_files = sorted(
+            log_dir.glob("query_history_*.jsonl"),
+            key=lambda f: f.stat().st_mtime,
+            reverse=True,  # Newest first
+        )
+
+        if not log_files:
+            return [
+                TextContent(
+                    type="text",
+                    text="⚠️ No query history found",
+                )
+            ]
+
+        # Parse and filter log entries
+        entries = []
+        for log_file in log_files:
+            if len(entries) >= limit:
+                break
+
+            try:
+                with log_file.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        if len(entries) >= limit:
+                            break
+
+                        line = line.strip()
+                        if not line:
+                            continue
+
+                        try:
+                            entry = json.loads(line)
+
+                            # Apply filters
+                            if database_filter and entry.get("database") != database_filter:
+                                continue
+
+                            if status_filter and entry.get("status") != status_filter:
+                                continue
+
+                            entries.append(entry)
+
+                        except json.JSONDecodeError:
+                            logger.warning("invalid_jsonl_line", log_file=str(log_file))
+                            continue
+
+            except Exception as e:
+                logger.warning(
+                    "log_file_read_error",
+                    log_file=str(log_file),
+                    error=str(e),
+                )
+                continue
+
+        if not entries:
+            filter_desc = []
+            if database_filter:
+                filter_desc.append(f"database={database_filter}")
+            if status_filter:
+                filter_desc.append(f"status={status_filter}")
+
+            filter_text = f" (filters: {', '.join(filter_desc)})" if filter_desc else ""
+            return [
+                TextContent(
+                    type="text",
+                    text=f"⚠️ No query history found matching criteria{filter_text}",
+                )
+            ]
+
+        # Sort entries by timestamp (newest first)
+        entries.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+
+        # Format response
+        response_parts = [f"## Query History (last {len(entries)} entries)\n"]
+
+        for i, entry in enumerate(entries[:limit], 1):
+            timestamp = entry.get("timestamp", "N/A")
+            database = entry.get("database", "N/A")
+            status = entry.get("status", "unknown")
+            nl_query = entry.get("natural_language", "N/A")
+            sql = entry.get("sql", "N/A")
+            exec_time = entry.get("execution_time_ms", "N/A")
+            row_count = entry.get("row_count", "N/A")
+            error = entry.get("error_message")
+
+            # Format status with emoji
+            status_icon = {
+                "success": "✅",
+                "validation_failed": "⚠️",
+                "execution_failed": "❌",
+                "ai_failed": "🔴",
+                "template_matched": "📋",
+            }.get(status, "❓")
+
+            response_parts.append(f"\n### Entry {i}")
+            response_parts.append(f"- **Time**: {timestamp}")
+            response_parts.append(f"- **Database**: {database}")
+            response_parts.append(f"- **Status**: {status_icon} {status}")
+            response_parts.append(f"- **Query**: {nl_query}")
+
+            if sql and sql != "N/A":
+                sql_display = f"`{sql[:100]}...`" if len(sql) > 100 else f"`{sql}`"
+                response_parts.append(f"- **SQL**: {sql_display}")
+
+            if exec_time != "N/A":
+                if isinstance(exec_time, int | float):
+                    time_display = f"{exec_time:.2f}ms"
+                else:
+                    time_display = f"{exec_time}ms"
+                response_parts.append(f"- **Execution Time**: {time_display}")
+
+            if row_count != "N/A":
+                response_parts.append(f"- **Rows**: {row_count}")
+
+            if error:
+                response_parts.append(f"- **Error**: {error}")
+
+        logger.info(
+            "query_history_success",
+            entries_count=len(entries),
+            database=database_filter,
+            status=status_filter,
+        )
+
+        return [TextContent(type="text", text="\n".join(response_parts))]
+
+    except Exception as e:
+        error_type = type(e).__name__
+        logger.error(
+            "query_history_failed",
+            error_type=error_type,
+            error=str(e),
+            exc_info=True,
+        )
+        return [
+            TextContent(
+                type="text",
+                text=f"❌ Failed to retrieve query history ({error_type}): {str(e)}",
+            )
+        ]

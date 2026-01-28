@@ -30,7 +30,7 @@ def register_resources(server: Server) -> None:
             List of resource definitions
         """
         from postgres_mcp.server import get_context
-        
+
         ctx = get_context()
         resources: list[Resource] = []
 
@@ -77,7 +77,7 @@ def register_resources(server: Server) -> None:
             Resource content as text
         """
         from postgres_mcp.server import get_context
-        
+
         ctx = get_context()
 
         try:

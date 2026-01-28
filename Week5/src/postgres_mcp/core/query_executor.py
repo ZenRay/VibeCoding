@@ -16,10 +16,15 @@ Raises:
 
 from __future__ import annotations
 
+import time
+import uuid
+
 from postgres_mcp.core.sql_generator import SQLGenerator
 from postgres_mcp.db.connection_pool import PoolManager
 from postgres_mcp.db.query_runner import QueryRunner
+from postgres_mcp.models.log_entry import LogStatus, QueryLogEntry
 from postgres_mcp.models.result import QueryResult
+from postgres_mcp.utils.jsonl_writer import JSONLWriter
 
 
 class QueryExecutionError(Exception):
@@ -72,10 +77,12 @@ class QueryExecutor:
         sql_generator: SQLGenerator,
         pool_manager: PoolManager,
         query_runner: QueryRunner,
+        jsonl_writer: JSONLWriter | None = None,
     ) -> None:
         self._sql_generator = sql_generator
         self._pool_manager = pool_manager
         self._query_runner = query_runner
+        self._jsonl_writer = jsonl_writer
 
     async def execute(self, natural_language: str, database: str, limit: int = 1000) -> QueryResult:
         """
@@ -101,15 +108,27 @@ class QueryExecutor:
             >>> assert result.row_count > 0
             >>> assert "SELECT" in result.sql
         """
+        request_id = str(uuid.uuid4())
+        start_time = time.perf_counter()
+        generated_sql: str | None = None
+        status = LogStatus.SUCCESS
+        error_message: str | None = None
+        row_count: int | None = None
+        generation_method: str | None = None
+
         try:
             # Step 1: Generate SQL
             generated_query = await self._sql_generator.generate(natural_language, database)
+            generated_sql = generated_query.sql
+            generation_method = generated_query.generation_method
 
             # Step 2: Validate SQL
             if not generated_query.validated:
-                raise QueryExecutionError(
+                status = LogStatus.VALIDATION_FAILED
+                error_message = (
                     f"Generated SQL failed validation: {', '.join(generated_query.warnings)}"
                 )
+                raise QueryExecutionError(error_message)
 
             # Step 3: Get database connection
             async with self._pool_manager.get_connection(database) as connection:
@@ -120,6 +139,7 @@ class QueryExecutor:
 
             # Step 5: Add SQL to result
             query_result.sql = generated_query.sql
+            row_count = query_result.row_count
 
             return query_result
 
@@ -129,12 +149,36 @@ class QueryExecutor:
 
         except Exception as exc:
             # Wrap all other exceptions
-            error_message = str(exc).lower()
-            if "ai service" in error_message or "openai" in error_message:
-                raise QueryExecutionError(f"AI service unavailable: {exc}") from exc
-            elif "connection" in error_message:
-                raise QueryExecutionError(f"Database connection failed: {exc}") from exc
-            elif "validation" in error_message:
-                raise QueryExecutionError(f"SQL validation failed: {exc}") from exc
+            error_message_lower = str(exc).lower()
+            if "ai service" in error_message_lower or "openai" in error_message_lower:
+                status = LogStatus.AI_FAILED
+                error_message = f"AI service unavailable: {exc}"
+            elif "connection" in error_message_lower:
+                status = LogStatus.EXECUTION_FAILED
+                error_message = f"Database connection failed: {exc}"
+            elif "validation" in error_message_lower:
+                status = LogStatus.VALIDATION_FAILED
+                error_message = f"SQL validation failed: {exc}"
             else:
-                raise QueryExecutionError(f"Query execution failed: {exc}") from exc
+                status = LogStatus.EXECUTION_FAILED
+                error_message = f"Query execution failed: {exc}"
+
+            raise QueryExecutionError(error_message) from exc
+
+        finally:
+            # Log query execution
+            execution_time_ms = (time.perf_counter() - start_time) * 1000
+
+            if self._jsonl_writer:
+                log_entry = QueryLogEntry(
+                    request_id=request_id,
+                    database=database,
+                    natural_language=natural_language,
+                    sql=generated_sql,
+                    status=status,
+                    execution_time_ms=execution_time_ms,
+                    row_count=row_count,
+                    error_message=error_message,
+                    generation_method=generation_method,
+                )
+                await self._jsonl_writer.write(log_entry)

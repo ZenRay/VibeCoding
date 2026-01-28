@@ -207,10 +207,10 @@
 
 #### Implementation
 
-- [ ] T068 [P] 实现 JSONLWriter（src/postgres_mcp/utils/jsonl_writer.py - 异步写入, 5 秒 flush, 日志轮转）
-- [ ] T069 [P] 实现日志清理（src/postgres_mcp/utils/jsonl_writer.py - 30 天保留）
-- [ ] T070 集成 JSONLWriter 到 QueryExecutor（src/postgres_mcp/core/query_executor.py - 记录所有查询）
-- [ ] T071 [P] 实现 MCP 工具 query_history（src/postgres_mcp/mcp/tools.py - 读取 JSONL, 过滤）
+- [x] T068 [P] 实现 JSONLWriter（src/postgres_mcp/utils/jsonl_writer.py - 异步写入, 5 秒 flush, 日志轮转）
+- [x] T069 [P] 实现日志清理（src/postgres_mcp/utils/jsonl_writer.py - 30 天保留）
+- [x] T070 集成 JSONLWriter 到 QueryExecutor（src/postgres_mcp/core/query_executor.py - 记录所有查询）
+- [x] T071 [P] 实现 MCP 工具 query_history（src/postgres_mcp/mcp/tools.py - 读取 JSONL, 过滤）
 
 ---
 
