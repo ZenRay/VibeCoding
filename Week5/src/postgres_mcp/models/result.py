@@ -57,6 +57,7 @@ class QueryResult(BaseModel):
         row_count: Number of rows returned.
         execution_time_ms: Execution duration in milliseconds.
         truncated: Whether results were truncated.
+        sql: The SQL query that was executed (optional).
         errors: Error messages if any.
 
     Returns:
@@ -73,6 +74,7 @@ class QueryResult(BaseModel):
     row_count: int = Field(ge=0)
     execution_time_ms: float = Field(ge=0)
     truncated: bool = False
+    sql: str | None = None
     errors: list[str] = Field(default_factory=list)
 
     @computed_field

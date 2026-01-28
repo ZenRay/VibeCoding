@@ -236,8 +236,7 @@ class SQLValidator:
                 func_name = self._get_function_name(node)
                 if func_name and func_name.lower() in self.DANGEROUS_FUNCTIONS:
                     errors.append(
-                        f"Dangerous function '{func_name}' is not allowed "
-                        f"(potential security risk)"
+                        f"Dangerous function '{func_name}' is not allowed (potential security risk)"
                     )
 
         return errors
@@ -287,8 +286,7 @@ class SQLValidator:
             # Check for missing LIMIT
             if not statement.args.get("limit"):
                 warnings.append(
-                    "No LIMIT clause detected: Consider adding LIMIT to prevent "
-                    "large result sets"
+                    "No LIMIT clause detected: Consider adding LIMIT to prevent large result sets"
                 )
 
         return warnings

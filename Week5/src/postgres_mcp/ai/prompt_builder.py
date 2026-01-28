@@ -86,9 +86,7 @@ class PromptBuilder:
             prompt_parts.append("\n# Query Examples\n")
             for i, example in enumerate(examples, 1):
                 prompt_parts.append(
-                    f"\nExample {i}:\n"
-                    f'Natural Language: "{example["nl"]}"\n'
-                    f'SQL: {example["sql"]}\n'
+                    f'\nExample {i}:\nNatural Language: "{example["nl"]}"\nSQL: {example["sql"]}\n'
                 )
 
         # Add user query

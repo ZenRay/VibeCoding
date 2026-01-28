@@ -4,16 +4,13 @@ Unit tests for Schema Inspector.
 Tests for PostgreSQL schema inspection using asyncpg.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from postgres_mcp.db.schema_inspector import SchemaInspector
 from postgres_mcp.models.schema import (
     DatabaseSchema,
-    TableSchema,
-    ColumnSchema,
-    IndexSchema,
-    ForeignKeySchema,
 )
 
 
@@ -57,12 +54,12 @@ async def test_inspector_initialization():
 async def test_connect_creates_pool(schema_inspector):
     """Test connection pool creation."""
     mock_pool = AsyncMock()
-    
+
     with patch("asyncpg.create_pool", new_callable=AsyncMock) as mock_create_pool:
         mock_create_pool.return_value = mock_pool
-        
+
         await schema_inspector.connect()
-        
+
         mock_create_pool.assert_called_once()
         assert schema_inspector._pool == mock_pool
 
@@ -72,9 +69,9 @@ async def test_disconnect_closes_pool(schema_inspector):
     """Test connection pool closure."""
     mock_pool = AsyncMock()
     schema_inspector._pool = mock_pool
-    
+
     await schema_inspector.disconnect()
-    
+
     mock_pool.close.assert_called_once()
     mock_pool.wait_closed.assert_called_once()
     assert schema_inspector._pool is None
@@ -88,7 +85,7 @@ async def test_inspect_schema_success(schema_inspector):
         {"table_name": "users", "table_type": "BASE TABLE"},
         {"table_name": "orders", "table_type": "BASE TABLE"},
     ]
-    
+
     # Mock column data for users table
     mock_users_columns = [
         {
@@ -110,7 +107,7 @@ async def test_inspect_schema_success(schema_inspector):
             "column_default": None,
         },
     ]
-    
+
     # Mock column data for orders table
     mock_orders_columns = [
         {
@@ -126,20 +123,18 @@ async def test_inspect_schema_success(schema_inspector):
             "column_default": None,
         },
     ]
-    
+
     # Mock primary key data
     mock_users_pk = [{"column_name": "id"}]
     mock_orders_pk = [{"column_name": "id"}]
-    
+
     # Mock index data
-    mock_users_indexes = [
-        {"index_name": "users_pkey", "column_name": "id", "is_unique": True}
-    ]
+    mock_users_indexes = [{"index_name": "users_pkey", "column_name": "id", "is_unique": True}]
     mock_orders_indexes = [
         {"index_name": "orders_pkey", "column_name": "id", "is_unique": True},
         {"index_name": "idx_orders_user_id", "column_name": "user_id", "is_unique": False},
     ]
-    
+
     # Mock foreign key data
     mock_orders_fks = [
         {
@@ -149,15 +144,15 @@ async def test_inspect_schema_success(schema_inspector):
             "foreign_column_name": "id",
         }
     ]
-    
+
     # Setup mock connection
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock()
-    
+
     # Configure mock responses
     async def mock_fetch(*args, **kwargs):
         query = args[0] if args else kwargs.get("query", "")
-        
+
         if "information_schema.tables" in query:
             return mock_tables
         elif "information_schema.columns" in query and "users" in query:
@@ -177,20 +172,20 @@ async def test_inspect_schema_success(schema_inspector):
         elif "information_schema.key_column_usage" in query and "users" in query:
             return []
         return []
-    
+
     mock_conn.fetch.side_effect = mock_fetch
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     # Execute inspection
     schema = await schema_inspector.inspect_schema()
-    
+
     # Verify results
     assert isinstance(schema, DatabaseSchema)
     assert schema.database_name == "test_db"
     assert len(schema.tables) == 2
     assert "users" in schema.tables
     assert "orders" in schema.tables
-    
+
     # Verify users table
     users_table = schema.tables["users"]
     assert users_table.name == "users"
@@ -199,7 +194,7 @@ async def test_inspect_schema_success(schema_inspector):
     assert users_table.columns[0].primary_key is True
     assert users_table.columns[1].name == "username"
     assert users_table.columns[1].nullable is False
-    
+
     # Verify orders table
     orders_table = schema.tables["orders"]
     assert orders_table.name == "orders"
@@ -214,9 +209,9 @@ async def test_inspect_schema_empty_database(schema_inspector):
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=[])
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     schema = await schema_inspector.inspect_schema()
-    
+
     assert isinstance(schema, DatabaseSchema)
     assert schema.database_name == "test_db"
     assert len(schema.tables) == 0
@@ -232,7 +227,7 @@ async def test_inspect_schema_without_connection():
         password="test",
         database="test",
     )
-    
+
     with pytest.raises(RuntimeError, match="not connected"):
         await inspector.inspect_schema()
 
@@ -241,7 +236,7 @@ async def test_inspect_schema_without_connection():
 async def test_inspect_schema_connection_error(schema_inspector):
     """Test schema inspection with connection error."""
     schema_inspector._pool.acquire.side_effect = Exception("Connection failed")
-    
+
     with pytest.raises(Exception, match="Connection failed"):
         await schema_inspector.inspect_schema()
 
@@ -263,13 +258,13 @@ async def test_get_table_columns(schema_inspector):
             "column_default": None,
         },
     ]
-    
+
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=mock_columns)
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     columns = await schema_inspector._get_table_columns("test_table")
-    
+
     assert len(columns) == 2
     assert columns[0].name == "id"
     assert columns[0].data_type == "integer"
@@ -282,13 +277,13 @@ async def test_get_table_columns(schema_inspector):
 async def test_get_primary_keys(schema_inspector):
     """Test fetching primary keys."""
     mock_pk = [{"column_name": "id"}, {"column_name": "tenant_id"}]
-    
+
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=mock_pk)
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     pk_columns = await schema_inspector._get_primary_keys("test_table")
-    
+
     assert pk_columns == {"id", "tenant_id"}
 
 
@@ -299,13 +294,13 @@ async def test_get_indexes(schema_inspector):
         {"index_name": "idx_name", "column_name": "name", "is_unique": True},
         {"index_name": "idx_email", "column_name": "email", "is_unique": False},
     ]
-    
+
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=mock_indexes)
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     indexes = await schema_inspector._get_indexes("test_table")
-    
+
     assert len(indexes) == 2
     assert indexes[0].name == "idx_name"
     assert indexes[0].unique is True
@@ -324,13 +319,13 @@ async def test_get_foreign_keys(schema_inspector):
             "foreign_column_name": "id",
         }
     ]
-    
+
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=mock_fks)
     schema_inspector._pool.acquire.return_value.__aenter__.return_value = mock_conn
-    
+
     fks = await schema_inspector._get_foreign_keys("test_table")
-    
+
     assert len(fks) == 1
     assert fks[0].name == "fk_user"
     assert fks[0].column == "user_id"

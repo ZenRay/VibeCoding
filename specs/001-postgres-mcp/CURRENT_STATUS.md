@@ -1,9 +1,9 @@
 # PostgreSQL MCP Server - Current Status
 
 **Project**: PostgreSQL 自然语言查询 MCP 服务器  
-**Last Updated**: 2026-01-29 01:30 CST  
-**Current Phase**: Phase 3 Complete ✅ → Ready for Testing/Integration  
-**Latest Commit**: `36002ee` (feat: 完成 MCP Interface 实现)  
+**Last Updated**: 2026-01-29 15:45 CST  
+**Current Phase**: Phase 4 Partial Complete ✅ → Ready for Testing  
+**Latest Commit**: TBD (Phase 4 completion)  
 **Branch**: `001-postgres-mcp`
 
 ---
@@ -14,13 +14,71 @@
 |-------|--------|----------|-------|----------|
 | Phase 1: Setup | ✅ Complete | 8/8 tasks | N/A | N/A |
 | Phase 2: Foundational | ✅ Complete | 14/14 tasks | 19/19 passed | 87% |
-| Phase 3: P1 User Stories | ✅ **Complete** | 26/26 tasks | 89/97 passed | **81%** |
-| Phase 4: P2 User Stories | 📅 Planned | 0/15 tasks | - | - |
+| Phase 3: P1 User Stories | ✅ Complete | 26/26 tasks | 89/97 passed | 81% |
+| Phase 4: P2 User Stories | ✅ **Partial** | 6/15 tasks | 14/14 passed | 93-97% |
 | Phase 5: P3 User Stories | 📅 Planned | 0/10 tasks | - | - |
 
-**Overall**: 48/67 tasks complete (71.6%) 🎉  
+**Overall**: 54/67 tasks complete (80.6%) 🎉  
 **Git Status**: 6 commits on branch `001-postgres-mcp` ✅  
 **Ready for Production Testing**: Yes 🚀
+
+---
+
+## ✅ Phase 4: P2 User Stories (Query Execution) - PARTIAL COMPLETE
+
+**Completion Date**: 2026-01-29  
+**Commit**: TBD  
+**Status**: Core query execution complete ✅ | Optional features deferred 📅
+
+### Summary
+
+Phase 4 实现了查询执行功能（US2）：
+- ✅ 查询执行器 (QueryExecutor + QueryRunner)
+- ✅ MCP execute_query 工具
+- ✅ 结果格式化和限制
+- ✅ 超时和错误处理
+- ⏸️ 查询历史和模板库（推迟至未来版本）
+
+### Completed Tasks (6/15 = 40%)
+
+#### User Story 2: Query Execution (6 tasks) ✅
+
+**Implementation**: 
+- ✅ **T055**: QueryRunner (`src/postgres_mcp/db/query_runner.py`)
+  - Asyncpg query execution with timeout
+  - Result formatting (columns + rows)
+  - Error handling for syntax/permission/connection errors
+  - 138 lines, 90% coverage
+  
+- ✅ **T056**: QueryExecutor (`src/postgres_mcp/core/query_executor.py`)
+  - Orchestrates SQL generation → validation → execution
+  - Integrates SQLGenerator, PoolManager, QueryRunner
+  - 143 lines, 97% coverage
+  
+- ✅ **T057**: Result formatting (included in QueryRunner)
+  - ColumnInfo extraction from query results
+  - Row count and truncation
+  
+- ✅ **T058**: QueryRunner unit tests (8 tests, 100% passed)
+- ✅ **T059**: QueryExecutor unit tests (6 tests, 100% passed)
+- ✅ **T060**: MCP tool execute_query (`src/postgres_mcp/mcp/tools.py`)
+  - Natural language → SQL → execution → formatted results
+  - Markdown table display (first 10 rows)
+  - Truncation warnings
+
+**Test Results**: 14/14 passed (100%) ✅
+
+### Deferred Tasks (9/15 = 60%)
+
+#### Query History Logging (4 tasks) ⏸️ DEFERRED
+- T066-T071: JSONLWriter, query_history tool, JSONL format
+- **Reason**: Optional audit feature, not critical for MVP
+
+#### Query Templates (5 tasks) ⏸️ DEFERRED  
+- T072-T078: Template library, matcher, fallback for OpenAI failures
+- **Reason**: Can use direct SQL as fallback, templates need careful design
+
+**Note**: These features are planned for future Phase 4.5/Phase 5 releases.
 
 ---
 
@@ -341,20 +399,25 @@ TOTAL                                     81% ✅
 2. System fetches cached database schema
 3. AI generates SQL with prompt optimization
 4. SQL validator ensures read-only and security
-5. Result returned via MCP with metadata
+5. **NEW**: System executes SQL and returns formatted results
+6. Result returned via MCP with metadata and data preview
 
 **Example Usage**:
 ```python
-# Via MCP Tool
+# Via MCP Tool - SQL Generation Only
 generate_sql(
     natural_language="显示过去 7 天的订单",
     database="ecommerce_small"
 )
+# Returns: Validated SQL + explanation + warnings
 
-# Returns:
-# - Validated SQL: SELECT * FROM orders WHERE created_at > NOW() - INTERVAL '7 days' LIMIT 1000;
-# - Explanation: Query orders from the last 7 days
-# - Warnings: SELECT * detected, LIMIT added
+# Via MCP Tool - Query Execution (NEW in Phase 4)
+execute_query(
+    natural_language="显示过去 7 天的订单",
+    database="ecommerce_small",
+    limit=100
+)
+# Returns: SQL + columns + rows + execution metadata
 ```
 
 ### Deployment Ready

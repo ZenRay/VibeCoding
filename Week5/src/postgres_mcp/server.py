@@ -13,9 +13,12 @@ from mcp.server.stdio import stdio_server
 
 from postgres_mcp.ai.openai_client import OpenAIClient
 from postgres_mcp.config import load_config
+from postgres_mcp.core.query_executor import QueryExecutor
 from postgres_mcp.core.schema_cache import SchemaCache
 from postgres_mcp.core.sql_generator import SQLGenerator
 from postgres_mcp.core.sql_validator import SQLValidator
+from postgres_mcp.db.connection_pool import PoolManager
+from postgres_mcp.db.query_runner import QueryRunner
 from postgres_mcp.db.schema_inspector import SchemaInspector
 from postgres_mcp.mcp.resources import register_resources
 from postgres_mcp.mcp.tools import register_tools
@@ -36,6 +39,9 @@ class ServerContext:
         self.sql_generator: SQLGenerator | None = None
         self.sql_validator: SQLValidator | None = None
         self.openai_client: OpenAIClient | None = None
+        self.pool_manager: PoolManager | None = None
+        self.query_runner: QueryRunner | None = None
+        self.query_executor: QueryExecutor | None = None
 
 
 # Global server context
@@ -100,6 +106,15 @@ async def server_lifespan():
         _context.sql_validator = SQLValidator()
         logger.info("sql_validator_initialized")
 
+        # Initialize connection pool manager
+        _context.pool_manager = PoolManager(db_configs=list(config.databases.values()))
+        await _context.pool_manager.initialize()
+        logger.info("pool_manager_initialized")
+
+        # Initialize query runner
+        _context.query_runner = QueryRunner(timeout_seconds=30.0)
+        logger.info("query_runner_initialized")
+
         # Initialize schema inspectors for each database
         inspectors = {}
         for db_name, db_config in config.databases.items():
@@ -128,6 +143,14 @@ async def server_lifespan():
         )
         logger.info("sql_generator_initialized")
 
+        # Initialize query executor
+        _context.query_executor = QueryExecutor(
+            sql_generator=_context.sql_generator,
+            pool_manager=_context.pool_manager,
+            query_runner=_context.query_runner,
+        )
+        logger.info("query_executor_initialized")
+
         logger.info("postgres_mcp_server_ready")
 
         # Server is now running
@@ -140,6 +163,10 @@ async def server_lifespan():
     finally:
         # Cleanup
         logger.info("postgres_mcp_server_shutting_down")
+
+        if _context.pool_manager:
+            await _context.pool_manager.close_all()
+            logger.info("pool_manager_closed")
 
         if _context.schema_cache:
             await _context.schema_cache.cleanup()
