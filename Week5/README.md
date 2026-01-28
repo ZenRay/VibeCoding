@@ -24,7 +24,7 @@ Query your PostgreSQL databases using natural language through the Model Context
 
 - Python 3.12+
 - PostgreSQL 12.0+
-- OpenAI API key
+- OpenAI API key **或** 阿里百炼 API key
 - UV package manager (recommended) or pip
 
 ### Installation
@@ -68,16 +68,21 @@ databases:
     max_pool_size: 10
 
 openai:
-  api_key_env_var: OPENAI_API_KEY  # API key from environment
+  # 方式1: 直接配置 (开发/测试推荐)
+  api_key: "sk-your-api-key"
   
-  # Choose your AI service (uncomment one):
+  # 方式2: 环境变量 (生产推荐)
+  # api_key: null
+  # api_key_env_var: "OPENAI_API_KEY"
   
-  # OpenAI (default)
-  model: gpt-4o-mini-2024-07-18
+  # 选择 AI 服务:
+  
+  # OpenAI (默认)
+  model: "gpt-4o-mini-2024-07-18"
   base_url: null
   
-  # Alibaba DashScope (Qwen)
-  # model: qwen-turbo
+  # 阿里百炼 (通义千问) - 推荐国内用户
+  # model: "qwen-turbo-latest"
   # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   
   temperature: 0.0
@@ -85,7 +90,7 @@ openai:
   timeout: 30.0
 ```
 
-3. **Set environment variables**:
+3. **Set environment variables** (如果使用方式2):
 
 ```bash
 export DB_PASSWORD="your_database_password"
@@ -382,10 +387,13 @@ MIT License - see LICENSE file for details
 - **Documentation**: [specs/001-postgres-mcp/](../specs/001-postgres-mcp/)
 - **Project Status**: [CURRENT_STATUS.md](../specs/001-postgres-mcp/CURRENT_STATUS.md)
 - **Quick Start Guide**: [quickstart.md](../specs/001-postgres-mcp/quickstart.md)
-- **Issue Tracker**: [GitHub Issues](https://github.com/yourusername/postgres-mcp/issues)
+- **Test Scripts**: [scripts/README.md](scripts/README.md)
+- **Test Reports**: [specs/001-postgres-mcp/testing/](../specs/001-postgres-mcp/testing/)
+- **DashScope Guide**: [specs/001-postgres-mcp/testing/README_DASHSCOPE.md](../specs/001-postgres-mcp/testing/README_DASHSCOPE.md)
 
 ---
 
 **Status**: Production Ready 🚀  
-**Version**: 0.4.0  
-**Last Updated**: 2026-01-29
+**Version**: 0.5.0  
+**Last Updated**: 2026-01-29  
+**Production Test**: ✅ 22/22 passed (100%)
