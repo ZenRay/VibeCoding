@@ -9,8 +9,11 @@ echo ""
 
 # 设置环境变量
 export TEST_DB_PASSWORD="testpass123"
-export HTTP_PROXY="http://127.0.0.1:7890"
-export HTTPS_PROXY="http://127.0.0.1:7890"
+
+# 注意：阿里百炼是国内服务，不需要代理
+# 如果需要代理访问其他服务，可以取消注释：
+# export HTTP_PROXY="http://127.0.0.1:7890"
+# export HTTPS_PROXY="http://127.0.0.1:7890"
 
 # 检查数据库
 echo "📊 检查测试数据库..."
