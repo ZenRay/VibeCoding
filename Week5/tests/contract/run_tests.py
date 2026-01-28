@@ -24,6 +24,7 @@ from tests.contract.test_framework import (
     TestStatus,
 )
 from tests.contract.test_l1_basic import L1_TEST_CASES
+from tests.contract.test_l2_join import L2_TEST_CASES
 
 
 async def run_contract_tests() -> TestReport:
@@ -69,6 +70,84 @@ async def run_contract_tests() -> TestReport:
     # Run L1 tests
     print(f"Running {len(L1_TEST_CASES)} L1 Basic Query tests...")
     for test_case in L1_TEST_CASES:
+        start_time = time.time()
+        try:
+            # Generate SQL
+            result = await sql_generator.generate(
+                natural_language=test_case.natural_language,
+                database_name=test_case.database,
+            )
+
+            execution_time = (time.time() - start_time) * 1000
+
+            # Validate SQL
+            if test_case.expected_sql:
+                pattern_match = test_validator.matches_pattern(result.sql, test_case.expected_sql)
+            else:
+                pattern_match = True
+
+            # Security validation
+            is_safe, security_msg = test_validator.validate_security(result.sql)
+
+            # Check validation rules
+            validation_results = {}
+            if test_case.validation_rules:
+                validation_results = test_validator.check_validation_rules(
+                    result.sql, test_case.validation_rules
+                )
+
+            # Determine status
+            if not is_safe:
+                status = TestStatus.FAILED
+                error_msg = f"Security violation: {security_msg}"
+            elif not pattern_match:
+                status = TestStatus.FAILED
+                error_msg = "SQL pattern does not match expected"
+            elif validation_results and not all(validation_results.values()):
+                status = TestStatus.FAILED
+                failed_rules = [k for k, v in validation_results.items() if not v]
+                error_msg = f"Validation failed for rules: {', '.join(failed_rules)}"
+            else:
+                status = TestStatus.PASSED
+                error_msg = None
+
+            test_result = TestResult(
+                test_id=test_case.id,
+                status=status,
+                generated_sql=result.sql,
+                execution_time_ms=execution_time,
+                error_message=error_msg,
+                validation_details={
+                    "pattern_match": pattern_match,
+                    "security_check": is_safe,
+                    "validation_rules": validation_results,
+                },
+            )
+
+            # Print status
+            status_symbol = "✓" if status == TestStatus.PASSED else "✗"
+            print(f"  {status_symbol} {test_case.id}: {status.value}")
+            if error_msg:
+                print(f"    Error: {error_msg}")
+                print(f"    Generated: {result.sql[:80]}...")
+
+        except Exception as e:
+            test_result = TestResult(
+                test_id=test_case.id,
+                status=TestStatus.FAILED,
+                execution_time_ms=(time.time() - start_time) * 1000,
+                error_message=str(e),
+            )
+            print(f"  ✗ {test_case.id}: FAILED")
+            print(f"    Error: {str(e)}")
+
+        report.add_result(test_result)
+
+    print()
+
+    # Run L2 tests
+    print(f"Running {len(L2_TEST_CASES)} L2 Multi-Table Join tests...")
+    for test_case in L2_TEST_CASES:
         start_time = time.time()
         try:
             # Generate SQL
