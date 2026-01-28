@@ -7,7 +7,7 @@
 
 ## 概述
 
-基于 Python 的 MCP (Model Context Protocol) 服务器，允许用户使用自然语言查询 PostgreSQL 数据库。利用 OpenAI GPT-4o-mini 模型自动生成 SQL 查询，支持数据库 schema 缓存、安全验证和查询执行。
+基于 Python 的 MCP (Model Context Protocol) 服务器，允许用户使用自然语言查询 PostgreSQL 数据库。利用 OpenAI 兼容模型（如阿里百炼通义千问）自动生成 SQL 查询，支持数据库 schema 缓存、安全验证和查询执行。
 
 ## 核心功能
 
@@ -104,7 +104,7 @@ pytest tests/unit/ --cov=src/postgres_mcp --cov-report=term-missing
 - Asyncpg 0.29+
 - SQLGlot 25.29+
 - Pydantic 2.10+
-- OpenAI GPT-4o-mini
+- OpenAI 兼容模型（如阿里百炼通义千问）
 - PostgreSQL 12.0+
 - Docker 2.x (容器化部署)
 
@@ -134,5 +134,5 @@ pytest tests/unit/ --cov=src/postgres_mcp --cov-report=term-missing
 
 ---
 
-**项目位置**: `~/Documents/VibeCoding/Week5`
-**规格位置**: `~/Documents/VibeCoding/specs/001-postgres-mcp`
+**项目位置**: `VibeCoding/Week5`
+**规格位置**: `VibeCoding/specs/001-postgres-mcp`

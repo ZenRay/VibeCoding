@@ -5,6 +5,7 @@ Provides integration with OpenAI API for SQL query generation.
 
 import asyncio
 import json
+import re
 from dataclasses import dataclass
 
 import structlog
@@ -123,11 +124,22 @@ class OpenAIClient:
                 # Parse JSON response
                 try:
                     data = json.loads(content)
-                    return AIResponse(
-                        sql=data.get("sql", ""),
-                        explanation=data.get("explanation", ""),
-                        assumptions=data.get("assumptions", []),
+                    sql_value = data.get("sql")
+                    if isinstance(sql_value, str) and sql_value.strip():
+                        return AIResponse(
+                            sql=sql_value,
+                            explanation=data.get("explanation", ""),
+                            assumptions=data.get("assumptions", []),
+                        )
+
+                    logger.warning(
+                        "json_sql_missing_or_invalid",
+                        attempt=attempt + 1,
+                        sql_type=type(sql_value).__name__,
                     )
+                    # If JSON parsed but sql is not a valid string, fail fast.
+                    # Do not try to extract SQL from JSON text to avoid false matches.
+                    raise AIServiceUnavailableError("OpenAI returned JSON without valid SQL")
                 except json.JSONDecodeError as e:
                     logger.warning(
                         "json_parse_failed",
@@ -135,6 +147,18 @@ class OpenAIClient:
                         content=content[:200],
                         error=str(e),
                     )
+                    extracted_sql = self._extract_sql_from_text(content)
+                    if extracted_sql:
+                        logger.warning(
+                            "non_json_response_parsed",
+                            attempt=attempt + 1,
+                            sql_preview=extracted_sql[:200],
+                        )
+                        return AIResponse(
+                            sql=extracted_sql,
+                            explanation="Generated from non-JSON response.",
+                            assumptions=[],
+                        )
                     if attempt < max_retries - 1:
                         await asyncio.sleep(0.5 * (attempt + 1))
                         continue
@@ -174,3 +198,29 @@ class OpenAIClient:
                 raise AIServiceUnavailableError(f"Unexpected error: {e}") from e
 
         raise AIServiceUnavailableError(f"Reached max retries ({max_retries})")
+
+    @staticmethod
+    def _extract_sql_from_text(content: str) -> str | None:
+        """Extract SQL from non-JSON model output."""
+        if not content:
+            return None
+
+        fence_sql = re.search(r"```sql\s*(.*?)```", content, re.IGNORECASE | re.DOTALL)
+        if fence_sql:
+            sql = fence_sql.group(1).strip()
+            if sql:
+                return sql
+
+        fence_any = re.search(r"```\s*(.*?)```", content, re.DOTALL)
+        if fence_any:
+            sql = fence_any.group(1).strip()
+            if sql and re.search(r"\b(select|with)\b", sql, re.IGNORECASE):
+                return sql
+
+        stmt_match = re.search(r"(?is)\b(select|with)\b.*?(;|$)", content)
+        if stmt_match:
+            sql = stmt_match.group(0).strip()
+            if sql:
+                return sql
+
+        return None

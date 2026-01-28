@@ -1,9 +1,9 @@
 # PostgreSQL MCP Server - Current Status
 
 **Project**: PostgreSQL 自然语言查询 MCP 服务器  
-**Last Updated**: 2026-01-29 18:00 CST  
-**Current Phase**: 生产测试完成 ✅ → 阿里百炼集成完成 ✅  
-**Latest Commit**: 778cc11 (文件整理完成)  
+**Last Updated**: 2026-01-29 04:20 CST  
+**Current Phase**: 人工测试完成 ✅ → 稳定性修复完成 ✅  
+**Latest Commit**: 未更新（本次为本地测试修复）  
 **Branch**: `001-postgres-mcp`
 
 ---
@@ -18,18 +18,19 @@
 | Phase 4: P2 User Stories | ✅ **Partial** | 6/15 tasks | 14/14 passed | 93-97% |
 | Phase 5: Polish | ✅ **Complete** | 6/13 tasks | 102/111 passed | 92% |
 | **生产测试** | ✅ **Complete** | - | 22/22 passed | **100%** |
+| **人工测试 (Claude CLI)** | ⚠️ **Partial** | - | 连接/部分工具通过 | - |
 
 **Overall**: 60/73 tasks complete (82.2%) 🎉  
-**Production Ready**: ✅ **Yes - 完整测试通过**  
+**Production Ready**: ⚠️ **Partial - 需复测 AI 输出稳定性**  
 **Git Status**: 13 commits on branch `001-postgres-mcp` ✅
 
 ---
 
-## 🎉 最新完成 - 生产测试和阿里百炼集成
+## 🎉 最新完成 - 人工测试与稳定性修复
 
 ### 2026-01-29 更新
 
-#### ✅ 灵活的 API Key 配置系统 (778cc11 系列)
+#### ✅ 灵活的 API Key 配置系统
 
 **新特性**: 双模式 API Key 配置
 - **方式1** (开发/测试): 直接在配置文件中写 `api_key`
@@ -44,7 +45,7 @@ openai:
   # api_key: null
   # api_key_env_var: "OPENAI_API_KEY"
   
-  model: "qwen-turbo-latest"
+  model: "qwen-plus-latest"
   base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 ```
 
@@ -56,12 +57,23 @@ openai:
 #### ✅ 阿里百炼 (通义千问) 集成
 
 **配置验证通过**:
-- 模型: `qwen-turbo-latest`
+- 模型: `qwen-plus-latest`
 - Endpoint: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - API Key 解析: ✅ 正常
 - 客户端初始化: ✅ 成功
 
-#### ✅ 生产测试结果 (100% 通过)
+#### ✅ 人工测试结果（部分通过）
+
+**已验证**:
+- MCP 连接成功（Claude CLI）
+- list_databases 正常
+- generate_sql/execute_query 可生成结果（在提示词更严格时）
+- schema 资源读取可用（listMcpResources/readMcpResource）
+
+**发现问题**:
+- Claude API 侧 404 重试导致“慢”
+- 模型输出结构化内容导致 `Struct` 校验失败（已修复解析/提示词）
+- YAML 缩进错误导致 MCP 启动失败（已修复）
 
 **测试覆盖**:
 ```
@@ -79,22 +91,8 @@ openai:
 
 #### ✅ 文件整理和文档更新
 
-**新目录结构**:
-```
-Week5/
-├── scripts/              # 测试脚本
-│   ├── README.md
-│   ├── test_production.py
-│   ├── test_ai_generation.py
-│   └── test_production_full.py
-└── ...
-
-specs/001-postgres-mcp/
-└── testing/              # 测试文档
-    ├── PRODUCTION_TEST_REPORT.md
-    ├── PRODUCTION_TEST_REPORT_FULL.md
-    └── README_DASHSCOPE.md
-```
+**新增/更新文档**:
+- `instructions/Week5/MCP_MANUAL_TEST_SUMMARY.md`（人工测试总结与脚本说明）
 
 #### 📝 相关 Git 提交
 
@@ -127,22 +125,20 @@ c5bd090 ← fix: 修复 server.py 导入错误
 
 ## 🎯 下一步行动
 
-### 1. 优先级最高 - MCP 集成测试
+### 1. 优先级最高 - MCP 集成复测（Claude CLI）
 
 **目标**: 通过 Claude Desktop 测试完整 MCP 工具链
 
 **测试步骤**:
-1. 配置 Claude Desktop (`claude_desktop_config.json`)
-2. 启动 MCP 服务器
-3. 测试 8 个 MCP 工具:
+1. 启动 Claude CLI 并确认 `/mcp` 连接
+2. 测试 MCP 工具（4 个）:
    - `list_databases`
-   - `get_schema`
-   - `validate_sql`
    - `generate_sql` (通义千问)
    - `execute_query`
-   - `generate_and_execute_query`
-   - `get_database_statistics`
-   - `explain_query`
+   - `refresh_schema`
+3. 测试资源（2 个）:
+   - `schema://{database}`
+   - `schema://{database}/{table}`
 
 **预期时间**: 1-2 小时
 **重要性**: ⭐⭐⭐⭐⭐ (必须)
@@ -158,7 +154,7 @@ c5bd090 ← fix: 修复 server.py 导入错误
 
 **当前状态**:
 - ✅ 组件验证通过 (AI 客户端, Schema Inspector, SQL Validator)
-- ⏳ 需要 SQLGenerator 完整集成测试
+- ⚠️ 模型输出稳定性需再验证（Struct 报错已修复解析/提示词）
 
 **预期时间**: 2-3 小时
 **重要性**: ⭐⭐⭐⭐☆ (重要)

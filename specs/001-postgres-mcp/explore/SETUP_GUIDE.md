@@ -17,7 +17,7 @@ This guide walks you through setting up and testing the SQL security validator.
 
 ```bash
 # Navigate to project directory
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 
 # Install SQLGlot using UV (recommended)
 uv pip install "sqlglot>=25.29"

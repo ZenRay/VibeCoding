@@ -545,12 +545,12 @@ docker run -d --name test-postgres \
 - [PostgreSQL Connection Pooling](https://www.postgresql.org/docs/current/runtime-config-connection.html)
 
 ### Implementation Files
-- `/home/ray/Documents/VibeCoding/Week5/examples/pool_manager.py`: Complete implementation
-- `/home/ray/Documents/VibeCoding/Week5/examples/fastapi_integration.py`: FastAPI example
-- `/home/ray/Documents/VibeCoding/Week5/examples/test_pool_manager.py`: Unit tests
+- `VibeCoding/Week5/examples/pool_manager.py`: Complete implementation
+- `VibeCoding/Week5/examples/fastapi_integration.py`: FastAPI example
+- `VibeCoding/Week5/examples/test_pool_manager.py`: Unit tests
 
 ### Research
-- `/home/ray/Documents/VibeCoding/Week5/research/asyncpg_connection_pool_best_practices.md`: Detailed research
+- `VibeCoding/Week5/research/asyncpg_connection_pool_best_practices.md`: Detailed research
 
 ---
 

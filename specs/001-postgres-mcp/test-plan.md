@@ -1310,7 +1310,7 @@ SELECT * FROM products;
 
 1. **启动测试数据库**:
 ```bash
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 make up
 ```
 
@@ -1372,7 +1372,7 @@ async def test_nl_to_sql_generation(test_case):
 
 1. **启动 MCP 服务器**:
 ```bash
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 python -m postgres_mcp.server
 ```
 

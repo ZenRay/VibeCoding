@@ -7,7 +7,7 @@
 ## Step 1: Install Dependencies
 
 ```bash
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 
 # Activate virtual environment
 source .venv/bin/activate
@@ -36,20 +36,20 @@ uv pip install asyncpg pybreaker fastapi uvicorn pytest pytest-asyncio
 
 ```bash
 # Create source directory
-mkdir -p ~/Documents/VibeCoding/Week5/src/pool
+mkdir -p VibeCoding/Week5/src/pool
 
 # Copy pool manager implementation
-cp ~/Documents/VibeCoding/Week5/examples/pool_manager.py \
-   ~/Documents/VibeCoding/Week5/src/pool/
+cp VibeCoding/Week5/examples/pool_manager.py \
+   VibeCoding/Week5/src/pool/
 
 # Copy FastAPI integration
-cp ~/Documents/VibeCoding/Week5/examples/fastapi_integration.py \
-   ~/Documents/VibeCoding/Week5/src/
+cp VibeCoding/Week5/examples/fastapi_integration.py \
+   VibeCoding/Week5/src/
 
 # Copy tests
-mkdir -p ~/Documents/VibeCoding/Week5/tests
-cp ~/Documents/VibeCoding/Week5/examples/test_pool_manager.py \
-   ~/Documents/VibeCoding/Week5/tests/
+mkdir -p VibeCoding/Week5/tests
+cp VibeCoding/Week5/examples/test_pool_manager.py \
+   VibeCoding/Week5/tests/
 ```
 
 ---
@@ -517,11 +517,11 @@ telnet localhost 5432
 
 ## Reference Files
 
-- **Implementation**: `/home/ray/Documents/VibeCoding/Week5/examples/pool_manager.py`
-- **FastAPI Example**: `/home/ray/Documents/VibeCoding/Week5/examples/fastapi_integration.py`
-- **Tests**: `/home/ray/Documents/VibeCoding/Week5/examples/test_pool_manager.py`
-- **Research**: `/home/ray/Documents/VibeCoding/Week5/research/asyncpg_connection_pool_best_practices.md`
-- **Architecture**: `/home/ray/Documents/VibeCoding/Week5/research/asyncpg_architecture_summary.md`
+- **Implementation**: `VibeCoding/Week5/examples/pool_manager.py`
+- **FastAPI Example**: `VibeCoding/Week5/examples/fastapi_integration.py`
+- **Tests**: `VibeCoding/Week5/examples/test_pool_manager.py`
+- **Research**: `VibeCoding/Week5/research/asyncpg_connection_pool_best_practices.md`
+- **Architecture**: `VibeCoding/Week5/research/asyncpg_architecture_summary.md`
 
 ---
 

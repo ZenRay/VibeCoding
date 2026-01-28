@@ -64,7 +64,7 @@ This research provides comprehensive guidance for implementing asyncpg connectio
 
 ### Core Implementation
 
-**Location**: `/home/ray/Documents/VibeCoding/Week5/examples/`
+**Location**: `VibeCoding/Week5/examples/`
 
 | File | Description | LOC |
 |------|-------------|-----|

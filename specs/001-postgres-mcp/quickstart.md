@@ -19,7 +19,7 @@
 - Python 3.12+
 - UV 包管理器
 - PostgreSQL 12.0+ 数据库（至少一个）
-- OpenAI API 密钥
+- OpenAI 兼容 API 密钥（支持阿里百炼）
 - Docker 2.x（可选，用于容器化部署和测试数据库）
 
 ---
@@ -30,7 +30,7 @@
 
 ```bash
 # 生成测试数据
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 make generate-data
 
 # 启动三个测试数据库（小型、中型、大型）
@@ -55,7 +55,7 @@ make test-all
 
 ```bash
 # 克隆仓库
-cd ~/Documents/VibeCoding/Week5
+cd VibeCoding/Week5
 
 # 创建虚拟环境
 uv venv
@@ -125,8 +125,13 @@ databases:
 default_database: "small"  # 或 "mydb"
 
 openai:
-  api_key_env_var: "OPENAI_API_KEY"
-  model: "gpt-4o-mini-2024-07-18"
+  # 方式1（开发/测试）:
+  api_key: "sk-your-key"
+  # 方式2（生产）:
+  # api_key: null
+  # api_key_env_var: "OPENAI_API_KEY"
+  model: "qwen-plus-latest"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 ```
 
 ### 设置环境变量

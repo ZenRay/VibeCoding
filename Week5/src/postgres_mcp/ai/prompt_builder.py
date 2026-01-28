@@ -32,12 +32,16 @@ class PromptBuilder:
 - 复杂条件时使用括号明确优先级
 
 输出格式:
-返回 JSON 格式:
+返回 JSON 格式（严格）:
 {
-  "sql": "生成的 SQL 查询",
-  "explanation": "简短解释",
-  "assumptions": ["做出的假设列表"]
+  "sql": "必须是单条 SELECT 语句的字符串",
+  "explanation": "简短解释（字符串）",
+  "assumptions": ["做出的假设列表（字符串数组）"]
 }
+
+重要:
+- sql 字段必须是字符串，不允许嵌套对象或数组
+- 不要输出 Markdown、代码块或其他额外内容
 
 错误处理:
 - 如果无法理解请求，在 explanation 中说明原因

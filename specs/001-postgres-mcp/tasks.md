@@ -16,7 +16,7 @@
 
 ## Path Conventions
 
-项目为单一 Python 包结构（根目录：`~/Documents/VibeCoding/Week5`）:
+项目为单一 Python 包结构（根目录：`VibeCoding/Week5`）:
 - Source: `src/postgres_mcp/`
 - Tests: `tests/`
 - Config: `config/`

@@ -162,58 +162,106 @@ async def server_lifespan():
         raise
 
     finally:
-        # Cleanup
-        logger.info("postgres_mcp_server_shutting_down")
+        # Comprehensive cleanup with error handling
+        # Note: Only log if stdout is still available (not during forced termination)
+        
+        cleanup_errors = []
 
+        # Close connection pool manager
         if _context.pool_manager:
-            await _context.pool_manager.close_all()
-            logger.info("pool_manager_closed")
+            try:
+                await _context.pool_manager.close_all()
+            except Exception as e:
+                cleanup_errors.append(f"pool_manager: {str(e)}")
 
+        # Cleanup schema cache
         if _context.schema_cache:
-            await _context.schema_cache.cleanup()
-            logger.info("schema_cache_cleaned_up")
+            try:
+                await _context.schema_cache.cleanup()
+            except Exception as e:
+                cleanup_errors.append(f"schema_cache: {str(e)}")
 
-        logger.info("postgres_mcp_server_stopped")
+        # Try to log cleanup status if possible
+        try:
+            if cleanup_errors:
+                logger.warning(
+                    "cleanup_completed_with_errors",
+                    error_count=len(cleanup_errors),
+                    errors=cleanup_errors,
+                )
+            else:
+                logger.info("postgres_mcp_server_stopped_cleanly")
+        except (ValueError, OSError):
+            # stdout/stderr closed - silently exit
+            pass
 
 
 async def main():
     """
-    Main entry point for the MCP server.
+    Main entry point for the MCP server with comprehensive error handling.
 
     Starts the server with stdio transport and registers all tools and resources.
+    Handles all errors gracefully to prevent unexpected crashes.
     """
-    # Create MCP server
-    server = Server("postgres-mcp")
+    try:
+        # Create MCP server
+        server = Server("postgres-mcp")
 
-    # Register tools and resources
-    register_tools(server)
-    register_resources(server)
+        # Register tools and resources
+        register_tools(server)
+        register_resources(server)
 
-    logger.info("mcp_tools_and_resources_registered")
+        logger.info("mcp_tools_and_resources_registered")
 
-    # Run server with lifespan management
-    async with server_lifespan():
-        async with stdio_server() as (read_stream, write_stream):
-            logger.info("mcp_server_started_stdio")
-            await server.run(
-                read_stream,
-                write_stream,
-                server.create_initialization_options(),
+        # Run server with lifespan management
+        async with server_lifespan():
+            async with stdio_server() as (read_stream, write_stream):
+                logger.info("mcp_server_started_stdio")
+                await server.run(
+                    read_stream,
+                    write_stream,
+                    server.create_initialization_options(),
+                )
+    except KeyboardInterrupt:
+        # Silently handle Ctrl+C
+        pass
+    except Exception as e:
+        try:
+            logger.error(
+                "server_main_failed",
+                error_type=type(e).__name__,
+                error=str(e),
+                exc_info=True,
             )
+        except (ValueError, OSError):
+            # stdout closed - silently exit
+            pass
+        raise
 
 
 def run():
     """
-    Synchronous entry point for the server.
+    Synchronous entry point for the server with comprehensive error handling.
 
     Used by __main__.py and CLI commands.
+    Ensures all errors are logged and handled gracefully.
     """
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("server_interrupted_by_user")
+        # Silently handle Ctrl+C
+        pass
     except Exception as e:
-        logger.error("server_failed", error=str(e))
+        try:
+            logger.error(
+                "server_failed",
+                error_type=type(e).__name__,
+                error=str(e),
+                exc_info=True,
+            )
+        except (ValueError, OSError):
+            # stdout closed - silently exit
+            pass
         raise
 
 

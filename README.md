@@ -5,7 +5,7 @@
 ## 项目结构
 
 ```
-~/Documents/VibeCoding/
+VibeCoding/
 ├── .github/                    # GitHub Actions 工作流
 │   └── workflows/
 │       ├── ci.yml              # CI 检查（自动检测变更的项目）

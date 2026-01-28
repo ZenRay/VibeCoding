@@ -1,9 +1,10 @@
 """
 MCP tools implementation.
 
-Implements all MCP tools for PostgreSQL operations.
+Implements all MCP tools for PostgreSQL operations with robust error handling.
 """
 
+import asyncio
 from typing import Any
 
 import structlog
@@ -111,7 +112,7 @@ def register_tools(server: Server) -> None:
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         """
-        Handle tool calls.
+        Handle tool calls with comprehensive error handling.
 
         Args:
         ----------
@@ -121,41 +122,63 @@ def register_tools(server: Server) -> None:
         Returns:
         ----------
             List of text content responses
+
+        Note:
+        ----------
+            All exceptions are caught and converted to user-friendly error messages
+            to prevent server crashes.
         """
         from postgres_mcp.server import get_context
         
         ctx = get_context()
 
+        logger.info("tool_call_started", tool=name, args=arguments)
+
         try:
             if name == "generate_sql":
-                return await handle_generate_sql(arguments, ctx)
+                result = await handle_generate_sql(arguments, ctx)
             elif name == "execute_query":
-                return await handle_execute_query(arguments, ctx)
+                result = await handle_execute_query(arguments, ctx)
             elif name == "list_databases":
-                return await handle_list_databases(ctx)
+                result = await handle_list_databases(ctx)
             elif name == "refresh_schema":
-                return await handle_refresh_schema(arguments, ctx)
+                result = await handle_refresh_schema(arguments, ctx)
             else:
-                return [
+                logger.warning("unknown_tool_called", tool=name)
+                result = [
                     TextContent(
                         type="text",
-                        text=f"Unknown tool: {name}",
+                        text=f"❌ Unknown tool: {name}",
                     )
                 ]
 
+            logger.info("tool_call_completed", tool=name, success=True)
+            return result
+
         except Exception as e:
-            logger.error("tool_call_failed", tool=name, error=str(e))
+            # Comprehensive error logging
+            logger.error(
+                "tool_call_failed",
+                tool=name,
+                error_type=type(e).__name__,
+                error=str(e),
+                exc_info=True,
+            )
+            
+            # Return user-friendly error message
+            error_msg = f"❌ Tool '{name}' failed: {type(e).__name__}: {str(e)}"
+            
             return [
                 TextContent(
                     type="text",
-                    text=f"Error: {str(e)}",
+                    text=error_msg,
                 )
             ]
 
 
 async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextContent]:
     """
-    Handle generate_sql tool call.
+    Handle generate_sql tool call with timeout and error recovery.
 
     Args:
     ----------
@@ -170,10 +193,10 @@ async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextC
     database = arguments.get("database")
 
     if not natural_language:
-        return [TextContent(type="text", text="Error: natural_language is required")]
+        return [TextContent(type="text", text="❌ Error: natural_language is required")]
 
     if not database:
-        return [TextContent(type="text", text="Error: database is required")]
+        return [TextContent(type="text", text="❌ Error: database is required")]
 
     logger.info(
         "generate_sql_called",
@@ -182,10 +205,13 @@ async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextC
     )
 
     try:
-        # Generate SQL
-        result = await ctx.sql_generator.generate(
-            natural_language=natural_language,
-            database=database,
+        # Generate SQL with timeout protection
+        result = await asyncio.wait_for(
+            ctx.sql_generator.generate(
+                natural_language=natural_language,
+                database=database,
+            ),
+            timeout=90.0,  # 90 second total timeout
         )
 
         # Format response
@@ -207,21 +233,43 @@ async def handle_generate_sql(arguments: dict[str, Any], ctx: Any) -> list[TextC
         )
         response_parts.append(f"- Method: {result.generation_method}")
 
+        logger.info(
+            "generate_sql_success",
+            database=database,
+            sql_length=len(result.sql),
+            validated=result.validated,
+        )
+
         return [TextContent(type="text", text="\n".join(response_parts))]
 
+    except asyncio.TimeoutError:
+        error_msg = (
+            "❌ SQL generation timed out (90s). "
+            "The AI service may be slow or unavailable. Please try again."
+        )
+        logger.error("sql_generation_timeout", database=database, timeout=90.0)
+        return [TextContent(type="text", text=error_msg)]
+
     except Exception as e:
-        logger.error("sql_generation_failed", error=str(e))
+        error_type = type(e).__name__
+        logger.error(
+            "sql_generation_failed",
+            database=database,
+            error_type=error_type,
+            error=str(e),
+            exc_info=True,
+        )
         return [
             TextContent(
                 type="text",
-                text=f"❌ SQL generation failed: {str(e)}",
+                text=f"❌ SQL generation failed ({error_type}): {str(e)}",
             )
         ]
 
 
 async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[TextContent]:
     """
-    Handle execute_query tool call.
+    Handle execute_query tool call with timeout and error recovery.
 
     Args:
     ----------
@@ -237,10 +285,10 @@ async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[Text
     limit = arguments.get("limit", 1000)
 
     if not natural_language:
-        return [TextContent(type="text", text="Error: natural_language is required")]
+        return [TextContent(type="text", text="❌ Error: natural_language is required")]
 
     if not database:
-        return [TextContent(type="text", text="Error: database is required")]
+        return [TextContent(type="text", text="❌ Error: database is required")]
 
     # Enforce max limit
     if limit > 10000:
@@ -254,11 +302,14 @@ async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[Text
     )
 
     try:
-        # Execute query
-        result = await ctx.query_executor.execute(
-            natural_language=natural_language,
-            database=database,
-            limit=limit,
+        # Execute query with timeout protection
+        result = await asyncio.wait_for(
+            ctx.query_executor.execute(
+                natural_language=natural_language,
+                database=database,
+                limit=limit,
+            ),
+            timeout=120.0,  # 120 second total timeout (generation + execution)
         )
 
         # Format response
@@ -298,21 +349,43 @@ async def handle_execute_query(arguments: dict[str, Any], ctx: Any) -> list[Text
         else:
             response_parts.append("\n*No rows returned*")
 
+        logger.info(
+            "execute_query_success",
+            database=database,
+            row_count=result.row_count,
+            execution_time_ms=result.execution_time_ms,
+        )
+
         return [TextContent(type="text", text="\n".join(response_parts))]
 
+    except asyncio.TimeoutError:
+        error_msg = (
+            "❌ Query execution timed out (120s). "
+            "The query may be too complex or the AI service is slow. Please try again."
+        )
+        logger.error("query_execution_timeout", database=database, timeout=120.0)
+        return [TextContent(type="text", text=error_msg)]
+
     except Exception as e:
-        logger.error("query_execution_failed", error=str(e))
+        error_type = type(e).__name__
+        logger.error(
+            "query_execution_failed",
+            database=database,
+            error_type=error_type,
+            error=str(e),
+            exc_info=True,
+        )
         return [
             TextContent(
                 type="text",
-                text=f"❌ Query execution failed: {str(e)}",
+                text=f"❌ Query execution failed ({error_type}): {str(e)}",
             )
         ]
 
 
 async def handle_list_databases(ctx: Any) -> list[TextContent]:
     """
-    Handle list_databases tool call.
+    Handle list_databases tool call with error recovery.
 
     Args:
     ----------
@@ -328,43 +401,59 @@ async def handle_list_databases(ctx: Any) -> list[TextContent]:
         databases = ctx.schema_cache.list_databases()
 
         if not databases:
-            return [TextContent(type="text", text="No databases configured")]
+            return [TextContent(type="text", text="⚠️ No databases configured")]
 
         response_parts = ["## Configured Databases\n"]
 
         for db_name in databases:
-            schema = await ctx.schema_cache.get_schema(db_name)
-            if schema:
-                table_count = len(schema.tables)
-                table_names = ", ".join(list(schema.tables.keys())[:5])
-                if len(schema.tables) > 5:
-                    table_names += f", ... (+{len(schema.tables) - 5} more)"
+            try:
+                schema = await ctx.schema_cache.get_schema(db_name)
+                if schema:
+                    table_count = len(schema.tables)
+                    table_names = ", ".join(list(schema.tables.keys())[:5])
+                    if len(schema.tables) > 5:
+                        table_names += f", ... (+{len(schema.tables) - 5} more)"
 
-                response_parts.append(f"\n### {db_name}")
-                response_parts.append(f"- Tables: {table_count}")
-                response_parts.append(f"- Sample tables: {table_names}")
-                response_parts.append(
-                    f"- Last updated: {schema.last_updated.strftime('%Y-%m-%d %H:%M:%S')}"
+                    response_parts.append(f"\n### {db_name}")
+                    response_parts.append(f"- Tables: {table_count}")
+                    response_parts.append(f"- Sample tables: {table_names}")
+                    response_parts.append(
+                        f"- Last updated: {schema.last_updated.strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
+                else:
+                    response_parts.append(f"\n### {db_name}")
+                    response_parts.append("- Status: ⚠️ Schema not loaded")
+            except Exception as e:
+                logger.warning(
+                    "get_schema_failed",
+                    database=db_name,
+                    error=str(e),
                 )
-            else:
                 response_parts.append(f"\n### {db_name}")
-                response_parts.append("- Status: Schema not loaded")
+                response_parts.append(f"- Status: ❌ Error: {str(e)}")
 
+        logger.info("list_databases_success", database_count=len(databases))
         return [TextContent(type="text", text="\n".join(response_parts))]
 
     except Exception as e:
-        logger.error("list_databases_failed", error=str(e))
+        error_type = type(e).__name__
+        logger.error(
+            "list_databases_failed",
+            error_type=error_type,
+            error=str(e),
+            exc_info=True,
+        )
         return [
             TextContent(
                 type="text",
-                text=f"❌ Failed to list databases: {str(e)}",
+                text=f"❌ Failed to list databases ({error_type}): {str(e)}",
             )
         ]
 
 
 async def handle_refresh_schema(arguments: dict[str, Any], ctx: Any) -> list[TextContent]:
     """
-    Handle refresh_schema tool call.
+    Handle refresh_schema tool call with error recovery.
 
     Args:
     ----------
@@ -381,6 +470,7 @@ async def handle_refresh_schema(arguments: dict[str, Any], ctx: Any) -> list[Tex
         logger.info("refresh_schema_called", database=database)
         try:
             await ctx.schema_cache.refresh_schema(database)
+            logger.info("refresh_schema_success", database=database)
             return [
                 TextContent(
                     type="text",
@@ -388,17 +478,25 @@ async def handle_refresh_schema(arguments: dict[str, Any], ctx: Any) -> list[Tex
                 )
             ]
         except Exception as e:
-            logger.error("schema_refresh_failed", database=database, error=str(e))
+            error_type = type(e).__name__
+            logger.error(
+                "schema_refresh_failed",
+                database=database,
+                error_type=error_type,
+                error=str(e),
+                exc_info=True,
+            )
             return [
                 TextContent(
                     type="text",
-                    text=f"❌ Failed to refresh schema for {database}: {str(e)}",
+                    text=f"❌ Failed to refresh schema for {database} ({error_type}): {str(e)}",
                 )
             ]
     else:
         logger.info("refresh_all_schemas_called")
         try:
             await ctx.schema_cache.refresh_all_schemas()
+            logger.info("refresh_all_schemas_success")
             return [
                 TextContent(
                     type="text",
@@ -406,10 +504,16 @@ async def handle_refresh_schema(arguments: dict[str, Any], ctx: Any) -> list[Tex
                 )
             ]
         except Exception as e:
-            logger.error("refresh_all_schemas_failed", error=str(e))
+            error_type = type(e).__name__
+            logger.error(
+                "refresh_all_schemas_failed",
+                error_type=error_type,
+                error=str(e),
+                exc_info=True,
+            )
             return [
                 TextContent(
                     type="text",
-                    text=f"❌ Failed to refresh schemas: {str(e)}",
+                    text=f"❌ Failed to refresh schemas ({error_type}): {str(e)}",
                 )
             ]

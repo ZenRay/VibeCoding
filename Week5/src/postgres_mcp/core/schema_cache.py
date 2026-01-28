@@ -183,18 +183,23 @@ class SchemaCache:
             interval_seconds=self._auto_refresh_interval,
         )
 
-        while not self._shutdown:
-            try:
-                await asyncio.sleep(self._auto_refresh_interval)
+        try:
+            while not self._shutdown:
+                try:
+                    await asyncio.sleep(self._auto_refresh_interval)
 
-                if self._shutdown:
+                    if self._shutdown:
+                        break
+
+                    await self.refresh_all_schemas()
+
+                except asyncio.CancelledError:
                     break
+                except Exception as e:
+                    # Only log if not shutting down
+                    if not self._shutdown:
+                        logger.error("auto_refresh_error", error=str(e))
 
-                await self.refresh_all_schemas()
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error("auto_refresh_error", error=str(e))
-
-        logger.info("auto_refresh_stopped")
+        finally:
+            # Silently stop - don't log during shutdown as stdout may be closed
+            pass
