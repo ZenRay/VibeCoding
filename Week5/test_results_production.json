@@ -1,6 +1,6 @@
 {
   "test_info": {
-    "date": "2026-01-29T02:27:38.258015",
+    "date": "2026-01-29T02:32:39.035625",
     "version": "0.4.0"
   },
   "database_connections": {
@@ -259,7 +259,7 @@
       "sql": "SELECT * FROM customers LIMIT 5",
       "row_count": 5,
       "column_count": 12,
-      "execution_time_ms": 0.4,
+      "execution_time_ms": 0.33,
       "columns": [
         {
           "name": "customer_id",
@@ -349,7 +349,7 @@
       "sql": "SELECT COUNT(*) as total FROM products",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.18,
+      "execution_time_ms": 0.69,
       "columns": [
         {
           "name": "total",
@@ -370,7 +370,7 @@
       "sql": "SELECT * FROM orders LIMIT 3",
       "row_count": 3,
       "column_count": 8,
-      "execution_time_ms": 6.89,
+      "execution_time_ms": 16.25,
       "columns": [
         {
           "name": "order_id",
@@ -436,7 +436,7 @@
       "sql": "SELECT orders.order_id, orders.total_amount FROM orders LIMIT 5",
       "row_count": 5,
       "column_count": 2,
-      "execution_time_ms": 0.16,
+      "execution_time_ms": 0.87,
       "columns": [
         {
           "name": "order_id",
@@ -466,7 +466,7 @@
       "sql": "SELECT * FROM users LIMIT 5",
       "row_count": 5,
       "column_count": 15,
-      "execution_time_ms": 0.49,
+      "execution_time_ms": 1.05,
       "columns": [
         {
           "name": "user_id",
@@ -574,7 +574,7 @@
       "sql": "SELECT COUNT(*) as total_users FROM users",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.2,
+      "execution_time_ms": 0.33,
       "columns": [
         {
           "name": "total_users",
@@ -595,7 +595,7 @@
       "sql": "SELECT * FROM departments LIMIT 5",
       "row_count": 5,
       "column_count": 3,
-      "execution_time_ms": 0.35,
+      "execution_time_ms": 0.53,
       "columns": [
         {
           "name": "department_id",
@@ -631,7 +631,7 @@
       "sql": "SELECT COUNT(*) as total_employees FROM employees",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.19,
+      "execution_time_ms": 0.39,
       "columns": [
         {
           "name": "total_employees",

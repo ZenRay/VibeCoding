@@ -12,7 +12,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from postgres_mcp.ai.openai_client import OpenAIClient
-from postgres_mcp.config import load_config
+from postgres_mcp.config import Config
 from postgres_mcp.core.query_executor import QueryExecutor
 from postgres_mcp.core.schema_cache import SchemaCache
 from postgres_mcp.core.sql_generator import SQLGenerator
@@ -85,7 +85,7 @@ async def server_lifespan():
 
     try:
         # Load configuration
-        config = load_config()
+        config = Config.load()
         logger.info(
             "config_loaded",
             database_count=len(config.databases),
