@@ -135,7 +135,7 @@
 - [x] T042 [US4] 实现 SQLValidator（src/postgres_mcp/core/sql_validator.py - SQLGlot AST 解析, 递归遍历, 危险函数黑名单）
 - [x] T043 [P] [US4] 实现注释去除（src/postgres_mcp/core/sql_validator.py - 防注入）
 - [x] T044 [P] [US4] 实现嵌套查询验证（src/postgres_mcp/core/sql_validator.py - CTE, 子查询）
-- [ ] T045 [US4] 集成 SQLValidator 到 SQLGenerator（src/postgres_mcp/core/sql_generator.py - 验证失败重试）
+- [x] T045 [US4] 集成 SQLValidator 到 SQLGenerator（src/postgres_mcp/core/sql_generator.py - 验证失败重试）
 
 ---
 

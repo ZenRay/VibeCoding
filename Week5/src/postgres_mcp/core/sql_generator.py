@@ -10,13 +10,14 @@ import structlog
 
 from postgres_mcp.ai.openai_client import AIServiceUnavailableError, OpenAIClient
 from postgres_mcp.ai.prompt_builder import PromptBuilder
+from postgres_mcp.core.sql_validator import SQLValidator
 from postgres_mcp.models.query import GeneratedQuery
 
 logger = structlog.get_logger(__name__)
 
 
 class GenerationMethod(str, Enum):
-    """SQL 生成方法。"""
+    """SQL generation method."""
 
     AI_GENERATED = "ai_generated"
     TEMPLATE_MATCHED = "template_matched"
@@ -24,37 +25,35 @@ class GenerationMethod(str, Enum):
 
 
 class SQLGenerationError(Exception):
-    """SQL 生成错误。"""
+    """SQL generation error."""
 
     pass
 
 
 class SQLGenerator:
-    """SQL 生成器。
+    """
+    SQL Generator for converting natural language to SQL queries.
 
-    负责将自然语言转换为 SQL 查询。
-
-    Attributes:
-        schema_cache: Schema 缓存
-        openai_client: OpenAI 客户端
-        sql_validator: SQL 验证器
-        prompt_builder: Prompt 构建器
+    Orchestrates OpenAI client, schema cache, and SQL validator to
+    generate safe and validated SQL queries.
     """
 
     def __init__(
         self,
         schema_cache: Any,
         openai_client: OpenAIClient,
-        sql_validator: Any,
+        sql_validator: SQLValidator,
         prompt_builder: PromptBuilder | None = None,
     ):
-        """初始化 SQL Generator。
+        """
+        Initialize SQL Generator.
 
         Args:
-            schema_cache: Schema 缓存实例
-            openai_client: OpenAI 客户端实例
-            sql_validator: SQL 验证器实例
-            prompt_builder: Prompt 构建器（可选）
+        ----------
+            schema_cache: Schema cache instance
+            openai_client: OpenAI client instance
+            sql_validator: SQL validator instance
+            prompt_builder: Prompt builder (optional)
         """
         self._schema_cache = schema_cache
         self._openai_client = openai_client
@@ -67,85 +66,116 @@ class SQLGenerator:
         database: str,
         max_retries: int = 2,
     ) -> GeneratedQuery:
-        """生成 SQL 查询。
+        """
+        Generate SQL query from natural language.
 
         Args:
-            natural_language: 自然语言查询
-            database: 目标数据库名称
-            max_retries: 最大重试次数
+        ----------
+            natural_language: Natural language query
+            database: Target database name
+            max_retries: Maximum number of retries on validation failure
 
         Returns:
-            GeneratedQuery: 生成的查询
+        ----------
+            GeneratedQuery with validated SQL
 
         Raises:
-            SQLGenerationError: 生成失败
+        ----------
+            SQLGenerationError: When generation fails after all retries
+
+        Example:
+        ----------
+            >>> generator = SQLGenerator(cache, client, validator)
+            >>> query = await generator.generate("show all users", "mydb")
+            >>> assert query.validated is True
         """
-        # 1. 获取 schema
+        # 1. Fetch schema from cache
         schema = await self._schema_cache.get_schema(database)
         if not schema:
-            raise SQLGenerationError(f"数据库 '{database}' 未找到或 schema 未缓存")
+            raise SQLGenerationError(f"Database '{database}' not found or schema not cached")
 
-        # 2. 尝试生成 SQL
+        # Track validation errors for retry prompts
+        previous_validation_errors: list[str] = []
+
+        # 2. Attempt to generate and validate SQL
         for attempt in range(max_retries):
             try:
-                # 构建 prompts
+                # Build prompts
                 system_prompt = self._prompt_builder.build_system_prompt()
                 user_prompt = self._prompt_builder.build_user_prompt(
                     natural_language=natural_language, schema=schema
                 )
 
-                # 如果是重试，增强 prompt
-                if attempt > 0:
+                # Enhance prompt with validation errors on retry
+                if attempt > 0 and previous_validation_errors:
+                    error_summary = "; ".join(previous_validation_errors[:3])
                     user_prompt = self._prompt_builder.build_retry_prompt(
                         original_prompt=user_prompt,
-                        validation_error="上次验证失败，请重新生成",
+                        validation_error=f"Previous SQL failed validation: {error_summary}",
                     )
 
-                # 调用 OpenAI
+                # Call OpenAI API
                 ai_response = await self._openai_client.generate(
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
-                    temperature=0.0 if attempt == 0 else 0.1,  # 重试时增加随机性
+                    temperature=0.0 if attempt == 0 else 0.1,  # Add randomness on retry
                 )
 
-                # 验证 SQL
+                # Validate generated SQL
                 validation = self._sql_validator.validate(ai_response.sql)
 
                 if validation.valid:
-                    # 验证通过
+                    # Validation passed - return successful query
+                    logger.info(
+                        "sql_generation_success",
+                        attempt=attempt + 1,
+                        sql_length=len(ai_response.sql),
+                        warnings_count=len(validation.warnings),
+                    )
                     return GeneratedQuery(
-                        sql=ai_response.sql,
+                        sql=validation.cleaned_sql or ai_response.sql,
                         validated=True,
-                        warnings=validation.warnings if hasattr(validation, 'warnings') else [],
+                        warnings=validation.warnings,
                         explanation=ai_response.explanation,
                         assumptions=ai_response.assumptions,
                         generation_method=GenerationMethod.AI_GENERATED,
                     )
                 else:
-                    # 验证失败
+                    # Validation failed - log and retry
                     logger.warning(
                         "sql_validation_failed",
                         attempt=attempt + 1,
-                        error=validation.error if hasattr(validation, 'error') else "Unknown",
-                        sql=ai_response.sql[:100],
+                        errors=validation.errors,
+                        sql_preview=ai_response.sql[:100],
                     )
 
+                    # Store errors for next retry
+                    previous_validation_errors.extend(validation.errors)
+
                     if attempt < max_retries - 1:
-                        continue  # 重试
+                        continue  # Retry generation
                     else:
+                        # Max retries reached - return failed query
+                        error_summary = "; ".join(validation.errors[:3])
                         raise SQLGenerationError(
-                            f"无法生成有效 SQL: {getattr(validation, 'error', 'Validation failed')}"
+                            f"Failed to generate valid SQL after {max_retries} attempts. "
+                            f"Validation errors: {error_summary}"
                         )
 
             except AIServiceUnavailableError as e:
                 logger.error("ai_service_unavailable", attempt=attempt + 1, error=str(e))
-                # TODO: 降级到模板匹配（Phase 4）
-                raise SQLGenerationError(f"AI 服务不可用: {e}") from e
+                # TODO: Fallback to template matching (Phase 4)
+                raise SQLGenerationError(f"AI service unavailable: {e}") from e
+
+            except SQLGenerationError:
+                # Re-raise SQLGenerationError without wrapping
+                raise
 
             except Exception as e:
                 logger.error("unexpected_generation_error", attempt=attempt + 1, error=str(e))
                 if attempt < max_retries - 1:
                     continue
-                raise SQLGenerationError(f"生成 SQL 时发生错误: {e}") from e
+                raise SQLGenerationError(f"Unexpected error during SQL generation: {e}") from e
 
-        raise SQLGenerationError(f"达到最大重试次数 ({max_retries})，无法生成有效 SQL")
+        # Should not reach here, but just in case
+        raise SQLGenerationError(f"Failed to generate valid SQL after {max_retries} attempts")
