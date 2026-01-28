@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def main():

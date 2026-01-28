@@ -23,9 +23,9 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from postgres_mcp.ai.openai_client import OpenAIClient
 from postgres_mcp.config import Config
+from postgres_mcp.core.sql_validator import SQLValidator
 from postgres_mcp.db.connection_pool import ConnectionPool
 from postgres_mcp.db.schema_inspector import SchemaInspector
-from postgres_mcp.core.sql_validator import SQLValidator
 
 
 class FullProductionTester:
@@ -53,7 +53,7 @@ class FullProductionTester:
         # 1. 加载配置
         print("📋 1. 加载配置...")
         self.config = Config.load("config/config.yaml")
-        print(f"   ✅ 配置加载成功")
+        print("   ✅ 配置加载成功")
         print(f"   - AI 模型: {self.config.openai.model}")
         print(f"   - Base URL: {self.config.openai.base_url}")
         print(f"   - 数据库数量: {len(self.config.databases)}")
@@ -73,7 +73,7 @@ class FullProductionTester:
             timeout=self.config.openai.timeout,
             base_url=self.config.openai.base_url,
         )
-        print(f"   ✅ AI 客户端初始化成功")
+        print("   ✅ AI 客户端初始化成功")
 
         # 3. 初始化数据库连接
         print("\n🔌 3. 初始化数据库连接...")
@@ -101,8 +101,10 @@ class FullProductionTester:
             print(f"\n🗄️  测试: {db_name}")
             try:
                 conn = await pool.acquire()
-                result = await conn.fetch("SELECT COUNT(*) FROM pg_tables WHERE schemaname='public'")
-                table_count = result[0]['count']
+                result = await conn.fetch(
+                    "SELECT COUNT(*) FROM pg_tables WHERE schemaname='public'"
+                )
+                table_count = result[0]["count"]
                 await pool.release(conn)
 
                 self.results["databases"][db_name] = {
@@ -123,7 +125,7 @@ class FullProductionTester:
         # 加载示例
         examples_file = Path("examples/sample_queries.json")
         if not examples_file.exists():
-            print(f"   ⚠️  示例文件不存在,跳过 AI 测试")
+            print("   ⚠️  示例文件不存在,跳过 AI 测试")
             return
 
         with open(examples_file) as f:
@@ -177,7 +179,7 @@ class FullProductionTester:
 
             except Exception as e:
                 print(f"   ❌ 失败: {e}")
-                test_result["status"] = f"❌ 失败"
+                test_result["status"] = "❌ 失败"
                 test_result["error"] = str(e)
 
             self.results["ai_tests"].append(test_result)
@@ -243,27 +245,27 @@ class FullProductionTester:
         print("=" * 80)
 
         # 配置
-        print(f"\n✅ 配置:")
+        print("\n✅ 配置:")
         print(f"   - AI 模型: {self.results['config']['model']}")
         print(f"   - Base URL: {self.results['config']['base_url']}")
 
         # 数据库
         print(f"\n✅ 数据库连接: {len(self.results['databases'])} 个")
-        for db, result in self.results['databases'].items():
+        for db, result in self.results["databases"].items():
             print(f"   - {db}: {result['status']}")
 
         # AI 生成
         if self.results["ai_tests"]:
             success = sum(1 for t in self.results["ai_tests"] if t["status"] == "✅ 成功")
             total = len(self.results["ai_tests"])
-            print(f"\n✅ AI SQL 生成:")
+            print("\n✅ AI SQL 生成:")
             print(f"   - 成功率: {success}/{total} ({success/total*100:.1f}%)")
 
         # 查询执行
         if self.results["query_tests"]:
             success = sum(1 for t in self.results["query_tests"] if t["status"] == "✅ 成功")
             total = len(self.results["query_tests"])
-            print(f"\n✅ 查询执行:")
+            print("\n✅ 查询执行:")
             print(f"   - 成功率: {success}/{total} ({success/total*100:.1f}%)")
 
         print("\n" + "=" * 80)

@@ -12,10 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from postgres_mcp.config import Config
 from postgres_mcp.ai.openai_client import OpenAIClient
-from postgres_mcp.db.schema_inspector import SchemaInspector
+from postgres_mcp.config import Config
 from postgres_mcp.core.sql_validator import SQLValidator
+from postgres_mcp.db.schema_inspector import SchemaInspector
 
 
 async def test_ai_generation():
@@ -110,7 +110,7 @@ async def test_ai_generation():
                 result["status"] = "success"
                 success_count += 1
             else:
-                print(f"   ⚠️  SQL 验证失败:")
+                print("   ⚠️  SQL 验证失败:")
                 for error in validation.errors:
                     print(f"      - {error}")
                 result["status"] = "validation_failed"
@@ -158,15 +158,20 @@ async def test_ai_generation():
     # 7. 保存结果
     output_file = "test_results_ai_generation.json"
     with open(output_file, "w") as f:
-        json.dump({
-            "model": config.openai.model,
-            "base_url": config.openai.base_url,
-            "total": len(examples),
-            "success": success_count,
-            "success_rate": f"{success_count/len(examples)*100:.1f}%",
-            "by_difficulty": by_difficulty,
-            "results": results,
-        }, f, indent=2, ensure_ascii=False)
+        json.dump(
+            {
+                "model": config.openai.model,
+                "base_url": config.openai.base_url,
+                "total": len(examples),
+                "success": success_count,
+                "success_rate": f"{success_count/len(examples)*100:.1f}%",
+                "by_difficulty": by_difficulty,
+                "results": results,
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     print(f"📄 详细结果已保存到: {output_file}")
 
