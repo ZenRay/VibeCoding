@@ -1,0 +1,64 @@
+server:
+  name: "postgres-mcp"
+  version: "0.4.0"
+
+databases:
+  - name: "ecommerce_small"
+    host: "localhost"
+    port: 5432
+    database: "ecommerce_small"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "disable"
+    min_pool_size: 2
+    max_pool_size: 10
+
+  - name: "social_medium"
+    host: "localhost"
+    port: 5432
+    database: "social_medium"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "disable"
+    min_pool_size: 2
+    max_pool_size: 10
+
+  - name: "erp_large"
+    host: "localhost"
+    port: 5432
+    database: "erp_large"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "disable"
+    min_pool_size: 2
+    max_pool_size: 10
+
+default_database: "ecommerce_small"
+
+openai:
+  api_key_env_var: "OPENAI_API_KEY"
+  model: "gpt-4o-mini-2024-07-18"
+  temperature: 0.0
+  max_tokens: 1000
+
+schema_cache:
+  poll_interval_minutes: 5
+  load_sample_data: true
+  max_sample_rows: 3
+
+query:
+  default_limit: 1000
+  max_timeout_seconds: 30
+  enable_result_validation: false
+
+templates:
+  enabled: false
+  directory: "src/postgres_mcp/templates/queries"
+
+logging:
+  level: "INFO"
+  directory: "logs/queries"
+  retention_days: 30
+  max_file_size_mb: 100
+  buffer_size: 100
+  flush_interval_seconds: 5.0
