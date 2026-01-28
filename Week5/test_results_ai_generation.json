@@ -1,0 +1,91 @@
+{
+  "model": "qwen-turbo-latest",
+  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "total": 8,
+  "success": 0,
+  "success_rate": "0.0%",
+  "by_difficulty": {
+    "easy": {
+      "total": 4,
+      "success": 0
+    },
+    "medium": {
+      "total": 4,
+      "success": 0
+    }
+  },
+  "results": [
+    {
+      "id": 1,
+      "query": "Show all users",
+      "database": "ecommerce_small",
+      "difficulty": "easy",
+      "category": "basic",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 2,
+      "query": "Show all active users",
+      "database": "ecommerce_small",
+      "difficulty": "easy",
+      "category": "basic",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 3,
+      "query": "Show all orders created in the last 7 days",
+      "database": "ecommerce_small",
+      "difficulty": "easy",
+      "category": "date_filter",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 4,
+      "query": "How many users are registered?",
+      "database": "ecommerce_small",
+      "difficulty": "easy",
+      "category": "aggregate",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 5,
+      "query": "List the top 10 products by sales",
+      "database": "ecommerce_small",
+      "difficulty": "medium",
+      "category": "aggregate",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 6,
+      "query": "Show all orders with user names",
+      "database": "ecommerce_small",
+      "difficulty": "medium",
+      "category": "join",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 7,
+      "query": "Show total sales by customer",
+      "database": "ecommerce_small",
+      "difficulty": "medium",
+      "category": "aggregate",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    },
+    {
+      "id": 8,
+      "query": "Show order details with product names and customer emails",
+      "database": "ecommerce_small",
+      "difficulty": "medium",
+      "category": "join",
+      "status": "error",
+      "error": "list indices must be integers or slices, not str"
+    }
+  ]
+}

@@ -17,6 +17,13 @@ default_database: "production"
 
 # OpenAI 配置 - 支持多种兼容服务
 openai:
+  # API Key 配置（二选一）:
+  
+  # 方式1（推荐开发/测试）: 直接配置 API key
+  # api_key: "sk-your-api-key-here"
+  
+  # 方式2（推荐生产环境）: 从环境变量读取
+  api_key: null
   api_key_env_var: "OPENAI_API_KEY"
   
   # 选择使用的 AI 服务（取消注释其中一个）:

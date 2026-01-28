@@ -94,7 +94,7 @@ async def server_lifespan():
 
         # Initialize OpenAI client
         _context.openai_client = OpenAIClient(
-            api_key=config.openai.api_key,
+            api_key=config.openai.resolved_api_key,
             model=config.openai.model,
             temperature=config.openai.temperature,
             max_tokens=config.openai.max_tokens,

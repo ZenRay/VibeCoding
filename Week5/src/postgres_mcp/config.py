@@ -55,6 +55,7 @@ class OpenAIConfig(BaseModel):
 
     Args:
     ----------
+        api_key: API key (直接配置，优先级最高).
         api_key_env_var: Environment variable containing API key.
         model: OpenAI model identifier.
         temperature: Sampling temperature.
@@ -71,12 +72,42 @@ class OpenAIConfig(BaseModel):
         None
     """
 
-    api_key_env_var: str = Field(..., min_length=1)
+    api_key: str | None = Field(None)  # Optional: Direct API key (for dev/test)
+    api_key_env_var: str | None = Field(None)  # Optional: Environment variable name
     model: str = Field(..., min_length=1)
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(1000, ge=1)
     base_url: str | None = Field(None)  # Optional: For OpenAI-compatible services
     timeout: float = Field(30.0, ge=1.0)  # Default 30s timeout
+
+    @property
+    def resolved_api_key(self) -> str:
+        """
+        Get API key with priority: direct api_key > environment variable.
+
+        Returns:
+        ----------
+            API key value
+
+        Raises:
+        ----------
+            ValueError: If no API key is available
+        """
+        # Priority 1: Direct api_key in config
+        if self.api_key:
+            return self.api_key
+        
+        # Priority 2: From environment variable
+        if self.api_key_env_var:
+            key = os.environ.get(self.api_key_env_var)
+            if key:
+                return key
+            raise ValueError(
+                f"environment variable {self.api_key_env_var} not set"
+            )
+        
+        # No API key available
+        raise ValueError("no API key configured (set api_key or api_key_env_var)")
 
 
 class SchemaCacheConfig(BaseModel):
@@ -125,6 +156,62 @@ class QueryConfig(BaseModel):
     default_limit: int = Field(1000, ge=1)
     max_timeout_seconds: int = Field(30, ge=1)
     enable_result_validation: bool = False
+
+
+class DatabaseConfig(BaseModel):
+    """
+    Database connection configuration.
+
+    Args:
+    ----------
+        name: Database connection name.
+        host: Database host.
+        port: Database port.
+        database: Database name.
+        user: Database user.
+        password_env_var: Environment variable containing password.
+        ssl_mode: SSL mode (require/prefer/disable).
+        min_pool_size: Minimum connection pool size.
+        max_pool_size: Maximum connection pool size.
+
+    Returns:
+    ----------
+        None
+
+    Raises:
+    ----------
+        None
+    """
+
+    name: str = Field(..., min_length=1)
+    host: str = Field(..., min_length=1)
+    port: int = Field(5432, ge=1, le=65535)
+    database: str = Field(..., min_length=1)
+    user: str = Field(..., min_length=1)
+    password_env_var: str = Field(..., min_length=1)
+    ssl_mode: str = Field("prefer", pattern="^(disable|prefer|require)$")
+    min_pool_size: int = Field(2, ge=1)
+    max_pool_size: int = Field(10, ge=1)
+
+    @property
+    def password(self) -> str:
+        """
+        Get password from environment variable.
+
+        Returns:
+        ----------
+            Password value from environment
+
+        Raises:
+        ----------
+            ValueError: If environment variable is not set
+        """
+        pwd = os.environ.get(self.password_env_var)
+        if not pwd:
+            raise ValueError(
+                f"environment variable {self.password_env_var} not set"
+            )
+        return pwd
 
 
 class TemplateConfig(BaseModel):

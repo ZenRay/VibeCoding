@@ -1,6 +1,6 @@
 {
   "test_info": {
-    "date": "2026-01-29T02:03:31.829114",
+    "date": "2026-01-29T02:27:38.258015",
     "version": "0.4.0"
   },
   "database_connections": {
@@ -259,7 +259,7 @@
       "sql": "SELECT * FROM customers LIMIT 5",
       "row_count": 5,
       "column_count": 12,
-      "execution_time_ms": 0.54,
+      "execution_time_ms": 0.4,
       "columns": [
         {
           "name": "customer_id",
@@ -349,7 +349,7 @@
       "sql": "SELECT COUNT(*) as total FROM products",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.17,
+      "execution_time_ms": 0.18,
       "columns": [
         {
           "name": "total",
@@ -370,7 +370,7 @@
       "sql": "SELECT * FROM orders LIMIT 3",
       "row_count": 3,
       "column_count": 8,
-      "execution_time_ms": 6.78,
+      "execution_time_ms": 6.89,
       "columns": [
         {
           "name": "order_id",
@@ -466,7 +466,7 @@
       "sql": "SELECT * FROM users LIMIT 5",
       "row_count": 5,
       "column_count": 15,
-      "execution_time_ms": 0.53,
+      "execution_time_ms": 0.49,
       "columns": [
         {
           "name": "user_id",
@@ -574,7 +574,7 @@
       "sql": "SELECT COUNT(*) as total_users FROM users",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.17,
+      "execution_time_ms": 0.2,
       "columns": [
         {
           "name": "total_users",
@@ -595,7 +595,7 @@
       "sql": "SELECT * FROM departments LIMIT 5",
       "row_count": 5,
       "column_count": 3,
-      "execution_time_ms": 0.42,
+      "execution_time_ms": 0.35,
       "columns": [
         {
           "name": "department_id",
@@ -631,7 +631,7 @@
       "sql": "SELECT COUNT(*) as total_employees FROM employees",
       "row_count": 1,
       "column_count": 1,
-      "execution_time_ms": 0.2,
+      "execution_time_ms": 0.19,
       "columns": [
         {
           "name": "total_employees",
