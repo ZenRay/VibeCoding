@@ -128,7 +128,10 @@ class SQLValidator:
             True
         """
         try:
-            return bool(re.search(expected_pattern, generated_sql, re.IGNORECASE))
+            # Normalize SQL by replacing multiple whitespace with single space
+            # This allows patterns to match regardless of formatting/newlines
+            normalized_sql = " ".join(generated_sql.split())
+            return bool(re.search(expected_pattern, normalized_sql, re.IGNORECASE))
         except re.error:
             return False
 
