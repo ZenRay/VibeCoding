@@ -87,13 +87,13 @@
 
 #### Implementation
 
-- [ ] T025 [P] [US1] 实现 OpenAI 客户端（src/postgres_mcp/ai/openai_client.py - Structured Outputs, 超时, 重试）
-- [ ] T026 [P] [US1] 实现 Prompt Builder（src/postgres_mcp/ai/prompt_builder.py - System/User message, DDL schema 格式）
-- [ ] T027 [P] [US1] 实现 Response Parser（src/postgres_mcp/ai/response_parser.py - 解析 AI 输出, 提取 SQL）
-- [ ] T028 [US1] 实现 SQLGenerator（src/postgres_mcp/core/sql_generator.py - 集成 OpenAI, prompt builder, 重试逻辑）
-- [ ] T029 [P] [US1] 单元测试 OpenAI 客户端（tests/unit/test_openai_client.py - mock API 调用）
-- [ ] T030 [P] [US1] 单元测试 Prompt Builder（tests/unit/test_prompt_builder.py - DDL 格式, few-shot 示例）
-- [ ] T031 [US1] 单元测试 SQLGenerator（tests/unit/test_sql_generator.py - 生成流程, 错误处理）
+- [x] T025 [P] [US1] 实现 OpenAI 客户端（src/postgres_mcp/ai/openai_client.py - Structured Outputs, 超时, 重试）
+- [x] T026 [P] [US1] 实现 Prompt Builder（src/postgres_mcp/ai/prompt_builder.py - System/User message, DDL schema 格式）
+- [x] T027 [P] [US1] 实现 Response Parser（src/postgres_mcp/ai/response_parser.py - 解析 AI 输出, 提取 SQL）
+- [x] T028 [US1] 实现 SQLGenerator（src/postgres_mcp/core/sql_generator.py - 集成 OpenAI, prompt builder, 重试逻辑）
+- [x] T029 [P] [US1] 单元测试 OpenAI 客户端（tests/unit/test_openai_client.py - mock API 调用）
+- [x] T030 [P] [US1] 单元测试 Prompt Builder（tests/unit/test_prompt_builder.py - DDL 格式, few-shot 示例）
+- [x] T031 [US1] 单元测试 SQLGenerator（tests/unit/test_sql_generator.py - 生成流程, 错误处理）
 
 ---
 
