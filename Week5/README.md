@@ -18,6 +18,7 @@ Query your PostgreSQL databases using natural language through the Model Context
 - 📜 **Query History**: Automatic logging and audit trail (JSONL format) ✨ **NEW**
 - 🔄 **Multi-Database Support**: Connect to multiple PostgreSQL databases simultaneously
 - 📈 **Result Formatting**: Automatic Markdown table formatting with row limits
+- 🎯 **Template Fallback**: 15 query templates for AI service unavailability ✨ **NEW**
 
 ## Quick Start
 
@@ -315,6 +316,7 @@ Three test databases are available:
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  SchemaCache    SQLGenerator    QueryExecutor        │   │
 │  │  SQLValidator   PromptBuilder   QueryRunner          │   │
+│  │  TemplateMatcher (NEW)   TemplateLoader (NEW)        │   │
 │  │  JSONLWriter (NEW)                                   │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
@@ -323,12 +325,14 @@ Three test databases are available:
 ┌──────────────────┐  ┌───────────────┐  ┌──────────────┐
 │ OpenAI           │  │ Schema        │  │ Asyncpg      │
 │ GPT-4o-mini      │  │ Inspector     │  │ Pool         │
-└──────────────────┘  └───────┬───────┘  └──────┬───────┘
-                              │                  │
-                              ▼                  ▼
-                      ┌─────────────────────────────┐
-                      │   PostgreSQL Database(s)    │
-                      └─────────────────────────────┘
+│ (with fallback)  │  └───────┬───────┘  └──────┬───────┘
+└────────┬─────────┘          │                  │
+         │ fallback           │                  │
+         ▼                    ▼                  ▼
+┌──────────────────┐  ┌─────────────────────────────┐
+│ Query Templates  │  │   PostgreSQL Database(s)    │
+│ (15 templates)   │  └─────────────────────────────┘
+└──────────────────┘
 ```
 
 ## Project Structure
@@ -347,7 +351,8 @@ Week5/
 │   │   ├── sql_generator.py
 │   │   ├── sql_validator.py
 │   │   ├── schema_cache.py
-│   │   └── query_executor.py     # Phase 4
+│   │   ├── query_executor.py     # Phase 4
+│   │   └── template_matcher.py   # Phase 4 (NEW)
 │   ├── db/                      # Database layer
 │   │   ├── connection_pool.py
 │   │   ├── schema_inspector.py
@@ -360,14 +365,23 @@ Week5/
 │   │   ├── schema.py
 │   │   ├── query.py
 │   │   ├── result.py
-│   │   └── log_entry.py
+│   │   ├── log_entry.py
+│   │   └── template.py
+│   ├── templates/               # Query templates (NEW)
+│   │   └── queries/              # 15 YAML templates
+│   │       ├── select_all.yaml
+│   │       ├── count_records.yaml
+│   │       └── ...
 │   └── utils/                   # Utilities
 │       ├── logging.py
 │       ├── validators.py
-│       └── jsonl_writer.py       # Phase 4 (NEW)
+│       ├── jsonl_writer.py       # Phase 4 (NEW)
+│       └── template_loader.py    # Phase 4 (NEW)
 ├── tests/
-│   ├── unit/                    # Unit tests (113 passed)
+│   ├── unit/                    # Unit tests (153 passed)
 │   │   ├── test_jsonl_writer.py  # Phase 4 (NEW)
+│   │   ├── test_template_loader.py  # Phase 4 (NEW)
+│   │   ├── test_template_matcher.py # Phase 4 (NEW)
 │   │   └── ...
 │   ├── integration/             # Integration tests
 │   ├── contract/                # Contract tests (70 test cases) 🎯 NEW

@@ -23,7 +23,7 @@
 
 **Overall**: 88/94 tasks complete (94%) 🎉  
 **Production Ready**: ✅ **Ready - 完整功能集 + 降级方案 + 测试体系**  
-**Git Status**: 待提交 (Query Templates 实现)
+**Git Status**: 已提交 (792c0ec - Query Templates 实现)
 
 ---
 
@@ -113,7 +113,7 @@ assert "template:" in query.explanation.lower()
 #### 📝 相关 Git 提交
 
 ```
-[待提交] feat(001-postgres-mcp): 完成查询模板库 (T072-T077)
+792c0ec ← feat: 完成查询模板库实现 (Phase 4 Query Templates)
   - 实现 TemplateLoader YAML 加载器
   - 实现 TemplateMatcher 四阶段评分
   - 创建 15 个查询模板
@@ -1261,21 +1261,238 @@ Week5/
 
 ---
 
+## 🧪 Contract Test Results & Optimization Plan
+
+### Current Test Results (2026-01-29)
+
+**测试执行**: 完整测试（70个用例，L1-L5 + S1）
+**通过率**: 18/70 (25.7%) ⚠️ 低于预期
+**执行时间**: ~14分钟（包含 API 请求延迟）
+
+#### 按类别统计
+
+| 类别 | 通过/总数 | 通过率 | 状态 |
+|------|----------|--------|------|
+| L1 基础查询 | 6/15 | 40% | ⚠️ |
+| L2 多表关联 | 6/15 | 40% | ⚠️ |
+| L3 聚合分析 | 3/12 | 25% | ❌ |
+| L4 复杂逻辑 | 2/10 | 20% | ❌ |
+| L5 高级特性 | 0/8  | 0%  | ❌ |
+| S1 安全测试 | 1/10 | 10% | ❌ |
+
+#### 失败原因分析
+
+| 原因 | 数量 | 占比 | 严重性 |
+|------|------|------|--------|
+| SQL 模式不匹配 | 45 | 86.5% | 🟡 测试问题 |
+| 安全验证器误报 | 6  | 11.5% | 🔴 代码 Bug |
+| 其他 | 1  | 2.0%  | 🟢 可忽略 |
+
+### 🔍 根因分析
+
+**关键发现**: ✅ **AI 生成的 SQL 质量实际良好！大多数失败是测试设计问题**
+
+#### 1. AI 的"好习惯"被误判为错误
+
+```sql
+-- 示例 L1.2: "显示价格大于 100 的产品"
+期望: SELECT * FROM products WHERE price > 100
+实际: SELECT * FROM products WHERE price > 100 LIMIT 1000;
+结果: ❌ 失败（模式不匹配）
+分析: ✅ AI 自动添加 LIMIT 1000 是安全的好实践！
+```
+
+```sql
+-- 示例 L1.10: "统计产品数量"
+期望: SELECT COUNT(*) FROM products
+实际: SELECT COUNT(*) AS product_count FROM products;
+结果: ❌ 失败（模式不匹配）
+分析: ✅ AI 添加有意义的别名提高可读性！
+```
+
+#### 2. 安全验证器存在严重 Bug
+
+```sql
+-- 示例 L1.8: "显示最近 30 天的客户"
+生成: SELECT * FROM customers WHERE created_at >= NOW() - INTERVAL '30 days'
+错误: "Security violation: Dangerous SQL detected: CREATE statement"
+分析: ❌ 字段名 created_at 中包含 "CREATE" 触发误报！
+```
+
+**Bug 位置**: `src/postgres_mcp/core/sql_validator.py`
+```python
+# 当前实现（过于简单）
+dangerous_keywords = ["INSERT", "UPDATE", "DELETE", "DROP", "CREATE", ...]
+if any(keyword in sql.upper() for keyword in dangerous_keywords):
+    return False  # ❌ 误报！
+```
+
+#### 3. 正则表达式模式过于严格
+
+测试用例使用严格的正则表达式，无法匹配语义等价的 SQL 变体：
+- 不允许 `LIMIT` 子句（除非明确指定）
+- 不允许列别名 `AS xxx`
+- 不允许额外的空格或换行
+
+### 🎯 优化计划（选项 A: 快速修复）
+
+**目标**: 通过率从 25.7% 提升到 60-70%  
+**工作量**: 1-2 小时  
+**优先级**: 高
+
+#### 修复 1: 改进安全验证器（高优先级 🔴）
+
+**文件**: `src/postgres_mcp/core/sql_validator.py`
+
+**当前问题**:
+- 简单字符串匹配导致大量误报
+- 无法区分关键字和字段名/表名
+
+**修复方案**: 使用 SQLGlot AST 验证
+
+```python
+import sqlglot
+
+def validate_security(sql: str) -> tuple[bool, str]:
+    """Validate SQL using AST analysis."""
+    try:
+        # Parse SQL into AST
+        parsed = sqlglot.parse_one(sql, dialect="postgres")
+        
+        # Check root node type
+        if not isinstance(parsed, sqlglot.exp.Select):
+            return False, "Only SELECT queries are allowed"
+        
+        # Check for subqueries (they should also be SELECT only)
+        for node in parsed.walk():
+            if isinstance(node, (
+                sqlglot.exp.Insert,
+                sqlglot.exp.Update,
+                sqlglot.exp.Delete,
+                sqlglot.exp.Drop,
+                sqlglot.exp.Create,
+                sqlglot.exp.Alter,
+            )):
+                return False, f"Dangerous operation detected: {type(node).__name__}"
+        
+        return True, ""
+    
+    except Exception as e:
+        return False, f"Invalid SQL syntax: {e}"
+```
+
+**预期效果**: 
+- ✅ 消除 created_at / updated_at 等字段名的误报
+- ✅ 准确识别嵌套查询中的危险操作
+- ✅ 提升安全验证准确率到 95%+
+
+#### 修复 2: 放宽正则表达式模式（中优先级 🟡）
+
+**文件**: `tests/contract/test_l1_basic.py`, `test_l2_join.py` 等
+
+**修复模式**:
+
+```python
+# 修复前
+expected_sql=r"SELECT .* FROM products WHERE .* price\s*>\s*100"
+
+# 修复后（允许 LIMIT 和额外空格）
+expected_sql=r"SELECT .* FROM products WHERE .* price\s*>\s*100(\s+LIMIT\s+\d+)?\s*;?"
+
+# 修复前
+expected_sql=r"SELECT COUNT\(\*\) FROM products"
+
+# 修复后（允许别名）
+expected_sql=r"SELECT COUNT\(\*\)(\s+AS\s+\w+)?\s+FROM products"
+```
+
+**需要修复的文件**:
+- `test_l1_basic.py`: 9 个测试用例
+- `test_l2_join.py`: 5 个测试用例
+- `test_l3_aggregate.py`: 3 个测试用例
+
+**预期效果**:
+- ✅ 匹配 AI 添加的 LIMIT 子句
+- ✅ 匹配有意义的列别名
+- ✅ 提升模式匹配准确率到 80%+
+
+#### 修复 3: 验证并重新测试（必需）
+
+```bash
+# 1. 修复代码
+cd ~/Documents/VibeCoding/Week5
+
+# 2. 运行单元测试验证修复
+pytest tests/unit/test_sql_validator.py -v
+
+# 3. 运行样例契约测试
+cd tests/contract
+./run_contract_tests.sh sample
+
+# 4. 如果样例通过，运行完整测试
+./run_contract_tests.sh full
+```
+
+### 📊 预期结果
+
+修复后的预期通过率：
+
+| 类别 | 当前 | 预期 | 提升 |
+|------|------|------|------|
+| L1 基础查询 | 40% | 80% | +40% |
+| L2 多表关联 | 40% | 70% | +30% |
+| L3 聚合分析 | 25% | 60% | +35% |
+| L4 复杂逻辑 | 20% | 50% | +30% |
+| L5 高级特性 | 0%  | 40% | +40% |
+| S1 安全测试 | 10% | 100% | +90% |
+| **总体** | **25.7%** | **65-70%** | **+40-45%** |
+
+### 📝 详细分析报告
+
+完整的测试结果分析和修复方案详见:
+- `instructions/Week5/CONTRACT_TEST_ANALYSIS.md`
+
+---
+
 ## 🎯 Next Actions
 
-### 1. Production Testing (Recommended)
+### 1. Contract Test Optimization (高优先级 🔴 - 进行中)
+
+**目标**: 修复测试框架问题，提升通过率从 25.7% 到 65-70%
+
+- [ ] **修复安全验证器** (src/postgres_mcp/core/sql_validator.py)
+  - 使用 SQLGlot AST 验证替代字符串匹配
+  - 消除 `created_at` 等字段名的误报
+  - 准确识别嵌套查询中的危险操作
+  
+- [ ] **放宽正则表达式模式** (tests/contract/test_l*.py)
+  - 允许 AI 添加的 `LIMIT` 子句
+  - 允许有意义的列别名 `AS xxx`
+  - 更新 17 个受影响的测试用例
+  
+- [ ] **重新运行测试并验证**
+  - 样例测试通过率 ≥ 80%
+  - 完整测试通过率 ≥ 65%
+  - 无安全验证误报
+
+**预计工作量**: 1-2 小时  
+**详细计划**: 见上文 "Contract Test Results & Optimization Plan"
+
+---
+
+### 2. Production Testing (推荐)
 - [ ] Test with Claude Desktop integration
 - [ ] Verify all 5 MCP tools work correctly
 - [ ] Test query_history tool with real logs
 - [ ] Performance testing with different databases
 
-### 2. Optional Enhancements
+### 3. Optional Enhancements
 - [ ] Fix SchemaInspector Mock tests (cosmetic)
 - [ ] Add integration tests for MCP interface (T052)
 - [ ] Improve Response Parser coverage (currently 55%)
-- [ ] Implement query templates library
+- [x] ~~Implement query templates library~~ ✅ 已完成
 
-### 3. Documentation
+### 4. Documentation
 - [x] User guide for MCP tools (quickstart.md updated)
 - [ ] API documentation (future)
 - [ ] Performance tuning guide (future)
