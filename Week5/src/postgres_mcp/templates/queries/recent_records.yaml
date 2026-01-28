@@ -1,0 +1,41 @@
+name: recent_records
+description: Get recent records based on date/timestamp column
+priority: 70
+keywords:
+  - recent
+  - 最近
+  - latest
+  - 最新
+  - new
+patterns:
+  - .*最近.*
+  - .*最新.*
+  - .*recent.*
+  - .*latest.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: date_column
+    type: identifier
+    description: Date/timestamp column
+    required: false
+    default: "created_at"
+  - name: limit
+    type: literal
+    description: Number of records
+    required: false
+    default: "10"
+sql_template: "SELECT * FROM {table} ORDER BY {date_column} DESC LIMIT {limit}"
+examples:
+  - input: "最近的10条订单"
+    params:
+      table: orders
+      date_column: created_at
+      limit: "10"
+  - input: "latest 20 users"
+    params:
+      table: users
+      date_column: created_at
+      limit: "20"

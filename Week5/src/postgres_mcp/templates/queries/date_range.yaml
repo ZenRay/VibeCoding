@@ -1,0 +1,46 @@
+name: date_range
+description: Select records within a date range
+priority: 70
+keywords:
+  - between
+  - 之间
+  - from
+  - to
+  - range
+  - 范围
+patterns:
+  - .*之间.*
+  - .*到.*
+  - .*between.*
+  - .*from.*to.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: date_column
+    type: identifier
+    description: Date column
+    required: true
+  - name: start_date
+    type: literal
+    description: Start date
+    required: true
+  - name: end_date
+    type: literal
+    description: End date
+    required: true
+sql_template: "SELECT * FROM {table} WHERE {date_column} BETWEEN {start_date} AND {end_date} LIMIT 1000"
+examples:
+  - input: "查询2024年1月到3月之间的订单"
+    params:
+      table: orders
+      date_column: created_at
+      start_date: "2024-01-01"
+      end_date: "2024-03-31"
+  - input: "users registered between Jan and March"
+    params:
+      table: users
+      date_column: registered_at
+      start_date: "2024-01-01"
+      end_date: "2024-03-31"

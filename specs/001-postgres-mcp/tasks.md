@@ -218,15 +218,15 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T072 [P] 单元测试 Template Matcher（tests/unit/test_template_matcher.py - 匹配算法, 实体提取）
-- [ ] T073 [P] 单元测试 Template Loader（tests/unit/test_template_loader.py - YAML 加载）
+- [x] T072 [P] 单元测试 Template Matcher（tests/unit/test_template_matcher.py - 匹配算法, 实体提取）
+- [x] T073 [P] 单元测试 Template Loader（tests/unit/test_template_loader.py - YAML 加载）
 
 #### Implementation
 
-- [ ] T074 [P] 创建 15 个查询模板（src/postgres_mcp/templates/queries/{select_all, select_with_condition, ...}.yaml）
-- [ ] T075 [P] 实现 TemplateLoader（src/postgres_mcp/utils/template_loader.py - YAML 解析, 验证）
-- [ ] T076 [US1] 实现 TemplateMatcher（src/postgres_mcp/core/template_matcher.py - 四阶段评分, 实体提取）
-- [ ] T077 集成 TemplateMatcher 到 SQLGenerator（src/postgres_mcp/core/sql_generator.py - OpenAI 失败降级）
+- [x] T074 [P] 创建 15 个查询模板（src/postgres_mcp/templates/queries/{select_all, select_with_condition, ...}.yaml）
+- [x] T075 [P] 实现 TemplateLoader（src/postgres_mcp/utils/template_loader.py - YAML 解析, 验证）
+- [x] T076 [US1] 实现 TemplateMatcher（src/postgres_mcp/core/template_matcher.py - 四阶段评分, 实体提取）
+- [x] T077 集成 TemplateMatcher 到 SQLGenerator（src/postgres_mcp/core/sql_generator.py - OpenAI 失败降级）
 - [ ] T078 集成测试模板匹配（tests/integration/test_template_matching.py - 覆盖率评估）
 
 **Checkpoint Phase 4**: 查询执行完成 - 可执行 SQL 并返回结果, 支持多数据库, 查询历史

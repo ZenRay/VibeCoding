@@ -1,0 +1,32 @@
+name: count_records
+description: Count total records in a table
+priority: 85
+keywords:
+  - count
+  - 统计
+  - 数量
+  - 多少
+  - how many
+  - total
+patterns:
+  - .*多少.*
+  - .*数量.*
+  - .*总数.*
+  - .*count.*
+  - how many.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+sql_template: "SELECT COUNT(*) as count FROM {table}"
+examples:
+  - input: "有多少用户"
+    params:
+      table: users
+  - input: "统计产品数量"
+    params:
+      table: products
+  - input: "how many orders"
+    params:
+      table: orders

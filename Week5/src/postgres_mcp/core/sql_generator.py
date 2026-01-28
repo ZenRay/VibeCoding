@@ -1,9 +1,8 @@
 """SQL Generator implementation.
 
-Core SQL generator integrating OpenAI, Schema Cache, and SQL Validator.
+Core SQL generator integrating OpenAI, Schema Cache, Template Matcher, and SQL Validator.
 """
 
-from enum import Enum
 from typing import Any
 
 import structlog
@@ -11,17 +10,10 @@ import structlog
 from postgres_mcp.ai.openai_client import AIServiceUnavailableError, OpenAIClient
 from postgres_mcp.ai.prompt_builder import PromptBuilder
 from postgres_mcp.core.sql_validator import SQLValidator
-from postgres_mcp.models.query import GeneratedQuery
+from postgres_mcp.core.template_matcher import TemplateMatcher
+from postgres_mcp.models.query import GeneratedQuery, GenerationMethod
 
 logger = structlog.get_logger(__name__)
-
-
-class GenerationMethod(str, Enum):
-    """SQL generation method."""
-
-    AI_GENERATED = "ai_generated"
-    TEMPLATE_MATCHED = "template_matched"
-    CACHED = "cached"
 
 
 class SQLGenerationError(Exception):
@@ -34,8 +26,8 @@ class SQLGenerator:
     """
     SQL Generator for converting natural language to SQL queries.
 
-    Orchestrates OpenAI client, schema cache, and SQL validator to
-    generate safe and validated SQL queries.
+    Orchestrates OpenAI client, template matcher (fallback), schema cache,
+    and SQL validator to generate safe and validated SQL queries.
     """
 
     def __init__(
@@ -44,6 +36,7 @@ class SQLGenerator:
         openai_client: OpenAIClient,
         sql_validator: SQLValidator,
         prompt_builder: PromptBuilder | None = None,
+        template_matcher: TemplateMatcher | None = None,
     ):
         """
         Initialize SQL Generator.
@@ -54,11 +47,13 @@ class SQLGenerator:
             openai_client: OpenAI client instance
             sql_validator: SQL validator instance
             prompt_builder: Prompt builder (optional)
+            template_matcher: Template matcher for fallback (optional)
         """
         self._schema_cache = schema_cache
         self._openai_client = openai_client
         self._sql_validator = sql_validator
         self._prompt_builder = prompt_builder or PromptBuilder()
+        self._template_matcher = template_matcher
 
     async def generate(
         self,
@@ -164,7 +159,29 @@ class SQLGenerator:
 
             except AIServiceUnavailableError as e:
                 logger.error("ai_service_unavailable", attempt=attempt + 1, error=str(e))
-                # TODO: Fallback to template matching (Phase 4)
+
+                # Fallback to template matching if available
+                if self._template_matcher:
+                    logger.info("attempting_template_fallback", natural_language=natural_language)
+                    try:
+                        template_query = await self._generate_from_template(
+                            natural_language=natural_language,
+                            schema=schema,
+                        )
+                        if template_query:
+                            logger.info(
+                                "template_fallback_success",
+                                template=template_query.generation_method,
+                            )
+                            return template_query
+                    except Exception as template_error:
+                        logger.warning(
+                            "template_fallback_failed",
+                            error=str(template_error),
+                            exc_info=True,
+                        )
+
+                # No template fallback available or failed
                 raise SQLGenerationError(f"AI service unavailable: {e}") from e
 
             except SQLGenerationError:
@@ -179,3 +196,75 @@ class SQLGenerator:
 
         # Should not reach here, but just in case
         raise SQLGenerationError(f"Failed to generate valid SQL after {max_retries} attempts")
+
+    async def _generate_from_template(
+        self,
+        natural_language: str,
+        schema: Any,
+    ) -> GeneratedQuery | None:
+        """
+        Generate SQL from template matching (fallback method).
+
+        Args:
+        ----------
+            natural_language: Natural language query
+            schema: Database schema
+
+        Returns:
+        ----------
+            GeneratedQuery if template matched, None otherwise
+
+        Raises:
+        ----------
+            SQLGenerationError: When template matching fails
+        """
+        if not self._template_matcher:
+            return None
+
+        # Convert schema to dict format expected by template matcher
+        schema_dict = {table.name: table for table in schema.tables}
+
+        # Match query to template
+        match = self._template_matcher.match(natural_language, schema_dict)
+
+        if not match:
+            logger.warning("no_template_match_found", query=natural_language)
+            return None
+
+        # Generate SQL from template
+        try:
+            sql, params = match["template"].generate_sql(match["entities"])
+
+            # Validate generated SQL
+            validation = self._sql_validator.validate(sql)
+
+            if not validation.valid:
+                error_summary = "; ".join(validation.errors[:3])
+                logger.warning(
+                    "template_sql_validation_failed",
+                    template=match["template"].name,
+                    errors=error_summary,
+                )
+                raise SQLGenerationError(
+                    f"Template-generated SQL failed validation: {error_summary}"
+                )
+
+            logger.info(
+                "template_sql_generated",
+                template=match["template"].name,
+                score=match["score"],
+                entities=match["entities"],
+            )
+
+            return GeneratedQuery(
+                sql=validation.cleaned_sql or sql,
+                validated=True,
+                warnings=validation.warnings,
+                explanation=f"Generated from template: {match['template'].description}",
+                assumptions=[f"Matched template: {match['template'].name}"],
+                generation_method=GenerationMethod.TEMPLATE_MATCHED,
+            )
+
+        except Exception as e:
+            logger.error("template_sql_generation_failed", error=str(e), exc_info=True)
+            raise SQLGenerationError(f"Template SQL generation failed: {e}") from e
