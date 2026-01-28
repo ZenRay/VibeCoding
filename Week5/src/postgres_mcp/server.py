@@ -108,7 +108,7 @@ async def server_lifespan():
         logger.info("sql_validator_initialized")
 
         # Initialize connection pool manager
-        _context.pool_manager = PoolManager(db_configs=list(config.databases.values()))
+        _context.pool_manager = PoolManager(db_configs=config.databases)
         await _context.pool_manager.initialize()
         logger.info("pool_manager_initialized")
 
@@ -118,7 +118,7 @@ async def server_lifespan():
 
         # Initialize schema inspectors for each database
         inspectors = {}
-        for db_name, db_config in config.databases.items():
+        for db_config in config.databases:
             inspector = SchemaInspector(
                 host=db_config.host,
                 port=db_config.port,
@@ -126,7 +126,7 @@ async def server_lifespan():
                 password=db_config.password,
                 database=db_config.database,
             )
-            inspectors[db_name] = inspector
+            inspectors[db_config.name] = inspector
 
         # Initialize schema cache
         _context.schema_cache = SchemaCache(

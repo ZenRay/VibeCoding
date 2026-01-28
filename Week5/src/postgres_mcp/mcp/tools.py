@@ -10,8 +10,6 @@ import structlog
 from mcp.server import Server
 from mcp.types import TextContent, Tool
 
-from postgres_mcp.server import get_context
-
 logger = structlog.get_logger(__name__)
 
 
@@ -124,6 +122,8 @@ def register_tools(server: Server) -> None:
         ----------
             List of text content responses
         """
+        from postgres_mcp.server import get_context
+        
         ctx = get_context()
 
         try:

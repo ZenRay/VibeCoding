@@ -121,16 +121,11 @@ class SchemaInspector:
             for table_row in table_rows:
                 table_name = table_row["table_name"]
 
-                # Get columns
-                columns = await self._get_table_columns(table_name)
-
-                # Get primary keys
+                # Get primary keys first
                 pk_columns = await self._get_primary_keys(table_name)
 
-                # Mark primary key columns
-                for col in columns:
-                    if col.name in pk_columns:
-                        col.primary_key = True
+                # Get columns (with pk info)
+                columns = await self._get_table_columns(table_name, pk_columns)
 
                 # Get indexes
                 indexes = await self._get_indexes(table_name)
@@ -153,13 +148,14 @@ class SchemaInspector:
 
             return DatabaseSchema(database_name=self._database, tables=tables)
 
-    async def _get_table_columns(self, table_name: str) -> list[ColumnSchema]:
+    async def _get_table_columns(self, table_name: str, pk_columns: set[str]) -> list[ColumnSchema]:
         """
         Get columns for a specific table.
 
         Args:
         ----------
             table_name: Name of the table
+            pk_columns: Set of primary key column names
 
         Returns:
         ----------
@@ -190,7 +186,7 @@ class SchemaInspector:
                         data_type=row["data_type"],
                         nullable=row["is_nullable"] == "YES",
                         default=row["column_default"],
-                        primary_key=False,  # Will be set later
+                        primary_key=row["column_name"] in pk_columns,  # Set based on pk_columns
                     )
                 )
 

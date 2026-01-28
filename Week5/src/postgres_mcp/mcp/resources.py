@@ -8,8 +8,6 @@ import structlog
 from mcp.server import Server
 from mcp.types import Resource
 
-from postgres_mcp.server import get_context
-
 logger = structlog.get_logger(__name__)
 
 
@@ -31,6 +29,8 @@ def register_resources(server: Server) -> None:
         ----------
             List of resource definitions
         """
+        from postgres_mcp.server import get_context
+        
         ctx = get_context()
         resources: list[Resource] = []
 
@@ -76,6 +76,8 @@ def register_resources(server: Server) -> None:
         ----------
             Resource content as text
         """
+        from postgres_mcp.server import get_context
+        
         ctx = get_context()
 
         try:

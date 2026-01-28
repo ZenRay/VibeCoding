@@ -7,9 +7,10 @@ connection status, and validation rules.
 
 from __future__ import annotations
 
+import os
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, computed_field
 
 
 class ConnectionStatus(str, Enum):
@@ -111,3 +112,25 @@ class DatabaseConnection(BaseModel, frozen=True):
         if value < min_size:
             raise ValueError(f"max_pool_size ({value}) must be >= min_pool_size ({min_size})")
         return value
+
+    @computed_field
+    @property
+    def password(self) -> str:
+        """
+        Get password from environment variable.
+
+        Returns:
+        ----------
+            Password value from environment variable
+
+        Raises:
+        ----------
+            ValueError: If environment variable is not set
+        """
+        password = os.environ.get(self.password_env_var)
+        if not password:
+            raise ValueError(
+                f"environment variable {self.password_env_var} not set"
+            )
+        return password
+
