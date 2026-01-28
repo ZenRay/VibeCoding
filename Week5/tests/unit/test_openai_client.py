@@ -81,9 +81,7 @@ async def test_openai_client_timeout(openai_client):
         side_effect=TimeoutError("Request timeout"),
     ):
         with pytest.raises(AIServiceUnavailableError, match="OpenAI API timeout"):
-            await openai_client.generate(
-                system_prompt="Test", user_prompt="Test query"
-            )
+            await openai_client.generate(system_prompt="Test", user_prompt="Test query")
 
 
 @pytest.mark.asyncio
@@ -104,9 +102,7 @@ async def test_openai_client_rate_limit(openai_client):
         side_effect=mock_error,
     ):
         with pytest.raises(AIServiceUnavailableError, match="rate limit"):
-            await openai_client.generate(
-                system_prompt="Test", user_prompt="Test query"
-            )
+            await openai_client.generate(system_prompt="Test", user_prompt="Test query")
 
 
 @pytest.mark.asyncio
@@ -172,6 +168,4 @@ async def test_openai_client_invalid_json_response(openai_client):
         mock_create.return_value = mock_response
 
         with pytest.raises(AIServiceUnavailableError, match="Failed to parse"):
-            await openai_client.generate(
-                system_prompt="Test", user_prompt="Test query"
-            )
+            await openai_client.generate(system_prompt="Test", user_prompt="Test query")
