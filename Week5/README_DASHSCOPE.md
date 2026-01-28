@@ -4,21 +4,19 @@ PostgreSQL MCP Server 支持任何 OpenAI 兼容的 API 服务。
 
 ## 方法 1: 修改配置文件（推荐）
 
-编辑 `config/config.yaml`:
+编辑 `config/config.yaml`，取消注释阿里百炼配置：
 
 ```yaml
 openai:
   api_key_env_var: "OPENAI_API_KEY"
-  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  
+  # 取消注释这两行，注释掉 OpenAI 配置
   model: "qwen-turbo"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  
   temperature: 0.0
   max_tokens: 2000
   timeout: 30.0
-```
-
-或直接使用示例配置:
-```bash
-cp config/config.dashscope.yaml config/config.yaml
 ```
 
 ## 方法 2: 使用环境变量

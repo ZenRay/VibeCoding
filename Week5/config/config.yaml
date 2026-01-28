@@ -35,11 +35,27 @@ databases:
 
 default_database: "ecommerce_small"
 
+# OpenAI 配置 - 支持多种兼容服务
 openai:
   api_key_env_var: "OPENAI_API_KEY"
+  
+  # 选择使用的 AI 服务（取消注释其中一个）:
+  
+  # 1. OpenAI 官方 (默认)
   model: "gpt-4o-mini-2024-07-18"
+  base_url: null
+  
+  # 2. 阿里百炼（通义千问）- 推荐国内用户
+  # model: "qwen-turbo"              # 或 qwen-plus, qwen-max
+  # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  
+  # 3. Azure OpenAI
+  # model: "gpt-4"
+  # base_url: "https://your-resource.openai.azure.com/"
+  
   temperature: 0.0
   max_tokens: 1000
+  timeout: 30.0
 
 schema_cache:
   poll_interval_minutes: 5
