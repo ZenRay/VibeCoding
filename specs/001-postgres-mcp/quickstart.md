@@ -13,7 +13,34 @@
 - UV 包管理器
 - PostgreSQL 12.0+ 数据库（至少一个）
 - OpenAI API 密钥
-- Docker 2.x（可选，用于容器化部署）
+- Docker 2.x（可选，用于容器化部署和测试数据库）
+
+---
+
+## 0. 测试数据库设置（可选，推荐）
+
+如果你没有现成的 PostgreSQL 数据库，可以使用我们提供的测试数据库：
+
+```bash
+# 生成测试数据
+cd ~/Documents/VibeCoding/Week5
+make generate-data
+
+# 启动三个测试数据库（小型、中型、大型）
+make up
+
+# 测试连接
+make test-all
+```
+
+这将创建三个不同规模的测试数据库：
+- **小型（ecommerce_small）** - 5个表，~1000条记录
+- **中型（social_medium）** - 14个表，~10000条记录  
+- **大型（erp_large）** - 11个表，~50000条记录
+
+**注意**: 所有三个数据库都在同一个 PostgreSQL 服务器上（localhost:5432），而不是三个独立的服务器。
+
+详细信息见 `fixtures/README.md`。
 
 ---
 
@@ -54,15 +81,41 @@ server:
   version: "0.1.0"
 
 databases:
+  # 使用测试数据库（如果已运行 make up）
+  - name: "small"
+    host: "localhost"
+    port: 5432
+    database: "ecommerce_small"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "prefer"
+  
+  - name: "medium"
+    host: "localhost"
+    port: 5432
+    database: "social_medium"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "prefer"
+  
+  - name: "large"
+    host: "localhost"
+    port: 5432
+    database: "erp_large"
+    user: "testuser"
+    password_env_var: "TEST_DB_PASSWORD"
+    ssl_mode: "prefer"
+    
+  # 或使用你自己的数据库
   - name: "mydb"
     host: "localhost"
     port: 5432
     database: "myapp_db"
     user: "readonly_user"
-    password_env_var: "MYDB_PASSWORD"  # 密码从环境变量读取
+    password_env_var: "MYDB_PASSWORD"
     ssl_mode: "prefer"
 
-default_database: "mydb"
+default_database: "small"  # 或 "mydb"
 
 openai:
   api_key_env_var: "OPENAI_API_KEY"
@@ -73,11 +126,13 @@ openai:
 
 ```bash
 # 方法 1: 导出环境变量
-export MYDB_PASSWORD="your_database_password"
+export TEST_DB_PASSWORD="testpass123"  # 测试数据库密码
+export MYDB_PASSWORD="your_database_password"  # 你的数据库密码
 export OPENAI_API_KEY="sk-..."
 
 # 方法 2: 使用 .env 文件
 cat > .env << EOF
+TEST_DB_PASSWORD=testpass123
 MYDB_PASSWORD=your_database_password
 OPENAI_API_KEY=sk-...
 EOF

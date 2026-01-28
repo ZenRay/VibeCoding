@@ -45,26 +45,26 @@
 
 ### Configuration & Logging
 
-- [ ] T009 [P] 实现 Config 数据模型（src/postgres_mcp/config.py - Pydantic Settings, DatabaseConnection, OpenAI config）
-- [ ] T010 [P] 配置 Structlog（src/postgres_mcp/utils/logging.py - 结构化日志, JSON 输出）
-- [ ] T011 [P] 单元测试 Config 加载和验证（tests/unit/test_config.py - 环境变量覆盖, 验证规则）
+- [x] T009 [P] 实现 Config 数据模型（src/postgres_mcp/config.py - Pydantic Settings, DatabaseConnection, OpenAI config）
+- [x] T010 [P] 配置 Structlog（src/postgres_mcp/utils/logging.py - 结构化日志, JSON 输出）
+- [x] T011 [P] 单元测试 Config 加载和验证（tests/unit/test_config.py - 环境变量覆盖, 验证规则）
 
 ### Data Models（核心 Pydantic 模型）
 
-- [ ] T012 [P] 实现 DatabaseConnection 模型（src/postgres_mcp/models/connection.py - frozen, validators）
-- [ ] T013 [P] 实现 Schema 模型（src/postgres_mcp/models/schema.py - ColumnSchema, TableSchema, DatabaseSchema）
-- [ ] T014 [P] 实现 Query 模型（src/postgres_mcp/models/query.py - QueryRequest, GeneratedQuery）
-- [ ] T015 [P] 实现 QueryResult 模型（src/postgres_mcp/models/result.py - ColumnInfo, QueryResult）
-- [ ] T016 [P] 实现 QueryLogEntry 模型（src/postgres_mcp/models/log_entry.py - JSONL 序列化）
-- [ ] T017 [P] 实现 QueryTemplate 模型（src/postgres_mcp/models/template.py - TemplateParameter, QueryTemplate）
-- [ ] T018 [P] 单元测试所有数据模型（tests/unit/test_models.py - 验证规则, 计算字段）
+- [x] T012 [P] 实现 DatabaseConnection 模型（src/postgres_mcp/models/connection.py - frozen, validators）
+- [x] T013 [P] 实现 Schema 模型（src/postgres_mcp/models/schema.py - ColumnSchema, TableSchema, DatabaseSchema）
+- [x] T014 [P] 实现 Query 模型（src/postgres_mcp/models/query.py - QueryRequest, GeneratedQuery）
+- [x] T015 [P] 实现 QueryResult 模型（src/postgres_mcp/models/result.py - ColumnInfo, QueryResult）
+- [x] T016 [P] 实现 QueryLogEntry 模型（src/postgres_mcp/models/log_entry.py - JSONL 序列化）
+- [x] T017 [P] 实现 QueryTemplate 模型（src/postgres_mcp/models/template.py - TemplateParameter, QueryTemplate）
+- [x] T018 [P] 单元测试所有数据模型（tests/unit/test_models.py - 验证规则, 计算字段）
 
 ### Database Connection Pool
 
-- [ ] T019 实现 PoolManager（src/postgres_mcp/db/connection_pool.py - 多数据库连接池, asyncpg, 熔断器）
-- [ ] T020 [P] 实现连接健康检查（src/postgres_mcp/db/connection_pool.py - 定期健康检查, 自动重连）
-- [ ] T021 [P] 单元测试 PoolManager（tests/unit/test_connection_pool.py - mock asyncpg, 熔断器行为）
-- [ ] T022 集成测试连接池（tests/integration/test_db_operations.py - 真实 PostgreSQL 连接）
+- [x] T019 实现 PoolManager（src/postgres_mcp/db/connection_pool.py - 多数据库连接池, asyncpg, 熔断器）
+- [x] T020 [P] 实现连接健康检查（src/postgres_mcp/db/connection_pool.py - 定期健康检查, 自动重连）
+- [x] T021 [P] 单元测试 PoolManager（tests/unit/test_connection_pool.py - mock asyncpg, 熔断器行为）
+- [x] T022 集成测试连接池（tests/integration/test_db_operations.py - 真实 PostgreSQL 连接）
 
 **Checkpoint**: 基础设施就绪 - 可开始用户故事实现
 
