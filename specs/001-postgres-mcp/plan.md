@@ -349,9 +349,10 @@ CLAUDE.md                   # AI Agent 指南（已存在）
    - 输入：database (string, optional)
    - 输出：{refreshed_databases: string[], duration_ms: int}
 
-5. **query_history**
-   - 输入：limit (int, default: 100), database (string, optional)
-   - 输出：{entries: [{timestamp, natural_language, sql, status}]}
+5. **query_history** ✅ IMPLEMENTED
+   - 输入：database (string, optional), status (string, optional), limit (int, default: 50)
+   - 输出：{entries: [{timestamp, request_id, database, natural_language, sql, status, execution_time_ms, row_count, error_message}]}
+   - 功能：查询历史执行记录，支持过滤和分析
 
 #### MCP 资源（Resources）
 
@@ -359,9 +360,9 @@ CLAUDE.md                   # AI Agent 指南（已存在）
    - 描述：返回指定数据库的 schema 信息
    - 格式：JSON (tables, views, relationships)
 
-2. **templates://queries**
-   - 描述：返回可用查询模板列表
-   - 格式：YAML/JSON 模板定义
+2. **schema://{database}/{table}** ✅ IMPLEMENTED
+   - 描述：返回指定表的详细 schema
+   - 格式：JSON (columns, indexes, foreign keys, DDL)
 
 ### QuickStart 文档
 
@@ -398,16 +399,21 @@ CLAUDE.md                   # AI Agent 指南（已存在）
   - FastMCP server, 3 tools, 2 resources
   - 720 LOC 实现
 
-### ✅ Phase 4: P2 用户故事 (部分完成)
+### ✅ Phase 4: P2 用户故事 (完成)
 - ✅ **US2: Query Execution** (6 tasks)
   - QueryRunner, QueryExecutor
   - execute_query MCP tool
   - 90-97% 测试覆盖率
   - 281 LOC 实现 + 14 tests
+- ✅ **Query History Logging** (4 tasks) ✨ **NEW**
+  - JSONLWriter 异步日志写入
+  - query_history MCP tool
+  - 90% 测试覆盖率
+  - 452 LOC 实现 + 11 tests
 - ✅ **US6: Multi-Database Support** (内置支持)
   - PoolManager 多数据库配置
   - 所有工具支持 database 参数
-- ⏸️ **Query History & Templates** (推迟)
+- ⏸️ **Query Templates** (推迟)
   - 可选功能，未来版本实现
 
 ### ✅ Phase 5: Polish & Documentation (完成)
@@ -415,19 +421,19 @@ CLAUDE.md                   # AI Agent 指南（已存在）
   - 完整项目 README.md
   - CHANGELOG.md 版本历史
   - 15 个示例查询
+  - quickstart.md 更新 ✨ **NEW**
 - ✅ **Code Quality** (3 tasks)
   - Ruff 格式化和检查通过
   - Mypy 类型检查
-  - 完整测试套件（102/111 passed, 92%）
+  - 完整测试套件（113/122 passed, 92.6%）
 - ⏸️ **Optional** (4 tasks)
   - Docker 支持（未来版本）
   - 性能基准测试（未来版本）
   - 安全审计（未来版本）
 
-**总计**: 60/73 tasks (82.2%) | 90-97% 新代码覆盖率 | 生产就绪 🚀
+**总计**: 68/80 tasks (85%) | 90-93% 新代码覆盖率 | 生产就绪 🚀
 
 ### 📅 未来增强功能
-- 查询历史日志
 - 查询模板库
 - 结果验证器
 - Docker 部署配置

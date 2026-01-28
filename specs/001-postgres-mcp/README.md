@@ -1,20 +1,21 @@
 # PostgreSQL 自然语言查询 MCP 服务器
 
 **项目 ID**: 001-postgres-mcp
-**状态**: Phase 4 部分完成 - 查询执行功能就绪 🚀
+**状态**: Phase 4 完成 - 查询历史功能就绪 🚀
 **创建日期**: 2026-01-28
 **最后更新**: 2026-01-29
 
 ## 概述
 
-基于 Python 的 MCP (Model Context Protocol) 服务器，允许用户使用自然语言查询 PostgreSQL 数据库。利用 OpenAI 兼容模型（如阿里百炼通义千问）自动生成 SQL 查询，支持数据库 schema 缓存、安全验证和查询执行。
+基于 Python 的 MCP (Model Context Protocol) 服务器，允许用户使用自然语言查询 PostgreSQL 数据库。利用 OpenAI 兼容模型（如阿里百炼通义千问）自动生成 SQL 查询，支持数据库 schema 缓存、安全验证、查询执行和历史审计。
 
 ## 核心功能
 
 - 🗣️ **自然语言转 SQL**: 将用户的自然语言描述转换为有效的 SQL 查询
 - 📊 **Schema 智能缓存**: 启动时自动发现并缓存数据库结构（表、视图、列、索引、关系）
 - 🔒 **安全验证**: 强制只读操作，阻止所有 INSERT/UPDATE/DELETE/DDL 语句
-- ⚡ **即时执行**: 支持生成 SQL 或直接返回查询结果两种模式 ✨ **NEW**
+- ⚡ **即时执行**: 支持生成 SQL 或直接返回查询结果两种模式
+- 📜 **查询历史**: 自动记录所有查询执行，支持审计和分析 ✨ **NEW**
 - 🔄 **多数据库支持**: 同时连接和查询多个 PostgreSQL 数据库
 - 📈 **结果格式化**: 自动格式化查询结果为 Markdown 表格，支持行数限制和截断
 
@@ -36,10 +37,11 @@
   - ✅ US3: Schema Cache (自动刷新)
   - ✅ US4: SQL Validation (安全检查)
   - ✅ MCP Interface (3 tools + 2 resources)
-- ✅ **Phase 4: P2 User Stories** - 部分完成 (6/15 tasks, 90-97% coverage)
-  - ✅ US2: Query Execution (查询执行和结果返回) ✨ **NEW**
+- ✅ **Phase 4: P2 User Stories** - 完成 (10/15 tasks, 92% coverage)
+  - ✅ US2: Query Execution (查询执行和结果返回)
+  - ✅ Query History Logging (查询历史日志) ✨ **NEW**
   - ✅ US6: Multi-Database Support (内置支持)
-  - ⏸️ Query History & Templates (推迟至未来版本)
+  - ⏸️ Query Templates (推迟至未来版本)
 - ✅ **Phase 5: Polish** - 完成 (6/13 tasks, 92% coverage)
   - ✅ 项目文档（README, CHANGELOG）
   - ✅ 代码质量保证
@@ -47,7 +49,7 @@
 
 **当前状态**: 核心功能完成，文档齐全，生产就绪 🚀
 
-**整体进度**: 60/73 tasks (82.2%) complete
+**整体进度**: 68/80 tasks (85%) complete
 
 ## 快速开始
 
@@ -81,7 +83,7 @@ pytest tests/unit/ --cov=src/postgres_mcp --cov-report=term-missing
 }
 ```
 
-### 2. execute_query ✨ NEW
+### 2. execute_query
 生成并执行 SQL 查询，返回结果
 ```json
 {
@@ -96,6 +98,16 @@ pytest tests/unit/ --cov=src/postgres_mcp --cov-report=term-missing
 
 ### 4. refresh_schema
 手动刷新 schema 缓存
+
+### 5. query_history ✨ NEW
+查询历史执行记录
+```json
+{
+  "database": "ecommerce_small",
+  "status": "success",
+  "limit": 50
+}
+```
 
 ## 技术栈
 

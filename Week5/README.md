@@ -2,10 +2,10 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-102%2F111%20passing-brightgreen)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-90--97%25-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-113%2F122%20passing-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-90--93%25-brightgreen)](tests/)
 
-**Natural Language to SQL Query Server powered by OpenAI GPT-4o-mini**
+**Natural Language to SQL Query Server powered by OpenAI GPT-4o-mini & 阿里百炼**
 
 Query your PostgreSQL databases using natural language through the Model Context Protocol (MCP). This server automatically generates safe, validated SQL queries and executes them with comprehensive error handling.
 
@@ -15,6 +15,7 @@ Query your PostgreSQL databases using natural language through the Model Context
 - 🔒 **Security First**: Enforces read-only operations with AST-based validation
 - 📊 **Smart Schema Caching**: Auto-discovers and caches database structures  
 - ⚡ **Query Execution**: Generate SQL or execute queries and return formatted results
+- 📜 **Query History**: Automatic logging and audit trail (JSONL format) ✨ **NEW**
 - 🔄 **Multi-Database Support**: Connect to multiple PostgreSQL databases simultaneously
 - 📈 **Result Formatting**: Automatic Markdown table formatting with row limits
 
@@ -170,6 +171,20 @@ List all configured databases and their schema information.
 
 Manually refresh schema cache for a specific database or all databases.
 
+### 5. query_history ✨ NEW
+
+Retrieve query execution history from logs:
+
+```json
+{
+  "database": "my_database",
+  "status": "success",
+  "limit": 50
+}
+```
+
+**Returns**: Recent query logs with execution details (timestamp, SQL, status, execution time, row count)
+
 ## MCP Resources
 
 ### schema://{database}
@@ -256,7 +271,7 @@ Three test databases are available:
 │                   FastMCP Server Layer                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │ Tools        │  │ Resources    │  │ Prompts      │      │
-│  │ (4 tools)    │  │ (2 resources)│  │ (optional)   │      │
+│  │ (5 tools)    │  │ (2 resources)│  │ (optional)   │      │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
 └─────────┼──────────────────┼──────────────────┼─────────────┘
           │                  │                  │
@@ -266,6 +281,7 @@ Three test databases are available:
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  SchemaCache    SQLGenerator    QueryExecutor        │   │
 │  │  SQLValidator   PromptBuilder   QueryRunner          │   │
+│  │  JSONLWriter (NEW)                                   │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
           │                  │                  │
@@ -297,14 +313,14 @@ Week5/
 │   │   ├── sql_generator.py
 │   │   ├── sql_validator.py
 │   │   ├── schema_cache.py
-│   │   ├── query_executor.py
-│   │   └── query_runner.py
+│   │   └── query_executor.py     # Phase 4
 │   ├── db/                      # Database layer
 │   │   ├── connection_pool.py
-│   │   └── schema_inspector.py
+│   │   ├── schema_inspector.py
+│   │   └── query_runner.py       # Phase 4
 │   ├── mcp/                     # MCP interface
-│   │   ├── tools.py
-│   │   └── resources.py
+│   │   ├── tools.py              # 5 tools
+│   │   └── resources.py          # 2 resources
 │   ├── models/                  # Data models
 │   │   ├── connection.py
 │   │   ├── schema.py
@@ -313,9 +329,12 @@ Week5/
 │   │   └── log_entry.py
 │   └── utils/                   # Utilities
 │       ├── logging.py
-│       └── validators.py
+│       ├── validators.py
+│       └── jsonl_writer.py       # Phase 4 (NEW)
 ├── tests/
-│   ├── unit/                    # Unit tests (102 passed)
+│   ├── unit/                    # Unit tests (113 passed)
+│   │   ├── test_jsonl_writer.py  # Phase 4 (NEW)
+│   │   └── ...
 │   ├── integration/             # Integration tests
 │   └── conftest.py              # Test configuration
 ├── fixtures/                    # Test databases
@@ -394,6 +413,7 @@ MIT License - see LICENSE file for details
 ---
 
 **Status**: Production Ready 🚀  
-**Version**: 0.5.0  
+**Version**: 0.6.0  
 **Last Updated**: 2026-01-29  
-**Production Test**: ✅ 22/22 passed (100%)
+**Test Status**: ✅ 113/122 passed (92.6%)  
+**Coverage**: 90-93% (新代码)
