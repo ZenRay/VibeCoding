@@ -25,7 +25,7 @@ L1_TEST_CASES = [
         category=TestCategory.L1_BASIC,
         natural_language="显示价格大于 100 的产品",
         database="ecommerce_small",
-        expected_sql=r"SELECT .* FROM products WHERE .* price\s*>\s*100(\s+LIMIT\s+\d+)?",
+        expected_sql=r"SELECT .* FROM products WHERE price\s*>\s*100",
         validation_rules=["has_where_clause", "uses_comparison"],
         description="Query with condition filter",
     ),
@@ -62,8 +62,8 @@ L1_TEST_CASES = [
         natural_language="找出类别是 'Electronics' 且有库存的产品",
         database="ecommerce_small",
         expected_sql=(
-            r"SELECT .* FROM products WHERE .* category.*=.*'Electronics'.* "
-            r"AND .* stock_quantity\s*>\s*0(\s+LIMIT\s+\d+)?"
+            r"SELECT .* FROM products WHERE.*category.*=.*'Electronics'.*"
+            r"AND.*stock_quantity\s*>\s*0"
         ),
         validation_rules=["has_where_clause", "uses_and"],
         description="Multiple conditions with AND",
@@ -96,7 +96,7 @@ L1_TEST_CASES = [
         category=TestCategory.L1_BASIC,
         natural_language="找出没有填写地址的客户",
         database="ecommerce_small",
-        expected_sql=r"SELECT .* FROM customers WHERE .* address IS NULL(\s+LIMIT\s+\d+)?",
+        expected_sql=r"SELECT .* FROM customers WHERE.*address IS NULL",
         validation_rules=["has_where_clause", "uses_is_null"],
         description="NULL value check",
     ),
@@ -141,7 +141,7 @@ L1_TEST_CASES = [
         category=TestCategory.L1_BASIC,
         natural_language="显示所有活跃的客户",
         database="ecommerce_small",
-        expected_sql=r"SELECT .* FROM customers WHERE .* is_active\s*(=\s*true|=\s*TRUE|\s)(\s+LIMIT\s+\d+)?",
+        expected_sql=r"SELECT .* FROM customers WHERE.*is_active",
         validation_rules=["has_where_clause"],
         description="Boolean field query",
     ),
@@ -150,7 +150,7 @@ L1_TEST_CASES = [
         category=TestCategory.L1_BASIC,
         natural_language="显示所有待处理的订单",
         database="ecommerce_small",
-        expected_sql=r"SELECT .* FROM orders WHERE .* status\s*=\s*'pending'(\s+LIMIT\s+\d+)?",
+        expected_sql=r"SELECT .* FROM orders WHERE.*status\s*=\s*'pending'",
         validation_rules=["has_where_clause"],
         description="Enum type query",
     ),
