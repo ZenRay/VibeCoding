@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 from postgres_mcp.ai.openai_client import OpenAIClient
-from postgres_mcp.config import load_config
+from postgres_mcp.config import Config
 from postgres_mcp.core.schema_cache import SchemaCache
 from postgres_mcp.core.sql_generator import SQLGenerator
 from postgres_mcp.core.sql_validator import SQLValidator
@@ -30,6 +30,11 @@ from tests.contract.test_l4_complex import L4_TEST_CASES
 from tests.contract.test_l5_advanced import L5_TEST_CASES
 from tests.contract.test_s1_security import S1_TEST_CASES
 
+# Rate limiting configuration to avoid API throttling
+# Adjust based on your API plan (free tier usually has low QPM limits)
+REQUEST_DELAY_SECONDS = 1.5  # Delay between each test case (40 requests/min)
+BATCH_DELAY_SECONDS = 5.0  # Delay between test categories
+
 
 async def run_contract_tests() -> TestReport:
     """
@@ -48,13 +53,31 @@ async def run_contract_tests() -> TestReport:
     report.start_time = time.time()
 
     # Initialize components
-    config = load_config()
+    config = Config.load()
     openai_client = OpenAIClient(config.openai)
     pool_manager = PoolManager(config.databases)
     await pool_manager.initialize()
 
-    schema_inspector = SchemaInspector(pool_manager)
-    schema_cache = SchemaCache(schema_inspector)
+    # Create SchemaInspector for each database
+    inspectors = {}
+    for db_config in config.databases:
+        # Resolve password from env var
+        password = db_config.password
+        if db_config.password_env_var:
+            import os
+
+            password = os.environ.get(db_config.password_env_var, "")
+
+        inspector = SchemaInspector(
+            host=db_config.host,
+            port=db_config.port,
+            user=db_config.user,
+            password=password,
+            database=db_config.database,
+        )
+        inspectors[db_config.name] = inspector
+
+    schema_cache = SchemaCache(inspectors)
     await schema_cache.initialize()
 
     sql_validator = SQLValidator()
@@ -79,7 +102,7 @@ async def run_contract_tests() -> TestReport:
             # Generate SQL
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
 
             execution_time = (time.time() - start_time) * 1000
@@ -147,6 +170,14 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
+    # Delay between test categories
+    print(f"⏳ Waiting {BATCH_DELAY_SECONDS}s before next category (rate limiting)...")
+    await asyncio.sleep(BATCH_DELAY_SECONDS)
     print()
 
     # Run L2 tests
@@ -157,7 +188,7 @@ async def run_contract_tests() -> TestReport:
             # Generate SQL
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
 
             execution_time = (time.time() - start_time) * 1000
@@ -225,6 +256,14 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
+    # Delay between test categories
+    print(f"⏳ Waiting {BATCH_DELAY_SECONDS}s before next category (rate limiting)...")
+    await asyncio.sleep(BATCH_DELAY_SECONDS)
     print()
 
     # Run L3 tests
@@ -235,7 +274,7 @@ async def run_contract_tests() -> TestReport:
             # Generate SQL
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
 
             execution_time = (time.time() - start_time) * 1000
@@ -303,6 +342,14 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
+    # Delay between test categories
+    print(f"⏳ Waiting {BATCH_DELAY_SECONDS}s before next category (rate limiting)...")
+    await asyncio.sleep(BATCH_DELAY_SECONDS)
     print()
 
     # Run L4 tests
@@ -312,7 +359,7 @@ async def run_contract_tests() -> TestReport:
         try:
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
             execution_time = (time.time() - start_time) * 1000
 
@@ -373,6 +420,14 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
+    # Delay between test categories
+    print(f"⏳ Waiting {BATCH_DELAY_SECONDS}s before next category (rate limiting)...")
+    await asyncio.sleep(BATCH_DELAY_SECONDS)
     print()
 
     # Run L5 tests
@@ -382,7 +437,7 @@ async def run_contract_tests() -> TestReport:
         try:
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
             execution_time = (time.time() - start_time) * 1000
 
@@ -443,6 +498,14 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
+    # Delay between test categories
+    print(f"⏳ Waiting {BATCH_DELAY_SECONDS}s before next category (rate limiting)...")
+    await asyncio.sleep(BATCH_DELAY_SECONDS)
     print()
 
     # Run S1 security tests
@@ -452,7 +515,7 @@ async def run_contract_tests() -> TestReport:
         try:
             result = await sql_generator.generate(
                 natural_language=test_case.natural_language,
-                database_name=test_case.database,
+                database=test_case.database,
             )
             execution_time = (time.time() - start_time) * 1000
 
@@ -548,8 +611,16 @@ async def run_contract_tests() -> TestReport:
 
         report.add_result(test_result)
 
+        # Rate limiting delay
+        await asyncio.sleep(REQUEST_DELAY_SECONDS)
+
+    print()
+
     # Cleanup
-    await pool_manager.close()
+    await pool_manager.close_all()
+    # Note: Skipping inspector cleanup due to API compatibility
+    # for inspector in inspectors.values():
+    #     await inspector.disconnect()
 
     report.end_time = time.time()
     return report

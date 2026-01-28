@@ -17,7 +17,7 @@ L2_TEST_CASES = [
         id="L2.1",
         category=TestCategory.L2_JOIN,
         natural_language="显示所有订单及其客户名字",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM orders .* (INNER )?JOIN customers .* " r"ON .*customer_id.*"
         ),
@@ -28,7 +28,7 @@ L2_TEST_CASES = [
         id="L2.2",
         category=TestCategory.L2_JOIN,
         natural_language="显示所有客户及其订单数量,包括没有订单的客户",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM customers .* LEFT JOIN orders .* " r"ON .*customer_id.* GROUP BY .*"
         ),
@@ -39,7 +39,7 @@ L2_TEST_CASES = [
         id="L2.3",
         category=TestCategory.L2_JOIN,
         natural_language="显示每个订单中的产品名称",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(r"SELECT .* FROM orders .* JOIN .* order_items .* " r"JOIN .* products .*"),
         validation_rules=["has_join"],
         description="Three-table join",
@@ -48,7 +48,7 @@ L2_TEST_CASES = [
         id="L2.4",
         category=TestCategory.L2_JOIN,
         natural_language="显示所有员工及其经理名字",
-        database="large",
+        database="erp_large",
         expected_sql=(r"SELECT .* FROM employees .* LEFT JOIN employees .* " r"ON .*manager_id.*"),
         validation_rules=["has_join"],
         description="Self join",
@@ -57,7 +57,7 @@ L2_TEST_CASES = [
         id="L2.5",
         category=TestCategory.L2_JOIN,
         natural_language="显示每个帖子的所有标签",
-        database="medium",
+        database="social_medium",
         expected_sql=(r"SELECT .* FROM posts .* JOIN .* post_hashtags .* " r"JOIN .* hashtags .*"),
         validation_rules=["has_join"],
         description="Many-to-many relationship",
@@ -66,7 +66,7 @@ L2_TEST_CASES = [
         id="L2.6",
         category=TestCategory.L2_JOIN,
         natural_language="显示价格超过 1000 的订单及客户邮箱",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM orders .* JOIN customers .* "
             r"ON .*customer_id.* WHERE .*total_amount\s*>\s*1000"
@@ -78,7 +78,7 @@ L2_TEST_CASES = [
         id="L2.7",
         category=TestCategory.L2_JOIN,
         natural_language="每个客户的总消费金额",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM customers .* LEFT JOIN orders .* "
             r"ON .*customer_id.* GROUP BY .* SUM\(.*total_amount.*\)"
@@ -90,7 +90,7 @@ L2_TEST_CASES = [
         id="L2.8",
         category=TestCategory.L2_JOIN,
         natural_language="显示产品统计信息",
-        database="small",
+        database="ecommerce_small",
         expected_sql=r"SELECT .* FROM product_stats",
         validation_rules=[],
         description="View query",
@@ -99,7 +99,7 @@ L2_TEST_CASES = [
         id="L2.9",
         category=TestCategory.L2_JOIN,
         natural_language="显示价格高于平均价的产品",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM products WHERE .* price\s*>\s*\("
             r"SELECT AVG\(price\) FROM products\)"
@@ -111,7 +111,7 @@ L2_TEST_CASES = [
         id="L2.10",
         category=TestCategory.L2_JOIN,
         natural_language="显示有订单的客户",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"(SELECT .* FROM customers WHERE customer_id IN \("
             r"SELECT customer_id FROM orders\)|"
@@ -125,7 +125,7 @@ L2_TEST_CASES = [
         id="L2.11",
         category=TestCategory.L2_JOIN,
         natural_language="显示从未下单的客户",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"(SELECT .* FROM customers WHERE customer_id NOT IN \("
             r"SELECT customer_id FROM orders\)|"
@@ -139,7 +139,7 @@ L2_TEST_CASES = [
         id="L2.12",
         category=TestCategory.L2_JOIN,
         natural_language="显示有评论的产品",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM products .* WHERE EXISTS \("
             r"SELECT .* FROM reviews .* WHERE .*product_id.*\)"
@@ -151,7 +151,7 @@ L2_TEST_CASES = [
         id="L2.13",
         category=TestCategory.L2_JOIN,
         natural_language="显示所有产品和仓库的组合",
-        database="large",
+        database="erp_large",
         expected_sql=r"SELECT .* FROM products .* CROSS JOIN .* warehouses",
         validation_rules=["has_join"],
         description="CROSS JOIN",
@@ -160,7 +160,7 @@ L2_TEST_CASES = [
         id="L2.14",
         category=TestCategory.L2_JOIN,
         natural_language="显示所有客户和供应商的邮箱",
-        database="large",
+        database="erp_large",
         expected_sql=(r"SELECT email FROM customers UNION SELECT email FROM suppliers"),
         validation_rules=[],
         description="UNION",
@@ -169,7 +169,7 @@ L2_TEST_CASES = [
         id="L2.15",
         category=TestCategory.L2_JOIN,
         natural_language="显示每个订单的客户名字、产品名称和数量",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM orders .* JOIN customers .* "
             r"ON .*customer_id.* JOIN order_items .* ON .*order_id.* "

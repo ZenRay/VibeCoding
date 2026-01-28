@@ -2,20 +2,87 @@
 
 自动化契约测试框架，用于验证 PostgreSQL MCP 服务器的自然语言到 SQL 转换准确性。
 
+## 快速开始
+
+### 方式 1：使用测试脚本（推荐）
+
+**位置**：`Week5/tests/contract/run_contract_tests.sh`
+
+```bash
+# 进入契约测试目录
+cd /path/to/Week5/tests/contract
+
+# 运行样例测试（3个用例，快速验证，~15秒）
+./run_contract_tests.sh sample
+
+# 运行完整测试（70个用例，约4-5分钟）
+./run_contract_tests.sh full
+```
+
+**脚本功能**：
+- ✅ 自动激活虚拟环境（Week5/.venv）
+- ✅ 自动设置数据库密码
+- ✅ 自动清除代理设置（避免 API 连接问题）
+- ✅ 测试结果保存到 `/tmp/contract_test_results_*.txt`
+- ✅ 详细的进度提示和错误处理
+
+**注意**：脚本会自动导航到 Week5 根目录运行测试，无需手动 cd。
+
+### 方式 2：手动运行
+
+如果不使用脚本，可以手动配置环境：
+
+```bash
+# 进入项目根目录
+cd /path/to/Week5
+source .venv/bin/activate
+
+# 设置环境变量
+export TEST_DB_PASSWORD=testpass123
+
+# 如果遇到 API 连接问题，清除代理设置
+unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+export NO_PROXY="localhost,127.0.0.1"
+
+# 运行测试
+python -m tests.contract.run_tests              # 完整测试（70个用例）
+python -m tests.contract.run_tests_sample       # 样例测试（3个用例）
+```
+
+## 环境要求
+
+1. **数据库**：PostgreSQL 测试数据库运行中
+   ```bash
+   cd fixtures
+   docker compose up -d
+   ```
+
+2. **配置**：`config/config.yaml` 中配置 OpenAI API
+   - API Key 已设置
+   - Base URL 正确（阿里百炼/OpenAI等）
+   - 模型名称匹配
+
+3. **网络**：
+   - 如果使用代理，确保代理正常工作
+   - 如果不使用代理，清除所有代理环境变量
+   - **推荐**：使用测试脚本自动处理代理问题
+
 ## 目录结构
 
 ```
 tests/contract/
-├── __init__.py                 # 模块初始化
-├── test_framework.py           # 测试框架基础类
-├── test_l1_basic.py           # L1 基础查询测试（15个用例）
-├── test_l2_join.py            # L2 多表关联测试（15个用例）
-├── test_l3_aggregate.py       # L3 聚合分析测试（12个用例）
-├── test_l4_complex.py         # L4 复杂逻辑测试（10个用例）
-├── test_l5_advanced.py        # L5 高级特性测试（8个用例）
-├── test_s1_security.py        # S1 安全测试（10个用例）
-├── run_tests.py               # 测试执行器
-└── README.md                  # 本文档
+├── __init__.py                      # 模块初始化
+├── test_framework.py                # 测试框架基础类
+├── test_l1_basic.py                # L1 基础查询测试（15个用例）
+├── test_l2_join.py                 # L2 多表关联测试（15个用例）
+├── test_l3_aggregate.py            # L3 聚合分析测试（12个用例）
+├── test_l4_complex.py              # L4 复杂逻辑测试（10个用例）
+├── test_l5_advanced.py             # L5 高级特性测试（8个用例）
+├── test_s1_security.py             # S1 安全测试（10个用例）
+├── run_tests.py                    # 完整测试执行器（70个用例）
+├── run_tests_sample.py             # 样例测试执行器（3个用例）
+├── run_contract_tests.sh           # 🚀 测试运行脚本（推荐使用）
+└── README.md                       # 本文档
 ```
 
 ## 测试分类

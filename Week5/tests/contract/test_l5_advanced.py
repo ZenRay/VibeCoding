@@ -16,7 +16,7 @@ L5_TEST_CASES = [
         id="L5.1",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示订单金额高于该客户平均订单金额的订单",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"WITH .* AS \(SELECT .* AVG\(total_amount\).* "
             r"FROM orders GROUP BY customer_id\) SELECT .* FROM orders .* "
@@ -29,7 +29,7 @@ L5_TEST_CASES = [
         id="L5.2",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示每个客户的订单数和总消费,以及在所有客户中的排名",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"WITH .* AS \(SELECT .* COUNT\(.*\).* SUM\(.*\).* "
             r"FROM customers .* GROUP BY .*\).* AS \(SELECT .* "
@@ -42,7 +42,7 @@ L5_TEST_CASES = [
         id="L5.3",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示每个客户的订单及上一笔和下一笔订单金额",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* LAG\(.*total_amount.*\) OVER.*PARTITION BY customer_id.*"
             r"LEAD\(.*total_amount.*\) OVER.*PARTITION BY customer_id"
@@ -54,7 +54,7 @@ L5_TEST_CASES = [
         id="L5.4",
         category=TestCategory.L5_ADVANCED,
         natural_language="每个用户发布的公开和私密帖子数量",
-        database="medium",
+        database="social_medium",
         expected_sql=(
             r"SELECT .* COUNT\(\*\) FILTER \(WHERE privacy.*=.*'public'\).* "
             r"COUNT\(\*\) FILTER \(WHERE privacy.*=.*'private'\).* "
@@ -67,7 +67,7 @@ L5_TEST_CASES = [
         id="L5.5",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示每个客户的最近 3 笔订单",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM customers .* CROSS JOIN LATERAL \(SELECT .* "
             r"FROM orders .* WHERE .*customer_id.*=.*customer_id.* "
@@ -80,7 +80,7 @@ L5_TEST_CASES = [
         id="L5.6",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示按类别、按年份、按类别和年份分组的产品数量",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* COUNT\(\*\).* FROM products GROUP BY "
             r"GROUPING SETS \(.*category.*EXTRACT\(YEAR FROM created_at\)"
@@ -92,7 +92,7 @@ L5_TEST_CASES = [
         id="L5.7",
         category=TestCategory.L5_ADVANCED,
         natural_language="生成最近 7 天的每日订单统计",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM generate_series\(.*CURRENT_DATE.*-.*INTERVAL.*"
             r"CURRENT_DATE.*'1 day'\).* LEFT JOIN orders"
@@ -104,7 +104,7 @@ L5_TEST_CASES = [
         id="L5.8",
         category=TestCategory.L5_ADVANCED,
         natural_language="显示每个订单的产品名称列表(逗号分隔)",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* STRING_AGG\(.*name.*,\s*','.*ORDER BY.*\).* "
             r"FROM orders .* JOIN order_items .* JOIN products .* GROUP BY"

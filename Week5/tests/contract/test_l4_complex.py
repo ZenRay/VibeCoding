@@ -17,7 +17,7 @@ L4_TEST_CASES = [
         id="L4.1",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示所有评论及其回复(包括嵌套回复)",
-        database="medium",
+        database="social_medium",
         expected_sql=(
             r"WITH RECURSIVE .* AS \(SELECT .* FROM comments "
             r"WHERE parent_comment_id IS NULL UNION ALL SELECT .* "
@@ -30,7 +30,7 @@ L4_TEST_CASES = [
         id="L4.2",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示元数据中包含 'click' 活动的用户行为",
-        database="medium",
+        database="social_medium",
         expected_sql=(
             r"SELECT .* FROM user_activity WHERE "
             r"(metadata @> '.*click.*'|metadata->>'event_type' = 'click')"
@@ -42,7 +42,7 @@ L4_TEST_CASES = [
         id="L4.3",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示注册后 7 天内下单的客户",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* FROM customers .* JOIN orders .* "
             r"WHERE .*order_date.*<=.*created_at.*\+.*INTERVAL\s*'7\s*days?'"
@@ -54,7 +54,7 @@ L4_TEST_CASES = [
         id="L4.4",
         category=TestCategory.L4_COMPLEX,
         natural_language="搜索帖子内容包含 'database' 或 'sql' 的帖子",
-        database="medium",
+        database="social_medium",
         expected_sql=(
             r"SELECT .* FROM posts WHERE "
             r"(to_tsvector.*@@.*to_tsquery|content\s+(ILIKE|LIKE).*database.*"
@@ -67,7 +67,7 @@ L4_TEST_CASES = [
         id="L4.5",
         category=TestCategory.L4_COMPLEX,
         natural_language="根据价格区间给产品分类",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* CASE\s+WHEN price.*<.*50.*THEN.*"
             r"WHEN price.*BETWEEN.*50.*AND.*200.*THEN.*"
@@ -80,7 +80,7 @@ L4_TEST_CASES = [
         id="L4.6",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示有超过 5 个标签的帖子",
-        database="medium",
+        database="social_medium",
         expected_sql=(
             r"SELECT .* FROM posts .* JOIN .* post_hashtags .* "
             r"GROUP BY .* HAVING COUNT\(.*\)\s*>\s*5"
@@ -92,7 +92,7 @@ L4_TEST_CASES = [
         id="L4.7",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示每个产品及其在同类别中的价格排名",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT .* \(SELECT COUNT\(\*\).* FROM products .* "
             r"WHERE .*category.*=.*category.* AND .*price.*>.*price.*\).* "
@@ -105,7 +105,7 @@ L4_TEST_CASES = [
         id="L4.8",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示既是客户又是供应商的邮箱",
-        database="large",
+        database="erp_large",
         expected_sql=r"SELECT email FROM customers INTERSECT SELECT email FROM suppliers",
         validation_rules=[],
         description="Set operation INTERSECT",
@@ -114,7 +114,7 @@ L4_TEST_CASES = [
         id="L4.9",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示有产品但没有订单的类别",
-        database="small",
+        database="ecommerce_small",
         expected_sql=(
             r"SELECT DISTINCT category FROM products EXCEPT "
             r"SELECT DISTINCT .* FROM products .* JOIN order_items"
@@ -126,7 +126,7 @@ L4_TEST_CASES = [
         id="L4.10",
         category=TestCategory.L4_COMPLEX,
         natural_language="显示每个部门的平均员工工资,只显示平均工资高于全公司平均工资的部门",
-        database="large",
+        database="erp_large",
         expected_sql=(
             r"SELECT .* FROM departments .* JOIN employees .* "
             r"GROUP BY .* HAVING AVG\(.*salary.*\)\s*>\s*"
