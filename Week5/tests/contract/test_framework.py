@@ -288,7 +288,19 @@ class TestReport:
         # Group by category
         by_category: dict[TestCategory, list[TestResult]] = {}
         for result in self.results:
-            cat = TestCategory[result.test_id.split(".")[0]]
+            # Map test ID prefix to category enum
+            prefix = result.test_id.split(".")[0]
+            category_map = {
+                "L1": TestCategory.L1_BASIC,
+                "L2": TestCategory.L2_JOIN,
+                "L3": TestCategory.L3_AGGREGATE,
+                "L4": TestCategory.L4_COMPLEX,
+                "L5": TestCategory.L5_ADVANCED,
+                "S1": TestCategory.S1_SECURITY,
+            }
+            cat = category_map.get(prefix)
+            if cat is None:
+                continue  # Skip unknown categories
             if cat not in by_category:
                 by_category[cat] = []
             by_category[cat].append(result)
