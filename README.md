@@ -59,11 +59,11 @@
 |------|--------|------|------|
 | **[Week1](./Week1)** | FastAPI + React + Docker | ✅ 完成 | Ticket 管理系统 - Project Alpha |
 | **[Week2](./Week2)** | FastAPI + React + MySQL | ✅ 完成 | 数据库查询工具 (支持 MySQL + 导出功能) |
-| **[Week3](./Week3)** | Rust + Tauri v2 + React | 🔥 **活跃开发** | ScribeFlow 桌面实时语音听写系统 |
+| **[Week3](./Week3)** | Rust + Tauri v2 + React | ✅ 完成 | ScribeFlow 桌面实时语音听写系统 |
 
 ## 快速开始
 
-### Week3 - ScribeFlow (当前活跃) 🔥
+### Week3 - ScribeFlow (已完成)
 
 ```bash
 # 进入项目目录
@@ -75,10 +75,11 @@ cat ../specs/001-scribeflow-voice-system/quickstart.md
 
 # 安装依赖 (按平台)
 # macOS: 按照 quickstart.md 安装 Xcode Tools, Rust, Node.js
-# Linux: bash scripts/setup-ubuntu.sh (待创建)
+# Linux: 按照 quickstart.md 安装系统依赖、Rust、Node.js
 
-# 初始化 Tauri 项目 (首次)
-npm create tauri-app@latest
+# 安装项目依赖
+npm install
+cargo build --manifest-path src-tauri/Cargo.toml
 
 # 开发
 npm run tauri dev
@@ -174,11 +175,11 @@ ScribeFlow 是一个类似 [Wispr Flow](https://www.wsprlabs.com/) 的桌面级�
 |------|------|--------|
 | Phase 0: Research | ✅ Complete | research.md (6 个技术决策) |
 | Phase 1: Design & Contracts | ✅ Complete | data-model.md, contracts/, quickstart.md |
-| Phase 2: Core Implementation | 📋 Planned | 音频采集、WebSocket、文本注入 |
-| Phase 3: UI & Configuration | 📋 Planned | 悬浮窗、托盘、设置面板 |
-| Phase 4: Polish | 📋 Planned | 错误处理、性能优化、文档 |
+| Phase 2: Core Implementation | ✅ Complete | 音频采集、WebSocket、文本注入 |
+| Phase 3: UI & Configuration | ✅ Complete | 悬浮窗、托盘、设置面板 |
+| Phase 4: Polish | ✅ Complete | 错误处理、性能优化、文档 |
 
-**预计完成**: 15-21 天
+**状态**: v0.1.0 已完成，可发布
 
 ### 关键文档
 
@@ -218,6 +219,6 @@ ScribeFlow 是一个类似 [Wispr Flow](https://www.wsprlabs.com/) 的桌面级�
 | **macOS 10.15+** | ✅ Tier 1 | 100% | ⭐⭐⭐⭐⭐ |
 | **Linux X11** | ✅ Tier 1 | 100% | ⭐⭐⭐⭐⭐ |
 | **Linux Wayland** | ⚠️ Tier 2 | 75% (降级) | ⭐⭐⭐ |
-| **Windows 11** | 📋 Planned | - | Coming in v2.0 |
+| **Windows 11** | ⚠️ Tier 3 | 未验证 | Not tested |
 
 **Linux 用户**: 推荐使用 X11 会话以获得完整功能。Wayland 模式下部分功能降级 (键盘模拟 → 剪贴板注入)。
