@@ -1,6 +1,6 @@
 """OpenAI client implementation.
 
-Provides integration with OpenAI API for SQL query generation.
+Provides integration with OpenAI API for SQL query generation and result validation.
 """
 
 import asyncio
@@ -16,6 +16,8 @@ from openai import (
     AsyncOpenAI,
     RateLimitError,
 )
+
+from postgres_mcp.models.validation import AIValidationResponse
 
 logger = structlog.get_logger(__name__)
 
@@ -233,3 +235,182 @@ class OpenAIClient:
                 return sql
 
         return None
+
+    async def validate_result_relevance(
+        self,
+        natural_language: str,
+        sql: str,
+        columns: list[str],
+        sample_rows: list[dict[str, object]],
+    ) -> AIValidationResponse:
+        """
+        使用 AI 验证查询结果与用户意图的相关性.
+
+        Args:
+            natural_language: 用户原始查询.
+            sql: 执行的 SQL 查询.
+            columns: 结果列名列表.
+            sample_rows: 样本数据行 (通常前 3-5 行).
+
+        Returns:
+            AIValidationResponse 包含相关性评分和建议.
+
+        Raises:
+            AIServiceUnavailableError: AI 服务不可用时.
+        """
+        logger.info(
+            "validating_result_relevance",
+            natural_language_length=len(natural_language),
+            columns_count=len(columns),
+            sample_rows_count=len(sample_rows),
+        )
+
+        # 构建验证 prompt
+        prompt = self._build_validation_prompt(
+            natural_language=natural_language,
+            sql=sql,
+            columns=columns,
+            sample_rows=sample_rows,
+        )
+
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a database query result validator. "
+                            "Evaluate if SQL query results semantically match the user's intent. "
+                            "Respond ONLY with valid JSON."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,  # 低温度保证一致性
+                max_tokens=800,
+                response_format={"type": "json_object"},
+            )
+
+            content = response.choices[0].message.content
+            if not content:
+                raise AIServiceUnavailableError("Empty response from AI")
+
+            # 解析 JSON 响应
+            data = json.loads(content)
+
+            # 验证必需字段
+            if "is_relevant" not in data or "match_score" not in data:
+                logger.warning("invalid_ai_response_format", data=data)
+                # 默认认为有效，避免阻止查询
+                return AIValidationResponse(
+                    is_relevant=True,
+                    match_score=1.0,
+                    reason="AI response format invalid, assuming valid",
+                )
+
+            logger.info(
+                "result_validation_complete",
+                is_relevant=data["is_relevant"],
+                match_score=data["match_score"],
+            )
+
+            return AIValidationResponse(
+                is_relevant=data["is_relevant"],
+                match_score=float(data["match_score"]),
+                reason=data.get("reason", "No reason provided"),
+                suggestion=data.get("suggestion"),
+                issues=data.get("issues", []),
+            )
+
+        except (APIConnectionError, APITimeoutError, RateLimitError) as e:
+            logger.error("ai_validation_api_error", error=str(e))
+            raise AIServiceUnavailableError(f"AI validation failed: {e}") from e
+
+        except json.JSONDecodeError as e:
+            logger.error("ai_validation_json_error", error=str(e))
+            # 默认认为有效
+            return AIValidationResponse(
+                is_relevant=True,
+                match_score=1.0,
+                reason=f"Failed to parse AI response: {e}",
+            )
+
+        except Exception as e:
+            logger.error("ai_validation_unexpected_error", error=str(e))
+            # 默认认为有效，避免阻止查询
+            return AIValidationResponse(
+                is_relevant=True,
+                match_score=1.0,
+                reason=f"Validation error: {e}",
+            )
+
+    @staticmethod
+    def _build_validation_prompt(
+        natural_language: str,
+        sql: str,
+        columns: list[str],
+        sample_rows: list[dict[str, object]],
+    ) -> str:
+        """
+        构建 AI 验证 prompt.
+
+        Args:
+            natural_language: 用户原始查询.
+            sql: 执行的 SQL.
+            columns: 结果列名.
+            sample_rows: 样本数据行.
+
+        Returns:
+            完整的验证 prompt.
+        """
+        # 格式化样本数据 (限制长度)
+        sample_data_str = (
+            "No data returned" if not sample_rows else json.dumps(sample_rows, indent=2)
+        )
+        if len(sample_data_str) > 1000:
+            sample_data_str = sample_data_str[:1000] + "\n... (truncated)"
+
+        prompt = f"""Evaluate if the SQL query result semantically matches the user's intent.
+
+**User Request**: "{natural_language}"
+
+**SQL Executed**:
+```sql
+{sql}
+```
+
+**Result Columns**: {', '.join(columns) if columns else 'No columns'}
+
+**Sample Data** (first {len(sample_rows)} rows):
+```json
+{sample_data_str}
+```
+
+**Your Task**:
+1. Does the result semantically answer the user's question?
+2. Are the returned columns relevant to the request?
+3. Does the sample data look correct based on the query intent?
+
+**Evaluation Criteria**:
+- **High match (0.9-1.0)**: Perfect semantic match, answers the question directly
+- **Good match (0.7-0.8)**: Mostly relevant, minor column naming differences
+- **Partial match (0.5-0.6)**: Some relevance, but may be missing key info
+- **Poor match (0.0-0.4)**: Wrong table, wrong columns, or completely irrelevant
+
+**Output Format** (MUST be valid JSON):
+{{
+    "is_relevant": true/false,
+    "match_score": 0.0-1.0,
+    "reason": "Brief explanation of the score",
+    "suggestion": "Improved SQL query (if match_score < 0.7, otherwise null)",
+    "issues": ["List of specific issues detected, if any"]
+}}
+
+**Important**:
+- If user asked for "users" but got "products", match_score should be very low
+- If column names differ slightly (e.g., "user_name" vs "username"), still acceptable
+- Empty result should be flagged with low match_score if data is expected
+- Respond ONLY with valid JSON, no markdown formatting
+"""
+        return prompt

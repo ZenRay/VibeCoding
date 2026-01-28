@@ -1,17 +1,7 @@
 """
 Query executor orchestrating SQL generation, validation, and execution.
 
-Args:
-----------
-    None
-
-Returns:
-----------
-    None
-
-Raises:
-----------
-    None
+Supports optional result validation for quality and semantic relevance checking.
 """
 
 from __future__ import annotations
@@ -19,12 +9,18 @@ from __future__ import annotations
 import time
 import uuid
 
+import structlog
+
+from postgres_mcp.core.result_validator import ResultValidator
 from postgres_mcp.core.sql_generator import SQLGenerator
 from postgres_mcp.db.connection_pool import PoolManager
 from postgres_mcp.db.query_runner import QueryRunner
 from postgres_mcp.models.log_entry import LogStatus, QueryLogEntry
 from postgres_mcp.models.result import QueryResult
+from postgres_mcp.models.validation import ValidationLevel
 from postgres_mcp.utils.jsonl_writer import JSONLWriter
+
+logger = structlog.get_logger(__name__)
 
 
 class QueryExecutionError(Exception):
@@ -78,35 +74,60 @@ class QueryExecutor:
         pool_manager: PoolManager,
         query_runner: QueryRunner,
         jsonl_writer: JSONLWriter | None = None,
+        result_validator: ResultValidator | None = None,
+        enable_validation: bool = False,
     ) -> None:
+        """
+        Initialize query executor.
+
+        Args:
+            sql_generator: SQL generator instance.
+            pool_manager: Connection pool manager.
+            query_runner: Query runner instance.
+            jsonl_writer: Optional JSONL writer for logging.
+            result_validator: Optional result validator (for US5).
+            enable_validation: Enable result validation by default.
+        """
         self._sql_generator = sql_generator
         self._pool_manager = pool_manager
         self._query_runner = query_runner
         self._jsonl_writer = jsonl_writer
+        self._result_validator = result_validator
+        self._enable_validation = enable_validation
 
-    async def execute(self, natural_language: str, database: str, limit: int = 1000) -> QueryResult:
+    async def execute(
+        self,
+        natural_language: str,
+        database: str,
+        limit: int = 1000,
+        validate_result: bool | None = None,
+        validation_level: ValidationLevel = ValidationLevel.AUTO,
+    ) -> QueryResult:
         """
         Execute a natural language query and return results.
 
         Args:
-        ----------
             natural_language: User's natural language query.
             database: Target database name.
             limit: Maximum rows to return (default: 1000).
+            validate_result: Override default validation setting (None uses default).
+            validation_level: Validation level (BASIC, SEMANTIC, AUTO).
 
         Returns:
-        ----------
             QueryResult with SQL, columns, rows, and metadata.
+            If validation is enabled, result.errors may contain validation suggestions.
 
         Raises:
-        ----------
             QueryExecutionError: If any step fails (generation, validation, execution).
 
         Example:
-        ----------
             >>> result = await executor.execute("List recent orders", "ecommerce")
             >>> assert result.row_count > 0
             >>> assert "SELECT" in result.sql
+            >>> # Check for validation warnings
+            >>> if result.errors:
+            >>>     for error in result.errors:
+            >>>         print(f"⚠️ {error}")
         """
         request_id = str(uuid.uuid4())
         start_time = time.perf_counter()
@@ -140,6 +161,43 @@ class QueryExecutor:
             # Step 5: Add SQL to result
             query_result.sql = generated_query.sql
             row_count = query_result.row_count
+
+            # Step 6: Validate result quality (if enabled) - US5
+            should_validate = (
+                validate_result if validate_result is not None else self._enable_validation
+            )
+
+            if should_validate and self._result_validator:
+                try:
+                    validation = await self._result_validator.validate(
+                        result=query_result,
+                        natural_language=natural_language,
+                        level=validation_level,
+                    )
+
+                    # Add validation suggestions to result errors
+                    if not validation.valid or validation.suggestions:
+                        logger.info(
+                            "result_validation_suggestions",
+                            valid=validation.valid,
+                            suggestions_count=len(validation.suggestions),
+                        )
+
+                        for suggestion in validation.suggestions:
+                            # Format suggestion message
+                            suggestion_msg = f"⚠️ [{suggestion.issue.value}] {suggestion.message}"
+                            if suggestion.suggested_query:
+                                suggestion_msg += f"\n   💡 建议查询: {suggestion.suggested_query}"
+
+                            query_result.errors.append(suggestion_msg)
+
+                except Exception as validation_error:
+                    # Validation failure should not block query result
+                    logger.warning(
+                        "result_validation_failed",
+                        error=str(validation_error),
+                    )
+                    query_result.errors.append(f"⚠️ Result validation failed: {validation_error}")
 
             return query_result
 

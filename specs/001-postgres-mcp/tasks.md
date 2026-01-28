@@ -243,12 +243,12 @@
 
 #### Tests (TDD - 先写测试)
 
-- [ ] T079 [P] [US5] 单元测试结果验证器（tests/unit/test_result_validator.py - 空结果检测, AI 验证）
+- [x] T079 [P] [US5] 单元测试结果验证器 ✅ **COMPLETE** (tests/unit/test_result_validator.py - 基础验证, AI 验证, AUTO 策略)
 
 #### Implementation
 
-- [ ] T080 [P] [US5] 实现 ResultValidator（src/postgres_mcp/core/result_validator.py - 空结果检测, AI 相关性验证）
-- [ ] T081 [US5] 集成 ResultValidator 到 QueryExecutor（src/postgres_mcp/core/query_executor.py - 可选验证）
+- [x] T080 [P] [US5] 实现 ResultValidator ✅ **COMPLETE** (src/postgres_mcp/core/result_validator.py - 空结果检测, AI 相关性验证, 智能策略选择)
+- [x] T081 [US5] 集成 ResultValidator 到 QueryExecutor ✅ **COMPLETE** (src/postgres_mcp/core/query_executor.py - 可选验证)
 
 ---
 

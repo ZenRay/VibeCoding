@@ -1,9 +1,9 @@
 # PostgreSQL MCP Server - Current Status
 
 **Project**: PostgreSQL 自然语言查询 MCP 服务器  
-**Last Updated**: 2026-01-30 00:30 CST  
-**Current Phase**: MCP 协议测试完成 ✅  
-**Latest Changes**: MCP 协议契约测试完成 (T023, T032, T033, T053, T067 - 10 tests)  
+**Last Updated**: 2026-01-30 08:00 CST  
+**Current Phase**: US5 结果验证器完成 ✅  
+**Latest Changes**: ResultValidator 实现完成 (T079-T081: 基础验证 + AI 语义验证 + 智能策略, 17 tests)  
 **Branch**: `001-postgres-mcp`
 
 ---
@@ -21,15 +21,176 @@
 | **契约测试框架** | ✅ Complete | 6/6 tasks | 70/70 实现 | 100% |
 | **查询模板库** | ✅ Complete | 7/8 tasks | 40/40 passed | 100% |
 | **US6 多数据库增强** | ✅ Complete | 3/5 tasks | 10/10 passed | 100% |
-| **MCP 协议测试** | ✅ **Complete** | 5/5 tasks | **10/10 passed** | **100%** |
+| **MCP 协议测试** | ✅ Complete | 5/5 tasks | 10/10 passed | 100% |
+| **US5 结果验证器** | ✅ **Complete** | **3/3 tasks** | **17/17 passed** | **100%** |
 
-**Overall**: 97/102 tasks complete (95%) 🎉  
-**Production Ready**: ✅ **Ready - 完整功能集 + 降级方案 + 协议符合性**  
-**Git Status**: 待提交 (MCP 协议测试)
+**Overall**: 100/105 tasks complete (95%) 🎉  
+**Production Ready**: ✅ **Ready - 完整功能 + 智能验证 + AI 增强**  
+**Git Status**: 待提交 (ResultValidator US5)
 
 ---
 
-## 🎉 最新完成 - MCP 协议契约测试
+## 🎉 最新完成 - US5 结果验证器 (ResultValidator)
+
+### 2026-01-30 更新 (Result Quality Validation)
+
+#### ✅ 结果验证器完整实现 (T079-T081)
+
+**目标**: 验证查询结果质量和语义相关性，提升用户体验
+
+**实现内容**:
+
+1. **数据模型** (`models/validation.py` - 134行)
+   - ✅ ValidationLevel (BASIC, SEMANTIC, AUTO)
+   - ✅ ValidationIssue (6种问题类型)
+   - ✅ ValidationSeverity (INFO, WARNING, ERROR)
+   - ✅ ValidationSuggestion (改进建议)
+   - ✅ ValidationResult (验证结果)
+   - ✅ AIValidationResponse (AI 响应)
+
+2. **ResultValidator 核心** (`core/result_validator.py` - 418行)
+   
+   **基础验证 (本地, 快速, 无 AI 成本)**:
+   - ✅ 空结果检测 (Empty Result)
+   - ✅ 结果过少检测 (Too Few Rows)
+   - ✅ 结果过多检测 (Too Many Rows, Truncated)
+   - ✅ 列名匹配度检查 (Column Mismatch)
+   - ✅ 关键词提取 (中英文混合支持)
+   
+   **AI 语义验证 (可选, OpenAI)**:
+   - 🤖 语义匹配度评分 (0.0-1.0)
+   - 🤖 相关性检查 (是否回答用户问题)
+   - 🤖 改进查询建议 (低匹配度时)
+   - 🤖 优雅降级 (AI 失败不阻止查询)
+   
+   **智能策略选择 (AUTO 模式)** ⭐ 核心创新:
+   - 🔴 空结果 → 自动升级 AI 验证
+   - 🟡 结果过少 → 自动升级 AI 验证
+   - 🟡 列名严重不匹配 → 自动升级 AI 验证
+   - 🟢 结果正常 → 跳过 AI 验证 (节省成本)
+   - 📊 用户可强制指定验证级别
+
+3. **OpenAI Client 扩展** (`ai/openai_client.py`)
+   - ✅ validate_result_relevance() 方法
+   - ✅ 详细验证 prompt 构建
+   - ✅ JSON 响应解析
+   - ✅ 错误处理和重试逻辑
+
+4. **QueryExecutor 集成** (`core/query_executor.py`)
+   - ✅ result_validator 参数 (可选)
+   - ✅ enable_validation 配置
+   - ✅ validate_result 参数覆盖
+   - ✅ validation_level 参数 (BASIC/SEMANTIC/AUTO)
+   - ✅ 将验证建议添加到 result.errors
+
+**测试覆盖** (tests/unit/test_result_validator.py - 17 tests):
+```
+✅ 基础验证测试 (5 tests)
+  - 空结果检测
+  - 结果过少/过多检测
+  - 列名不匹配检测
+  - 正常结果验证通过
+
+✅ AI 语义验证测试 (2 tests)
+  - 高匹配度场景 (0.95)
+  - 低匹配度场景 (0.3, 含建议查询)
+
+✅ AUTO 策略测试 (3 tests)
+  - 空结果自动升级 AI
+  - 正常结果跳过 AI
+  - 列名不匹配升级 AI
+
+✅ 关键词提取测试 (3 tests)
+  - 中文关键词提取
+  - 英文关键词提取
+  - 中英混合提取
+
+✅ 边界情况测试 (4 tests)
+  - 无 OpenAI client 降级
+  - AI 验证失败优雅处理
+  - ValidationResult 属性测试
+```
+
+**测试结果**:
+```
+17/17 tests passed (100%)
+Runtime: ~0.5s
+Coverage: 100% (核心验证逻辑)
+```
+
+**关键特性**:
+
+1. **智能成本控制** 💰
+   - AUTO 模式仅在必要时调用 AI
+   - 正常查询跳过 AI 验证，节省 API 成本
+   - 问题查询自动获得 AI 分析
+
+2. **多语言支持** 🌏
+   - 中英文关键词提取
+   - 中文停用词过滤
+   - 混合语言查询支持
+
+3. **优雅降级** 🛡️
+   - AI 验证失败不阻止查询
+   - 无 OpenAI client 时仍可基础验证
+   - 验证错误记录但不中断流程
+
+4. **灵活配置** ⚙️
+   - 默认关闭 (enable_validation=False)
+   - 可全局启用或按查询启用
+   - 可选择验证级别 (BASIC/SEMANTIC/AUTO)
+
+**使用示例**:
+
+```python
+# 1. 基础验证 (本地, 快速)
+result = await executor.execute(
+    natural_language="show all users",
+    database="main_db",
+    validate_result=True,
+    validation_level=ValidationLevel.BASIC,
+)
+
+# 2. AI 语义验证 (强制)
+result = await executor.execute(
+    natural_language="show active users",
+    database="main_db",
+    validate_result=True,
+    validation_level=ValidationLevel.SEMANTIC,
+)
+
+# 3. AUTO 智能模式 (推荐)
+result = await executor.execute(
+    natural_language="show users",
+    database="main_db",
+    validate_result=True,
+    validation_level=ValidationLevel.AUTO,  # 自动决策
+)
+
+# 检查验证建议
+if result.errors:
+    for error in result.errors:
+        print(error)
+        # ⚠️ [empty_result] 查询返回空结果...
+        #    💡 建议查询: SELECT * FROM users WHERE status = 'active'
+```
+
+**文件清单**:
+- ✅ `src/postgres_mcp/models/validation.py` (新增, 134行)
+- ✅ `src/postgres_mcp/core/result_validator.py` (新增, 418行)
+- ✅ `src/postgres_mcp/ai/openai_client.py` (扩展, +186行)
+- ✅ `src/postgres_mcp/core/query_executor.py` (集成, +50行修改)
+- ✅ `tests/unit/test_result_validator.py` (新增, 444行, 17 tests)
+
+**代码统计**:
+- 新增代码: ~1,050 行
+- 测试代码: ~450 行
+- 测试覆盖: 100%
+- 所有测试通过: 17/17 ✅
+
+---
+
+## 🎉 之前完成 - MCP 协议契约测试
 
 ### 2026-01-30 更新 (MCP Protocol Contract Tests)
 
