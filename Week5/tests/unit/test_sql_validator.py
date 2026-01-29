@@ -307,13 +307,13 @@ def test_detect_comment_injection(sql_validator):
 
 
 def test_block_union_injection(sql_validator):
-    """Test UNION-based injection is blocked if not SELECT."""
+    """Test UNION with safe SELECT branches is allowed."""
+    # Based on requirements: UNION is a legal read-only set operation
     sql = "SELECT id FROM users WHERE id = 1 UNION SELECT password FROM admin_users;"
-    # SQLGlot parses UNION as a Union node (not SELECT)
     result = sql_validator.validate(sql)
-    # UNION is blocked because it's not a pure SELECT statement type
-    assert result.valid is False
-    assert any("Union" in err or "UNION" in err for err in result.errors)
+    # UNION is now allowed (as per test-plan.md L2.14 and S1.2)
+    assert result.valid is True
+    assert len(result.errors) == 0
 
 
 def test_block_stacked_queries(sql_validator):
