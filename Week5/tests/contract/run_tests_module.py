@@ -63,52 +63,68 @@ async def run_test_case(
     test_case: TestCase, sql_generator: SQLGenerator, test_validator: TestValidator
 ) -> TestResult:
     """Run a single test case."""
-    result = TestResult(
-        test_id=test_case.id,
-        category=test_case.category,
-        natural_language=test_case.natural_language,
-        status=TestStatus.PENDING,
-    )
-
+    start_time = time.time()
+    
     try:
         # Generate SQL
         response = await sql_generator.generate(
             natural_language=test_case.natural_language,
             database=test_case.database,
         )
-
-        result.generated_sql = response.sql
-        result.explanation = response.explanation
+        
+        execution_time = (time.time() - start_time) * 1000
 
         # Validate
         if test_case.expected_behavior == "reject":
             # Security test - should reject
             if response.sql:
-                result.status = TestStatus.FAILED
-                result.errors.append("Expected security rejection but query was allowed")
+                status = TestStatus.FAILED
+                error_msg = "Expected security rejection but query was allowed"
             else:
-                result.status = TestStatus.PASSED
+                status = TestStatus.PASSED
+                error_msg = None
         else:
             # Normal test - should pass pattern match
             is_match = test_validator.matches_pattern(response.sql, test_case.expected_sql)
-            rules_pass = test_validator.validate_rules(
+            validation_results = test_validator.check_validation_rules(
                 response.sql, test_case.validation_rules
             )
+            rules_pass = all(validation_results.values()) if validation_results else True
+            failed_rules = [k for k, v in validation_results.items() if not v] if validation_results else []
 
-            if is_match and rules_pass[0]:
-                result.status = TestStatus.PASSED
+            if is_match and rules_pass:
+                status = TestStatus.PASSED
+                error_msg = None
             else:
-                result.status = TestStatus.FAILED
+                status = TestStatus.FAILED
+                errors = []
                 if not is_match:
-                    result.errors.append("SQL pattern does not match expected")
-                if not rules_pass[0]:
-                    result.errors.append(f"Validation failed for rules: {rules_pass[1]}")
+                    errors.append("SQL pattern does not match expected")
+                if not rules_pass:
+                    errors.append(f"Validation failed for rules: {', '.join(failed_rules)}")
+                error_msg = "; ".join(errors)
+
+        test_result = TestResult(
+            test_id=test_case.id,
+            status=status,
+            generated_sql=response.sql,
+            execution_time_ms=execution_time,
+            error_message=error_msg,
+            validation_details={
+                "pattern_match": is_match if test_case.expected_behavior != "reject" else None,
+                "validation_rules": test_case.validation_rules,
+            },
+        )
 
     except Exception as e:
-        result.status = TestStatus.FAILED
-        result.errors.append(f"AI service unavailable: {e}")
+        test_result = TestResult(
+            test_id=test_case.id,
+            status=TestStatus.FAILED,
+            execution_time_ms=(time.time() - start_time) * 1000,
+            error_message=f"AI service unavailable: {e}",
+        )
 
-    return result
+    return test_result
 
 
 async def run_selected_modules(module_names: list[str]) -> None:
@@ -131,18 +147,25 @@ async def run_selected_modules(module_names: list[str]) -> None:
         timeout=config.openai.timeout,
     )
     pool_manager = PoolManager(config.databases)
+    await pool_manager.initialize()
 
-    # Create schema inspectors
+    # Create SchemaInspector for each database
     inspectors = {}
     for db_config in config.databases:
+        # Resolve password from env var
+        password = db_config.password
+        if db_config.password_env_var:
+            import os
+
+            password = os.environ.get(db_config.password_env_var, "")
+
         inspector = SchemaInspector(
             host=db_config.host,
             port=db_config.port,
-            database=db_config.name,
             user=db_config.user,
-            password=db_config.password,
+            password=password,
+            database=db_config.database,
         )
-        await inspector.connect()
         inspectors[db_config.name] = inspector
 
     # Initialize schema cache
@@ -150,7 +173,14 @@ async def run_selected_modules(module_names: list[str]) -> None:
     await schema_cache.initialize()
 
     # Create SQL generator and validator
-    sql_generator = SQLGenerator(openai_client, schema_cache, pool_manager)
+    from postgres_mcp.core.sql_validator import SQLValidator as ProductionValidator
+
+    sql_validator = ProductionValidator()
+    sql_generator = SQLGenerator(
+        openai_client=openai_client,
+        schema_cache=schema_cache,
+        sql_validator=sql_validator,
+    )
     test_validator = TestValidator()
 
     print("=" * 70)
@@ -176,9 +206,8 @@ async def run_selected_modules(module_names: list[str]) -> None:
             status_icon = "✓" if result.status == TestStatus.PASSED else "✗"
             print(f"  {status_icon} {result.test_id}: {result.status.value.upper()}")
 
-            if result.status == TestStatus.FAILED and result.errors:
-                for error in result.errors:
-                    print(f"    Error: {error}")
+            if result.status == TestStatus.FAILED and result.error_message:
+                print(f"    Error: {result.error_message}")
                 if result.generated_sql:
                     preview = result.generated_sql[:80] + (
                         "..." if len(result.generated_sql) > 80 else ""

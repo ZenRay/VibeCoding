@@ -129,104 +129,56 @@ case "$TEST_MODE" in
         echo "📊 Current pass rate: L1 86.7%, L2 80.0% → Combined 83.3% ✅"
         echo "⏱️  Estimated time: ~2 minutes"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L1', 'L2']))
-" 2>&1 | tee /tmp/contract_test_results_core.txt
+        python -m tests.contract.run_tests_module L1 L2 2>&1 | tee /tmp/contract_test_results_core.txt
         ;;
     weak)
         echo "🧪 Running WEAK module tests (L3 + L4 + L5 + S1 = 40 test cases)..."
         echo "📊 Current pass rate: L3 41.7%, L4 40%, L5 0%, S1 10% → Combined 22.5% 🟡"
         echo "⏱️  Estimated time: ~3 minutes"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L3', 'L4', 'L5', 'S1']))
-" 2>&1 | tee /tmp/contract_test_results_weak.txt
+        python -m tests.contract.run_tests_module L3 L4 L5 S1 2>&1 | tee /tmp/contract_test_results_weak.txt
         ;;
     l1)
         echo "🧪 Running L1 Basic Query tests (15 test cases)..."
         echo "📊 Current pass rate: 86.7% (13/15) ✅"
         echo "⏱️  Estimated time: ~1 minute"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L1']))
-" 2>&1 | tee /tmp/contract_test_results_l1.txt
+        python -m tests.contract.run_tests_module L1 2>&1 | tee /tmp/contract_test_results_l1.txt
         ;;
     l2)
         echo "🧪 Running L2 Multi-Table JOIN tests (15 test cases)..."
         echo "📊 Current pass rate: 80.0% (12/15) ✅"
         echo "⏱️  Estimated time: ~1 minute"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L2']))
-" 2>&1 | tee /tmp/contract_test_results_l2.txt
+        python -m tests.contract.run_tests_module L2 2>&1 | tee /tmp/contract_test_results_l2.txt
         ;;
     l3)
         echo "🧪 Running L3 Aggregation tests (12 test cases)..."
         echo "📊 Current pass rate: 41.7% (5/12) 🟡"
         echo "⏱️  Estimated time: ~1 minute"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L3']))
-" 2>&1 | tee /tmp/contract_test_results_l3.txt
+        python -m tests.contract.run_tests_module L3 2>&1 | tee /tmp/contract_test_results_l3.txt
         ;;
     l4)
         echo "🧪 Running L4 Complex Logic tests (10 test cases)..."
         echo "📊 Current pass rate: 40.0% (4/10) 🟡"
         echo "⏱️  Estimated time: ~45 seconds"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L4']))
-" 2>&1 | tee /tmp/contract_test_results_l4.txt
+        python -m tests.contract.run_tests_module L4 2>&1 | tee /tmp/contract_test_results_l4.txt
         ;;
     l5)
         echo "🧪 Running L5 Advanced Features tests (8 test cases)..."
         echo "📊 Current pass rate: 0% (0/8) 🔴"
         echo "⏱️  Estimated time: ~30 seconds"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['L5']))
-" 2>&1 | tee /tmp/contract_test_results_l5.txt
+        python -m tests.contract.run_tests_module L5 2>&1 | tee /tmp/contract_test_results_l5.txt
         ;;
     s1)
         echo "🧪 Running S1 Security tests (10 test cases)..."
         echo "📊 Current pass rate: 10% (1/10) 🔴"
         echo "⏱️  Estimated time: ~45 seconds"
         echo ""
-        python -c "
-import asyncio
-import sys
-sys.path.insert(0, '.')
-from tests.contract.run_tests_module import run_selected_modules
-asyncio.run(run_selected_modules(['S1']))
-" 2>&1 | tee /tmp/contract_test_results_s1.txt
+        python -m tests.contract.run_tests_module S1 2>&1 | tee /tmp/contract_test_results_s1.txt
         ;;
     *)
         echo "❌ Error: Invalid argument '$TEST_MODE'"
