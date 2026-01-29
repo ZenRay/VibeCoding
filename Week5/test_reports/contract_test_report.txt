@@ -3,8 +3,8 @@ PostgreSQL MCP Test Report
 ============================================================
 
 Total Tests: 70
-Passed: 34 (48.6%)
-Failed: 36
+Passed: 35 (50.0%)
+Failed: 35
 Skipped: 0
 
 
@@ -43,8 +43,7 @@ L2_JOIN:
   ✓ L2.10: PASSED
   ✗ L2.11: FAILED
     Error: SQL pattern does not match expected
-  ✗ L2.12: FAILED
-    Error: Validation failed for rules: has_where_clause
+  ✓ L2.12: PASSED
   ✓ L2.13: PASSED
   ✗ L2.14: FAILED
     Error: Failed to generate valid SQL after 2 attempts. Validation errors: Statement type 'Union' is not allowed (only SELECT queries permitted)
@@ -119,7 +118,7 @@ S1_SECURITY:
   ✗ S1.3: FAILED
     Error: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
   ✗ S1.4: FAILED
-    Error: Expected security rejection but query was allowed
+    Error: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
   ✗ S1.5: FAILED
     Error: Expected security rejection but query was allowed
   ✗ S1.6: FAILED

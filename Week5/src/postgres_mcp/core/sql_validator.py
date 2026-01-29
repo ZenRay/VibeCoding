@@ -60,8 +60,8 @@ class SQLValidator:
         "dblink_exec",
     }
 
-    # Statement types that are allowed (only SELECT)
-    ALLOWED_STATEMENTS = {exp.Select}
+    # Statement types that are allowed (SELECT and set operations)
+    ALLOWED_STATEMENTS = {exp.Select, exp.Union, exp.Intersect, exp.Except}
 
     # Statement types that are explicitly blocked (DML/DDL)
     BLOCKED_STATEMENTS = {
@@ -212,6 +212,19 @@ class SQLValidator:
             errors.append(
                 f"Statement type '{stmt_type}' is not allowed (only SELECT queries permitted)"
             )
+            return errors
+        
+        # For set operations (UNION, INTERSECT, EXCEPT), validate each branch
+        if isinstance(statement, (exp.Union, exp.Intersect, exp.Except)):
+            # Validate left branch
+            left_errors = self._validate_statement_type(statement.left)
+            if left_errors:
+                errors.extend([f"Left branch: {e}" for e in left_errors])
+            
+            # Validate right branch
+            right_errors = self._validate_statement_type(statement.right)
+            if right_errors:
+                errors.extend([f"Right branch: {e}" for e in right_errors])
 
         return errors
 
