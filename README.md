@@ -98,7 +98,6 @@ cd tests/contract && ./run_contract_tests.sh sample  # 快速验证 (3个用例)
 **文档**: 见 [Week5/README.md](./Week5/README.md) 和 [specs/001-postgres-mcp/](./specs/001-postgres-mcp/)
 
 ---
-
 ### Week3 - ScribeFlow (已完成)
 
 ```bash
