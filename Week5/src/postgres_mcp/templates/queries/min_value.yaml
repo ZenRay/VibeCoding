@@ -1,0 +1,33 @@
+name: min_value
+description: Find minimum value in a column
+priority: 70
+keywords:
+  - min
+  - minimum
+  - 最小
+  - lowest
+  - 最低
+patterns:
+  - .*最小.*
+  - .*最低.*
+  - .*minimum.*
+  - .*lowest.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: column
+    type: identifier
+    description: Column to find min
+    required: true
+sql_template: "SELECT MIN({column}) as min_value FROM {table}"
+examples:
+  - input: "最低产品价格"
+    params:
+      table: products
+      column: price
+  - input: "minimum order amount"
+    params:
+      table: orders
+      column: amount

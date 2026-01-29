@@ -1,0 +1,32 @@
+name: select_with_condition
+description: Select rows with WHERE condition
+priority: 75
+keywords:
+  - where
+  - 条件
+  - filter
+  - 筛选
+  - 过滤
+patterns:
+  - .*where.*
+  - .*条件.*
+  - .*筛选.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: condition
+    type: expression
+    description: WHERE condition
+    required: true
+sql_template: "SELECT * FROM {table} WHERE {condition} LIMIT 1000"
+examples:
+  - input: "显示年龄大于30的用户"
+    params:
+      table: users
+      condition: "age > 30"
+  - input: "查询价格低于100的产品"
+    params:
+      table: products
+      condition: "price < 100"

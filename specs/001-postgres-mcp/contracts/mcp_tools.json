@@ -1,0 +1,284 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/tool-definition.json",
+  "tools": [
+    {
+      "name": "generate_sql",
+      "description": "根据自然语言描述生成 PostgreSQL SELECT 查询（不执行）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "natural_language": {
+            "type": "string",
+            "description": "自然语言查询描述（例如：'显示所有活跃用户'）",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "database": {
+            "type": "string",
+            "description": "目标数据库名称（可选，默认使用配置的默认数据库）"
+          }
+        },
+        "required": ["natural_language"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "生成的 SQL SELECT 查询"
+          },
+          "validated": {
+            "type": "boolean",
+            "description": "SQL 是否通过安全验证"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "警告消息（如果有）"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "AI 生成的查询解释"
+          },
+          "generation_method": {
+            "type": "string",
+            "enum": ["ai_generated", "template_matched", "retry_generated"],
+            "description": "SQL 生成方式"
+          }
+        },
+        "required": ["sql", "validated"]
+      },
+      "errors": [
+        {
+          "code": "DATABASE_NOT_FOUND",
+          "message": "指定的数据库不存在或未配置"
+        },
+        {
+          "code": "AI_SERVICE_UNAVAILABLE",
+          "message": "AI 服务当前不可用，请稍后重试"
+        },
+        {
+          "code": "INVALID_QUERY",
+          "message": "无法理解的查询描述或无法生成有效 SQL"
+        },
+        {
+          "code": "VALIDATION_FAILED",
+          "message": "生成的 SQL 未通过安全验证（包含非法操作）"
+        }
+      ]
+    },
+    {
+      "name": "execute_query",
+      "description": "根据自然语言生成 SQL 并立即执行，返回查询结果",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "natural_language": {
+            "type": "string",
+            "description": "自然语言查询描述",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "database": {
+            "type": "string",
+            "description": "目标数据库名称（可选）"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "最大返回行数（默认 1000）",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1000
+          }
+        },
+        "required": ["natural_language"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "执行的 SQL 查询"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "type": {"type": "string"}
+              }
+            },
+            "description": "结果列元数据"
+          },
+          "rows": {
+            "type": "array",
+            "items": {"type": "object"},
+            "description": "查询结果行数据"
+          },
+          "row_count": {
+            "type": "integer",
+            "description": "返回的行数"
+          },
+          "execution_time_ms": {
+            "type": "number",
+            "description": "查询执行耗时（毫秒）"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "结果是否因 LIMIT 截断"
+          }
+        },
+        "required": ["sql", "columns", "rows", "row_count", "execution_time_ms"]
+      },
+      "errors": [
+        {
+          "code": "QUERY_TIMEOUT",
+          "message": "查询执行超时（30 秒限制）"
+        },
+        {
+          "code": "INVALID_SQL",
+          "message": "生成的 SQL 语法错误或包含非法操作"
+        },
+        {
+          "code": "PERMISSION_DENIED",
+          "message": "无权限访问请求的表或列"
+        },
+        {
+          "code": "EXECUTION_ERROR",
+          "message": "查询执行失败（详细错误信息）"
+        }
+      ]
+    },
+    {
+      "name": "list_databases",
+      "description": "列出所有已配置的数据库连接及其状态",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "databases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "host": {"type": "string"},
+                "database": {"type": "string"},
+                "status": {
+                  "type": "string",
+                  "enum": ["connected", "disconnected", "error"]
+                },
+                "table_count": {"type": "integer"},
+                "last_updated": {"type": "string", "format": "date-time"}
+              }
+            }
+          }
+        },
+        "required": ["databases"]
+      }
+    },
+    {
+      "name": "refresh_schema",
+      "description": "刷新数据库 schema 缓存（手动触发或更新特定数据库）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "要刷新的数据库名称（可选，默认刷新所有）"
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "refreshed_databases": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "已刷新的数据库名称列表"
+          },
+          "duration_ms": {
+            "type": "number",
+            "description": "刷新总耗时（毫秒）"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "database": {"type": "string"},
+                "error": {"type": "string"}
+              }
+            },
+            "description": "刷新失败的数据库及错误信息"
+          }
+        },
+        "required": ["refreshed_databases", "duration_ms"]
+      }
+    },
+    {
+      "name": "query_history",
+      "description": "查询最近的查询历史记录（用于审计和调试）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "返回的最大记录数",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 100
+          },
+          "database": {
+            "type": "string",
+            "description": "过滤特定数据库的查询（可选）"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "validation_failed", "execution_failed", "ai_failed"],
+            "description": "过滤特定状态的查询（可选）"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "起始时间（ISO 8601 格式，可选）"
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {"type": "string", "format": "date-time"},
+                "request_id": {"type": "string"},
+                "database": {"type": "string"},
+                "natural_language": {"type": "string"},
+                "sql": {"type": ["string", "null"]},
+                "status": {"type": "string"},
+                "execution_time_ms": {"type": "number"},
+                "row_count": {"type": "integer"},
+                "error_message": {"type": "string"}
+              }
+            }
+          },
+          "total_count": {
+            "type": "integer",
+            "description": "符合条件的总记录数"
+          }
+        },
+        "required": ["entries", "total_count"]
+      }
+    }
+  ]
+}

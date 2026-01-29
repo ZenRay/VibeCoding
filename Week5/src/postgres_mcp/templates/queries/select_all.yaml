@@ -1,0 +1,33 @@
+name: select_all
+description: Select all rows from a table
+priority: 80
+keywords:
+  - all
+  - 所有
+  - show
+  - 显示
+  - list
+  - 列出
+  - display
+patterns:
+  - 显示.*所有
+  - 列出.*所有
+  - 查看.*所有
+  - show.*all
+  - list.*all
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+sql_template: "SELECT * FROM {table} LIMIT 1000"
+examples:
+  - input: "显示所有用户"
+    params:
+      table: users
+  - input: "列出所有产品"
+    params:
+      table: products
+  - input: "show all orders"
+    params:
+      table: orders

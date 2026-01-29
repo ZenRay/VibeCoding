@@ -1,0 +1,172 @@
+{
+  "examples": [
+    {
+      "id": "example_1",
+      "name": "Simple SELECT",
+      "natural_language": "Show all users",
+      "database": "ecommerce_small",
+      "expected_tables": ["users"],
+      "category": "basic",
+      "difficulty": "easy"
+    },
+    {
+      "id": "example_2",
+      "name": "Filtered SELECT",
+      "natural_language": "Show all active users",
+      "database": "ecommerce_small",
+      "expected_tables": ["users"],
+      "category": "basic",
+      "difficulty": "easy"
+    },
+    {
+      "id": "example_3",
+      "name": "Date Range Query",
+      "natural_language": "Show all orders created in the last 7 days",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders"],
+      "category": "date_filter",
+      "difficulty": "easy"
+    },
+    {
+      "id": "example_4",
+      "name": "Aggregate Count",
+      "natural_language": "How many users are registered?",
+      "database": "ecommerce_small",
+      "expected_tables": ["users"],
+      "category": "aggregate",
+      "difficulty": "easy"
+    },
+    {
+      "id": "example_5",
+      "name": "Top N Query",
+      "natural_language": "List the top 10 products by sales",
+      "database": "ecommerce_small",
+      "expected_tables": ["products", "order_items"],
+      "category": "aggregate",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_6",
+      "name": "Simple JOIN",
+      "natural_language": "Show all orders with user names",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders", "users"],
+      "category": "join",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_7",
+      "name": "GROUP BY",
+      "natural_language": "Show total sales by customer",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders", "users"],
+      "category": "aggregate",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_8",
+      "name": "Multi-table JOIN",
+      "natural_language": "Show order details with product names and customer emails",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders", "order_items", "products", "users"],
+      "category": "join",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_9",
+      "name": "Subquery",
+      "natural_language": "Find users who have placed more than 5 orders",
+      "database": "ecommerce_small",
+      "expected_tables": ["users", "orders"],
+      "category": "subquery",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_10",
+      "name": "Complex Aggregate",
+      "natural_language": "Show average order value by month for the last year",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders"],
+      "category": "aggregate",
+      "difficulty": "hard"
+    },
+    {
+      "id": "example_11",
+      "name": "CTE (Common Table Expression)",
+      "natural_language": "Show customers with their total purchases and rank by spending",
+      "database": "ecommerce_small",
+      "expected_tables": ["users", "orders"],
+      "category": "advanced",
+      "difficulty": "hard"
+    },
+    {
+      "id": "example_12",
+      "name": "Window Function",
+      "natural_language": "Show each order with running total of sales",
+      "database": "ecommerce_small",
+      "expected_tables": ["orders"],
+      "category": "advanced",
+      "difficulty": "hard"
+    },
+    {
+      "id": "example_13",
+      "name": "Multiple Filters",
+      "natural_language": "Find active users who registered in 2023 and have placed at least one order",
+      "database": "ecommerce_small",
+      "expected_tables": ["users", "orders"],
+      "category": "complex_filter",
+      "difficulty": "hard"
+    },
+    {
+      "id": "example_14",
+      "name": "LEFT JOIN",
+      "natural_language": "Show all users including those who haven't placed any orders",
+      "database": "ecommerce_small",
+      "expected_tables": ["users", "orders"],
+      "category": "join",
+      "difficulty": "medium"
+    },
+    {
+      "id": "example_15",
+      "name": "Pattern Matching",
+      "natural_language": "Find users whose email contains 'gmail'",
+      "database": "ecommerce_small",
+      "expected_tables": ["users"],
+      "category": "text_search",
+      "difficulty": "easy"
+    }
+  ],
+  "test_scenarios": [
+    {
+      "scenario": "Basic Query Generation",
+      "description": "Test simple SELECT queries with basic filters",
+      "example_ids": ["example_1", "example_2", "example_15"]
+    },
+    {
+      "scenario": "Aggregations",
+      "description": "Test COUNT, SUM, AVG, GROUP BY queries",
+      "example_ids": ["example_4", "example_5", "example_7", "example_10"]
+    },
+    {
+      "scenario": "Joins",
+      "description": "Test INNER JOIN, LEFT JOIN, multi-table joins",
+      "example_ids": ["example_6", "example_8", "example_14"]
+    },
+    {
+      "scenario": "Advanced SQL",
+      "description": "Test subqueries, CTEs, window functions",
+      "example_ids": ["example_9", "example_11", "example_12"]
+    },
+    {
+      "scenario": "Complex Filters",
+      "description": "Test date ranges and multiple conditions",
+      "example_ids": ["example_3", "example_13"]
+    }
+  ],
+  "notes": {
+    "usage": "These examples can be used to test the MCP server's SQL generation capabilities",
+    "database": "Examples are designed for the ecommerce_small test database",
+    "validation": "All queries should pass SQL validation (read-only check)",
+    "execution": "Examples can be executed using the execute_query tool"
+  }
+}
