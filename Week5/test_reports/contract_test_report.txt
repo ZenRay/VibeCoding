@@ -2,131 +2,30 @@
 PostgreSQL MCP Test Report
 ============================================================
 
-Total Tests: 70
-Passed: 35 (50.0%)
-Failed: 35
+Total Tests: 10
+Passed: 1 (10.0%)
+Failed: 9
 Skipped: 0
 
-
-L1_BASIC:
-------------------------------------------------------------
-  ✓ L1.1: PASSED
-  ✓ L1.2: PASSED
-  ✓ L1.3: PASSED
-  ✓ L1.4: PASSED
-  ✓ L1.5: PASSED
-  ✓ L1.6: PASSED
-  ✓ L1.7: PASSED
-  ✗ L1.8: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L1.9: PASSED
-  ✓ L1.10: PASSED
-  ✓ L1.11: PASSED
-  ✗ L1.12: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L1.13: PASSED
-  ✓ L1.14: PASSED
-  ✓ L1.15: PASSED
-
-L2_JOIN:
-------------------------------------------------------------
-  ✓ L2.1: PASSED
-  ✓ L2.2: PASSED
-  ✓ L2.3: PASSED
-  ✓ L2.4: PASSED
-  ✓ L2.5: PASSED
-  ✓ L2.6: PASSED
-  ✗ L2.7: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L2.8: PASSED
-  ✓ L2.9: PASSED
-  ✓ L2.10: PASSED
-  ✗ L2.11: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L2.12: PASSED
-  ✓ L2.13: PASSED
-  ✗ L2.14: FAILED
-    Error: Failed to generate valid SQL after 2 attempts. Validation errors: Statement type 'Union' is not allowed (only SELECT queries permitted)
-  ✓ L2.15: PASSED
-
-L3_AGGREGATE:
-------------------------------------------------------------
-  ✓ L3.1: PASSED
-  ✗ L3.2: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L3.3: PASSED
-  ✓ L3.4: PASSED
-  ✓ L3.5: PASSED
-  ✗ L3.6: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L3.7: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L3.8: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L3.9: PASSED
-  ✗ L3.10: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L3.11: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L3.12: FAILED
-    Error: SQL pattern does not match expected
-
-L4_COMPLEX:
-------------------------------------------------------------
-  ✓ L4.1: PASSED
-  ✗ L4.2: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L4.3: PASSED
-  ✓ L4.4: PASSED
-  ✗ L4.5: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L4.6: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L4.7: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L4.8: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L4.9: FAILED
-    Error: SQL pattern does not match expected
-  ✓ L4.10: PASSED
-
-L5_ADVANCED:
-------------------------------------------------------------
-  ✗ L5.1: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.2: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.3: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.4: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.5: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.6: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.7: FAILED
-    Error: SQL pattern does not match expected
-  ✗ L5.8: FAILED
-    Error: SQL pattern does not match expected
 
 S1_SECURITY:
 ------------------------------------------------------------
   ✗ S1.1: FAILED
     Error: Expected security rejection but query was allowed
   ✗ S1.2: FAILED
-    Error: SQL pattern does not match expected (sanitization failed)
+    Error: SQL pattern does not match expected
   ✗ S1.3: FAILED
-    Error: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
+    Error: Expected security rejection but query was allowed
   ✗ S1.4: FAILED
-    Error: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
+    Error: Expected security rejection but query was allowed
   ✗ S1.5: FAILED
     Error: Expected security rejection but query was allowed
   ✗ S1.6: FAILED
     Error: Expected security rejection but query was allowed
   ✗ S1.7: FAILED
-    Error: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
+    Error: AI service unavailable: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
   ✗ S1.8: FAILED
-    Error: SQL pattern does not match expected (sanitization failed)
+    Error: SQL pattern does not match expected
   ✓ S1.9: PASSED
   ✗ S1.10: FAILED
-    Error: SQL pattern does not match expected (sanitization failed)
+    Error: SQL pattern does not match expected

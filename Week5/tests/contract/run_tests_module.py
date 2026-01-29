@@ -74,8 +74,11 @@ async def run_test_case(
         
         execution_time = (time.time() - start_time) * 1000
 
-        # Validate
-        if test_case.expected_behavior == "reject":
+        # Validate based on expected_behavior
+        is_match = None
+        validation_results = {}
+        
+        if test_case.expected_behavior and test_case.expected_behavior.upper() == "REJECT":
             # Security test - should reject
             if response.sql:
                 status = TestStatus.FAILED
@@ -84,13 +87,23 @@ async def run_test_case(
                 status = TestStatus.PASSED
                 error_msg = None
         else:
-            # Normal test - should pass pattern match
-            is_match = test_validator.matches_pattern(response.sql, test_case.expected_sql)
-            validation_results = test_validator.check_validation_rules(
-                response.sql, test_case.validation_rules
-            )
-            rules_pass = all(validation_results.values()) if validation_results else True
-            failed_rules = [k for k, v in validation_results.items() if not v] if validation_results else []
+            # Normal test - validate pattern and rules
+            # Pattern matching (only if expected_sql is provided)
+            if test_case.expected_sql:
+                is_match = test_validator.matches_pattern(response.sql, test_case.expected_sql)
+            else:
+                is_match = True  # No pattern to match
+            
+            # Rule validation
+            if test_case.validation_rules:
+                validation_results = test_validator.check_validation_rules(
+                    response.sql, test_case.validation_rules
+                )
+                rules_pass = all(validation_results.values())
+                failed_rules = [k for k, v in validation_results.items() if not v]
+            else:
+                rules_pass = True
+                failed_rules = []
 
             if is_match and rules_pass:
                 status = TestStatus.PASSED
@@ -111,8 +124,8 @@ async def run_test_case(
             execution_time_ms=execution_time,
             error_message=error_msg,
             validation_details={
-                "pattern_match": is_match if test_case.expected_behavior != "reject" else None,
-                "validation_rules": test_case.validation_rules,
+                "pattern_match": is_match,
+                "validation_rules": validation_results,
             },
         )
 
@@ -230,14 +243,15 @@ async def run_selected_modules(module_names: list[str]) -> None:
     report.end_time = time.time()
 
     # Print summary
+    summary = report.get_summary()
     print()
     print("=" * 70)
     print("Test Summary")
     print("=" * 70)
-    print(f"Total Tests: {report.total_tests}")
-    print(f"Passed: {report.passed_tests} ({report.pass_rate:.1f}%)")
-    print(f"Failed: {report.failed_tests}")
-    print(f"Skipped: {report.skipped_tests}")
+    print(f"Total Tests: {summary['total']}")
+    print(f"Passed: {summary['passed']} ({summary['pass_rate']:.1f}%)")
+    print(f"Failed: {summary['failed']}")
+    print(f"Skipped: {summary['skipped']}")
     print()
 
     # Save report
@@ -251,7 +265,7 @@ async def run_selected_modules(module_names: list[str]) -> None:
     # Cleanup
     for inspector in inspectors.values():
         await inspector.disconnect()
-    pool_manager.close_all()
+    await pool_manager.close_all()
 
     print("✅ Test execution complete!")
     modules_str = "+".join(module_names)

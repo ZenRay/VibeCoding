@@ -79,7 +79,6 @@ class SchemaInspector:
         """Close connection pool."""
         if self._pool:
             await self._pool.close()
-            await self._pool.wait_closed()
             self._pool = None
             logger.info("schema_inspector_disconnected", database=self._database)
 
