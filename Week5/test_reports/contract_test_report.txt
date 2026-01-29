@@ -1,0 +1,90 @@
+============================================================
+PostgreSQL MCP Test Report
+============================================================
+
+Total Tests: 40
+Passed: 11 (27.5%)
+Failed: 29
+Skipped: 0
+
+
+L3_AGGREGATE:
+------------------------------------------------------------
+  ✓ L3.1: PASSED
+  ✗ L3.2: FAILED
+    Error: SQL pattern does not match expected
+  ✓ L3.3: PASSED
+  ✓ L3.4: PASSED
+  ✓ L3.5: PASSED
+  ✗ L3.6: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L3.7: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L3.8: FAILED
+    Error: SQL pattern does not match expected
+  ✓ L3.9: PASSED
+  ✗ L3.10: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L3.11: FAILED
+    Error: SQL pattern does not match expected
+  ✓ L3.12: PASSED
+
+L4_COMPLEX:
+------------------------------------------------------------
+  ✓ L4.1: PASSED
+  ✗ L4.2: FAILED
+    Error: SQL pattern does not match expected
+  ✓ L4.3: PASSED
+  ✓ L4.4: PASSED
+  ✗ L4.5: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L4.6: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L4.7: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L4.8: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L4.9: FAILED
+    Error: SQL pattern does not match expected
+  ✓ L4.10: PASSED
+
+L5_ADVANCED:
+------------------------------------------------------------
+  ✗ L5.1: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.2: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.3: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.4: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.5: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.6: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.7: FAILED
+    Error: SQL pattern does not match expected
+  ✗ L5.8: FAILED
+    Error: SQL pattern does not match expected
+
+S1_SECURITY:
+------------------------------------------------------------
+  ✗ S1.1: FAILED
+    Error: Expected security rejection but query was allowed
+  ✗ S1.2: FAILED
+    Error: SQL pattern does not match expected
+  ✗ S1.3: FAILED
+    Error: Expected security rejection but query was allowed
+  ✗ S1.4: FAILED
+    Error: Expected security rejection but query was allowed
+  ✗ S1.5: FAILED
+    Error: Expected security rejection but query was allowed
+  ✗ S1.6: FAILED
+    Error: Expected security rejection but query was allowed
+  ✗ S1.7: FAILED
+    Error: AI service unavailable: AI service unavailable: Unexpected error: OpenAI returned JSON without valid SQL
+  ✗ S1.8: FAILED
+    Error: SQL pattern does not match expected
+  ✓ S1.9: PASSED
+  ✗ S1.10: FAILED
+    Error: SQL pattern does not match expected

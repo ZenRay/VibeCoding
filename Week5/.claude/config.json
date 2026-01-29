@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "postgres-mcp": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/ray/Documents/VibeCoding/Week5",
+        "run",
+        "python",
+        "-m",
+        "postgres_mcp"
+      ],
+      "env": {
+        "TEST_DB_PASSWORD": "testpass123"
+      }
+    }
+  }
+}

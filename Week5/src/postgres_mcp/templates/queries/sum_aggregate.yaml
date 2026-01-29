@@ -1,0 +1,33 @@
+name: sum_aggregate
+description: Sum a numeric column
+priority: 70
+keywords:
+  - sum
+  - 总和
+  - 合计
+  - total
+  - 总计
+patterns:
+  - .*总和.*
+  - .*合计.*
+  - .*总计.*
+  - .*sum.*
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: column
+    type: identifier
+    description: Column to sum
+    required: true
+sql_template: "SELECT SUM({column}) as total FROM {table}"
+examples:
+  - input: "计算订单总金额"
+    params:
+      table: orders
+      column: amount
+  - input: "sum of product prices"
+    params:
+      table: products
+      column: price

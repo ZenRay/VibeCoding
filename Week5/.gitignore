@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+.env
+.env.*
+*.log
+logs/
+
+# Test results (temporary files)
+test_results*.json
+*_results.json
+
+# Configuration files (contain sensitive info)
+config/config.yaml
+
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+.vscode/
+.idea/

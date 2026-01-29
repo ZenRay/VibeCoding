@@ -1,0 +1,32 @@
+name: count_with_condition
+description: Count records matching a condition
+priority: 75
+keywords:
+  - count
+  - 统计
+  - 数量
+  - where
+  - 条件
+patterns:
+  - count.*where
+  - 统计.*条件
+  - .*多少.*where
+parameters:
+  - name: table
+    type: identifier
+    description: Table name
+    required: true
+  - name: condition
+    type: expression
+    description: WHERE condition
+    required: true
+sql_template: "SELECT COUNT(*) as count FROM {table} WHERE {condition}"
+examples:
+  - input: "统计年龄大于30的用户数量"
+    params:
+      table: users
+      condition: "age > 30"
+  - input: "count how many products cost less than 100"
+    params:
+      table: products
+      condition: "price < 100"

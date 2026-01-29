@@ -5,7 +5,7 @@
 ## 项目结构
 
 ```
-~/Documents/VibeCoding/
+VibeCoding/
 ├── .github/                    # GitHub Actions 工作流
 │   └── workflows/
 │       ├── ci.yml              # CI 检查（自动检测变更的项目）
@@ -59,11 +59,46 @@
 |------|--------|------|------|
 | **[Week1](./Week1)** | FastAPI + React + Docker | ✅ 完成 | Ticket 管理系统 - Project Alpha |
 | **[Week2](./Week2)** | FastAPI + React + MySQL | ✅ 完成 | 数据库查询工具 (支持 MySQL + 导出功能) |
-| **[Week3](./Week3)** | Rust + Tauri v2 + React | 🔥 **活跃开发** | ScribeFlow 桌面实时语音听写系统 |
+| **[Week3](./Week3)** | Rust + Tauri v2 + React | ✅ 完成 | ScribeFlow 桌面实时语音听写系统 |
+| **[Week5](./Week5)** | Python + FastMCP + PostgreSQL | ✅ 完成 | PostgreSQL MCP Server - 自然语言查询数据库 |
 
 ## 快速开始
 
-### Week3 - ScribeFlow (当前活跃) 🔥
+### Week5 - PostgreSQL MCP Server (最新) 🔥
+
+**自然语言到 SQL 查询服务器** - 通过 Model Context Protocol (MCP) 使用中英文自然语言查询 PostgreSQL 数据库。
+
+```bash
+cd Week5
+
+# 安装
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# 配置
+cp config/config.example.yaml config/config.yaml
+# 编辑 config.yaml 填入数据库和 API 配置
+
+# 运行
+python -m postgres_mcp
+
+# 测试
+pytest tests/unit/ -v              # 单元测试 (141个)
+cd tests/contract && ./run_contract_tests.sh sample  # 快速验证 (3个用例)
+```
+
+**核心特性**:
+- 🗣️ 自然语言 → SQL (OpenAI GPT-4o-mini 或 阿里百炼)
+- 🔒 安全优先 (AST 验证, 只读操作, UNION 支持)
+- 📊 智能 schema 缓存
+- 🧪 契约测试 (70个 NL-to-SQL 准确性测试)
+- 📜 查询历史记录
+
+**文档**: 见 [Week5/README.md](./Week5/README.md) 和 [specs/001-postgres-mcp/](./specs/001-postgres-mcp/)
+
+---
+### Week3 - ScribeFlow (已完成)
 
 ```bash
 # 进入项目目录
@@ -75,10 +110,11 @@ cat ../specs/001-scribeflow-voice-system/quickstart.md
 
 # 安装依赖 (按平台)
 # macOS: 按照 quickstart.md 安装 Xcode Tools, Rust, Node.js
-# Linux: bash scripts/setup-ubuntu.sh (待创建)
+# Linux: 按照 quickstart.md 安装系统依赖、Rust、Node.js
 
-# 初始化 Tauri 项目 (首次)
-npm create tauri-app@latest
+# 安装项目依赖
+npm install
+cargo build --manifest-path src-tauri/Cargo.toml
 
 # 开发
 npm run tauri dev
@@ -174,11 +210,11 @@ ScribeFlow 是一个类似 [Wispr Flow](https://www.wsprlabs.com/) 的桌面级�
 |------|------|--------|
 | Phase 0: Research | ✅ Complete | research.md (6 个技术决策) |
 | Phase 1: Design & Contracts | ✅ Complete | data-model.md, contracts/, quickstart.md |
-| Phase 2: Core Implementation | 📋 Planned | 音频采集、WebSocket、文本注入 |
-| Phase 3: UI & Configuration | 📋 Planned | 悬浮窗、托盘、设置面板 |
-| Phase 4: Polish | 📋 Planned | 错误处理、性能优化、文档 |
+| Phase 2: Core Implementation | ✅ Complete | 音频采集、WebSocket、文本注入 |
+| Phase 3: UI & Configuration | ✅ Complete | 悬浮窗、托盘、设置面板 |
+| Phase 4: Polish | ✅ Complete | 错误处理、性能优化、文档 |
 
-**预计完成**: 15-21 天
+**状态**: v0.1.0 已完成，可发布
 
 ### 关键文档
 
@@ -218,6 +254,6 @@ ScribeFlow 是一个类似 [Wispr Flow](https://www.wsprlabs.com/) 的桌面级�
 | **macOS 10.15+** | ✅ Tier 1 | 100% | ⭐⭐⭐⭐⭐ |
 | **Linux X11** | ✅ Tier 1 | 100% | ⭐⭐⭐⭐⭐ |
 | **Linux Wayland** | ⚠️ Tier 2 | 75% (降级) | ⭐⭐⭐ |
-| **Windows 11** | 📋 Planned | - | Coming in v2.0 |
+| **Windows 11** | ⚠️ Tier 3 | 未验证 | Not tested |
 
 **Linux 用户**: 推荐使用 X11 会话以获得完整功能。Wayland 模式下部分功能降级 (键盘模拟 → 剪贴板注入)。

@@ -1,0 +1,67 @@
+server:
+  name: "postgres-mcp"
+  version: "0.1.0"
+
+databases:
+  - name: "production"
+    host: "localhost"
+    port: 5432
+    database: "myapp"
+    user: "readonly_user"
+    password_env_var: "PROD_DB_PASSWORD"
+    ssl_mode: "require"
+    min_pool_size: 5
+    max_pool_size: 20
+
+default_database: "production"
+
+# OpenAI 配置 - 支持多种兼容服务
+openai:
+  # API Key 配置（二选一）:
+  
+  # 方式1（推荐开发/测试）: 直接配置 API key
+  # api_key: "sk-your-api-key-here"
+  
+  # 方式2（推荐生产环境）: 从环境变量读取
+  api_key: null
+  api_key_env_var: "OPENAI_API_KEY"
+  
+  # 选择使用的 AI 服务（取消注释其中一个）:
+  
+  # 1. OpenAI 官方 (默认)
+  model: "gpt-4o-mini-2024-07-18"
+  base_url: null
+  
+  # 2. 阿里百炼（通义千问）- 推荐国内用户
+  # model: "qwen-turbo"              # 或 qwen-plus, qwen-max
+  # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  
+  # 3. Azure OpenAI
+  # model: "gpt-4"
+  # base_url: "https://your-resource.openai.azure.com/"
+  
+  temperature: 0.0
+  max_tokens: 1000
+  timeout: 30.0
+
+schema_cache:
+  poll_interval_minutes: 5
+  load_sample_data: true
+  max_sample_rows: 3
+
+query:
+  default_limit: 1000
+  max_timeout_seconds: 30
+  enable_result_validation: false
+
+templates:
+  enabled: true
+  directory: "src/postgres_mcp/templates/queries"
+
+logging:
+  level: "INFO"
+  directory: "logs/queries"
+  retention_days: 30
+  max_file_size_mb: 100
+  buffer_size: 100
+  flush_interval_seconds: 5.0

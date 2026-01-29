@@ -1,0 +1,219 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/resource-definition.json",
+  "resources": [
+    {
+      "uri": "schema://{database}",
+      "name": "Database Schema",
+      "description": "返回指定数据库的完整 schema 信息（表、视图、列、关系）",
+      "mimeType": "application/json",
+      "uriTemplate": "schema://{database}",
+      "parameters": {
+        "database": {
+          "type": "string",
+          "description": "数据库名称",
+          "required": true
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "database_name": {"type": "string"},
+          "table_count": {"type": "integer"},
+          "last_updated": {"type": "string", "format": "date-time"},
+          "tables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "data_type": {"type": "string"},
+                      "nullable": {"type": "boolean"},
+                      "primary_key": {"type": "boolean"},
+                      "foreign_key_table": {"type": ["string", "null"]},
+                      "foreign_key_column": {"type": ["string", "null"]}
+                    }
+                  }
+                },
+                "indexes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "columns": {"type": "array", "items": {"type": "string"}},
+                      "unique": {"type": "boolean"}
+                    }
+                  }
+                },
+                "row_count_estimate": {"type": ["integer", "null"]}
+              }
+            }
+          },
+          "views": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "examples": [
+        {
+          "uri": "schema://production",
+          "description": "获取 production 数据库的 schema"
+        },
+        {
+          "uri": "schema://analytics",
+          "description": "获取 analytics 数据库的 schema"
+        }
+      ]
+    },
+    {
+      "uri": "schema://{database}/{table}",
+      "name": "Table Schema",
+      "description": "返回指定表的详细 schema 信息",
+      "mimeType": "application/json",
+      "uriTemplate": "schema://{database}/{table}",
+      "parameters": {
+        "database": {
+          "type": "string",
+          "description": "数据库名称",
+          "required": true
+        },
+        "table": {
+          "type": "string",
+          "description": "表名称",
+          "required": true
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "data_type": {"type": "string"},
+                "nullable": {"type": "boolean"},
+                "primary_key": {"type": "boolean"},
+                "default_value": {"type": ["string", "null"]}
+              }
+            }
+          },
+          "primary_keys": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "foreign_keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column": {"type": "string"},
+                "ref_table": {"type": "string"},
+                "ref_column": {"type": "string"}
+              }
+            }
+          },
+          "indexes": {
+            "type": "array",
+            "items": {"type": "object"}
+          },
+          "sample_data": {
+            "type": "array",
+            "items": {"type": "object"},
+            "maxItems": 3,
+            "description": "示例数据（最多 3 行）"
+          }
+        }
+      },
+      "examples": [
+        {
+          "uri": "schema://production/users",
+          "description": "获取 users 表的 schema"
+        }
+      ]
+    },
+    {
+      "uri": "templates://queries",
+      "name": "Query Templates",
+      "description": "返回可用的查询模板列表（用于 AI 降级方案）",
+      "mimeType": "application/json",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "keywords": {"type": "array", "items": {"type": "string"}},
+                "sql_template": {"type": "string"},
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "type": {"type": "string"},
+                      "required": {"type": "boolean"}
+                    }
+                  }
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "input": {"type": "string"},
+                      "parameters": {"type": "object"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "template_count": {"type": "integer"}
+        }
+      }
+    },
+    {
+      "uri": "stats://server",
+      "name": "Server Statistics",
+      "description": "返回服务器统计信息（连接池、缓存、查询历史）",
+      "mimeType": "application/json",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "uptime_seconds": {"type": "number"},
+          "total_queries": {"type": "integer"},
+          "successful_queries": {"type": "integer"},
+          "failed_queries": {"type": "integer"},
+          "ai_fallback_count": {"type": "integer"},
+          "template_match_count": {"type": "integer"},
+          "databases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "pool_size": {"type": "integer"},
+                "pool_available": {"type": "integer"},
+                "queries_executed": {"type": "integer"}
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
