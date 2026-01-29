@@ -60,8 +60,44 @@ VibeCoding/
 | **[Week1](./Week1)** | FastAPI + React + Docker | ✅ 完成 | Ticket 管理系统 - Project Alpha |
 | **[Week2](./Week2)** | FastAPI + React + MySQL | ✅ 完成 | 数据库查询工具 (支持 MySQL + 导出功能) |
 | **[Week3](./Week3)** | Rust + Tauri v2 + React | ✅ 完成 | ScribeFlow 桌面实时语音听写系统 |
+| **[Week5](./Week5)** | Python + FastMCP + PostgreSQL | ✅ 完成 | PostgreSQL MCP Server - 自然语言查询数据库 |
 
 ## 快速开始
+
+### Week5 - PostgreSQL MCP Server (最新) 🔥
+
+**自然语言到 SQL 查询服务器** - 通过 Model Context Protocol (MCP) 使用中英文自然语言查询 PostgreSQL 数据库。
+
+```bash
+cd Week5
+
+# 安装
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# 配置
+cp config/config.example.yaml config/config.yaml
+# 编辑 config.yaml 填入数据库和 API 配置
+
+# 运行
+python -m postgres_mcp
+
+# 测试
+pytest tests/unit/ -v              # 单元测试 (141个)
+cd tests/contract && ./run_contract_tests.sh sample  # 快速验证 (3个用例)
+```
+
+**核心特性**:
+- 🗣️ 自然语言 → SQL (OpenAI GPT-4o-mini 或 阿里百炼)
+- 🔒 安全优先 (AST 验证, 只读操作, UNION 支持)
+- 📊 智能 schema 缓存
+- 🧪 契约测试 (70个 NL-to-SQL 准确性测试)
+- 📜 查询历史记录
+
+**文档**: 见 [Week5/README.md](./Week5/README.md) 和 [specs/001-postgres-mcp/](./specs/001-postgres-mcp/)
+
+---
 
 ### Week3 - ScribeFlow (已完成)
 

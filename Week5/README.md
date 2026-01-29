@@ -468,12 +468,18 @@ MIT License - see LICENSE file for details
 
 ## Links
 
+- **📚 Configuration Guide**: [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) - 详细配置指南
+  - 查询模板配置
+  - 安全规则定制
+  - AI Prompt 调整
+  - 契约测试扩展
 - **Documentation**: [specs/001-postgres-mcp/](../specs/001-postgres-mcp/)
 - **Project Status**: [CURRENT_STATUS.md](../specs/001-postgres-mcp/CURRENT_STATUS.md)
 - **Quick Start Guide**: [quickstart.md](../specs/001-postgres-mcp/quickstart.md)
 - **Test Scripts**: [scripts/README.md](scripts/README.md)
 - **Test Reports**: [specs/001-postgres-mcp/testing/](../specs/001-postgres-mcp/testing/)
 - **DashScope Guide**: [specs/001-postgres-mcp/testing/README_DASHSCOPE.md](../specs/001-postgres-mcp/testing/README_DASHSCOPE.md)
+- **Contract Tests**: [tests/contract/README.md](tests/contract/README.md)
 
 ---
 
