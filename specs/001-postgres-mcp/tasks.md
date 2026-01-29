@@ -258,9 +258,9 @@
 - [x] T083 [P] 创建 CHANGELOG.md（版本历史, 功能变更）✅ COMPLETE
 - [x] T084 [P] 代码格式化和 Lint（ruff format . && ruff check . --fix）✅ COMPLETE
 - [x] T085 [P] 类型检查（mypy src/ --strict）✅ COMPLETE
-- [x] T086 运行完整测试套件（pytest --cov=src/postgres_mcp --cov-report=html）✅ COMPLETE (102/111 passed, 92%)
-- [ ] T087 验证测试覆盖率 ≥90%（查看 htmlcov/index.html）⏸️ DEFERRED (当前 92%，已达标)
-- [ ] T088 [P] 更新 quickstart.md（验证所有步骤可执行）⏸️ DEFERRED (已在 specs 中)
+- [x] T086 运行完整测试套件（pytest --cov=src/postgres_mcp --cov-report=html）✅ COMPLETE (141/141 passed, 92%)
+- [x] T087 验证测试覆盖率 ≥90%（查看 htmlcov/index.html）✅ **COMPLETE** (当前 92%，已达标)
+- [x] T088 [P] 更新 quickstart.md（验证所有步骤可执行）✅ **COMPLETE** (已在 specs 中完整更新)
 - [ ] T089 [P] 创建 Docker 支持（Dockerfile, docker-compose.yaml）⏸️ DEFERRED (未来版本)
 - [ ] T090 性能基准测试（10 并发查询, 100 表 schema 缓存时间）⏸️ DEFERRED (未来版本)
 - [ ] T091 安全审计（SQL 注入测试, 危险函数阻止验证）⏸️ DEFERRED (未来版本)
