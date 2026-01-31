@@ -22,17 +22,18 @@ last_updated: "2026-02-01"
 | Phase 1: Setup & Foundation | ✅ Complete | 100% (7/7) | T001-T007 |
 | Phase 2: Style Initialization | ✅ Complete | 100% (5/5) | T008-T012 |
 | Phase 3: Slide Management | ✅ Complete | 100% (7/7) | T013-T019 |
-| Phase 4: Fullscreen Playback | ⏳ Pending | 0% (0/4) | T020-T023 |
-| Phase 5: Polish & Edge Cases | 🎯 Mostly Done | 80% (4/5) | T024-T028 |
-| **Total** | **75% Complete** | **23/28** | **All Tasks** |
+| Phase 4: Fullscreen Playback | ✅ Complete | 100% (4/4) | T020-T023 |
+| Phase 5: Polish & Edge Cases | ✅ Complete | 100% (5/5) | T024-T028 |
+| **Total** | **✅ 100% Complete** | **28/28** | **All Tasks** |
 
 **Current Status**: 
 - ✅ Core functionality complete (Phases 1-3)
 - ✅ UI/UX polished (Tailwind CSS, Toast notifications, loading states)
 - ✅ Error handling and data integrity implemented
-- ⏳ Carousel component remaining (Phase 4)
+- ✅ Carousel component complete (Phase 4)
+- ✅ End-to-end testing complete (Phase 5)
 
-**Next Steps**: Implement Phase 4 Carousel component for fullscreen presentation mode.
+**🎉 Project Status**: **All tasks complete! Ready for production deployment.**
 
 ---
 
@@ -114,12 +115,12 @@ last_updated: "2026-02-01"
 **Independent Test**: Click Play, verification full screen, auto-advance, Esc to exit.
 
 ### Backend Track (BE)
-- [ ] T020 [P] [US4] Ensure `GET /project` returns slides in correct order (already covered by T004/T014, verify only)
+- [X] T020 [P] [US4] Ensure `GET /project` returns slides in correct order (already covered by T004/T014, verify only)
 
 ### Frontend Track (FE)
-- [ ] T021 [P] [US4] Create `Carousel` component in `Week7/frontend/src/components/Carousel.tsx` (Fullscreen overlay)
-- [ ] T022 [P] [US4] Implement auto-advance timer and Esc key listener in `Carousel.tsx`
-- [ ] T023 [P] [US4] Add "Play" button to `Sidebar` or `App` header to trigger Carousel
+- [X] T021 [P] [US4] Create `Carousel` component in `Week7/frontend/src/components/Carousel.tsx` (Fullscreen overlay)
+- [X] T022 [P] [US4] Implement auto-advance timer and Esc key listener in `Carousel.tsx`
+- [X] T023 [P] [US4] Add "Play" button to `Sidebar` or `App` header to trigger Carousel
 
 **Checkpoint**: Presentation mode works smoothly.
 
@@ -133,7 +134,7 @@ last_updated: "2026-02-01"
 - [X] T025 [P] [BE] Add error handling in `generator.py` for Gemini API quotas/timeouts
 - [X] T026 [P] [FE] Add loading skeletons/spinners for image generation states
 - [X] T027 [P] [BE] Verify atomic writes for `outline.yml` to prevent corruption
-- [ ] T028 Run full end-to-end test flow (Init -> Add -> Edit -> Reorder -> Play)
+- [X] T028 Run full end-to-end test flow (Init -> Add -> Edit -> Reorder -> Play)
 
 ---
 

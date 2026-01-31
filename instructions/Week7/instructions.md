@@ -167,6 +167,21 @@ python 和 typescript 两个 agent
 分别撰写后端和前端的
 
 
-测试
 
+
+### 1.5
+测试
 前端页面出错-如果不带slug,似乎要展示demo,但不存在
+
+### 1.6
+Frontend UI issues
+
+目前前端界面有很大问题：
+1. 没有使用 design-tokens.css 请确保使用定义好的 design tokens
+2. 请再次阅读 ./specs/w7/genslide.jpg，页面结构应该跟它一致。
+   - 侧边栏每个 slide 后面（下一个slide 前面）的位置点击会显示一条横线，回车可以添加新的 slide
+   - 每个 slide 删除的按钮应该放在右上方
+
+仔细看这个wireframe修复其他页面问题(缩略图位置),图片展示大小等
+
+双击 slide 打开一个popup 允许用户修改 slide 文本

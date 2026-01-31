@@ -5,6 +5,7 @@ import { useAppStore } from './store/appStore';
 import { StyleInitializer } from './components/StyleInitializer';
 import { Sidebar } from './components/Sidebar';
 import { SlideEditor } from './components/SlideEditor';
+import { Carousel } from './components/Carousel';
 import './index.css';
 
 function App() {
@@ -122,20 +123,13 @@ function App() {
         </>
       )}
 
-      {/* Carousel (Phase 4 - TODO) */}
-      {showCarousel && (
-        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-          <div className="text-white text-center">
-            <p className="text-2xl mb-4">演示模式 (Phase 4 待实现)</p>
-            <button
-              onClick={() => setShowCarousel(false)}
-              className="bg-white text-black px-6 py-3 rounded-lg"
-            >
-              退出
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Carousel */}
+      <Carousel
+        slides={slides}
+        isOpen={showCarousel}
+        onClose={() => setShowCarousel(false)}
+        initialIndex={0}
+      />
     </div>
   );
 }
