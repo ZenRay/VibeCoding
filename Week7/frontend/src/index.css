@@ -1,1 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "./styles/design-tokens.css";
+@import "./styles/global.css";

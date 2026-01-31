@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 from typing import Optional
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class YAMLStore:
@@ -20,12 +23,17 @@ class YAMLStore:
         """
         base_dir = Path(__file__).parent.parent.parent.parent  # Week7/
         self.file_path = base_dir / file_path.lstrip("../")
+        logger.info(f"YAMLStore initialized with path: {self.file_path}")
         self._ensure_file_exists()
     
     def _ensure_file_exists(self):
         """确保 YAML 文件存在"""
         if not self.file_path.exists():
+            logger.warning(f"YAML file does not exist, creating: {self.file_path}")
             self._write_data({"style_reference": None, "slides": []})
+            logger.info("Created initial outline.yml")
+        else:
+            logger.info(f"YAML file exists: {self.file_path}")
     
     def _read_data(self) -> dict:
         """
@@ -38,8 +46,11 @@ class YAMLStore:
             with open(self.file_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
                 return data if data else {"style_reference": None, "slides": []}
+        except yaml.YAMLError as e:
+            logger.error(f"YAML parse error: {e}")
+            return {"style_reference": None, "slides": []}
         except Exception as e:
-            print(f"Error reading YAML: {e}")
+            logger.exception(f"Error reading YAML: {e}")
             return {"style_reference": None, "slides": []}
     
     def _write_data(self, data: dict):
@@ -48,6 +59,9 @@ class YAMLStore:
         
         Args:
             data: 要写入的数据
+            
+        Raises:
+            Exception: 写入失败时抛出异常
         """
         try:
             # 原子写入: 先写临时文件,再替换
@@ -57,8 +71,12 @@ class YAMLStore:
             
             # 替换原文件
             temp_path.replace(self.file_path)
+            logger.debug(f"Successfully wrote YAML file")
+        except yaml.YAMLError as e:
+            logger.error(f"YAML serialization error: {e}")
+            raise
         except Exception as e:
-            print(f"Error writing YAML: {e}")
+            logger.exception(f"Error writing YAML: {e}")
             raise
     
     def get_project_state(self) -> dict:
@@ -76,10 +94,18 @@ class YAMLStore:
         
         Args:
             image_path: 图片路径
+            
+        Raises:
+            Exception: 写入失败时抛出异常
         """
+        if not image_path or not image_path.strip():
+            raise ValueError("Image path cannot be empty")
+        
+        logger.info(f"Setting style reference to: {image_path}")
         data = self._read_data()
-        data["style_reference"] = image_path
+        data["style_reference"] = image_path.strip()
         self._write_data(data)
+        logger.info("Style reference saved successfully")
     
     def add_slide(self, slide_id: str, text: str, image_path: Optional[str] = None) -> dict:
         """
@@ -170,3 +196,15 @@ class YAMLStore:
         # 按新顺序重新组织
         data["slides"] = [slide_map[sid] for sid in slide_ids if sid in slide_map]
         self._write_data(data)
+    
+    def reset(self):
+        """
+        重置项目状态到初始状态（仅用于测试）
+        """
+        logger.warning("Resetting project to initial state")
+        initial_data = {
+            "style_reference": None,
+            "slides": []
+        }
+        self._write_data(initial_data)
+        logger.info("Project reset complete")

@@ -5,6 +5,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import config
 from app.api.endpoints import router
+import logging
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('api.log', encoding='utf-8')
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AI Slide Generator API",
@@ -23,6 +36,20 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """应用启动事件"""
+    logger.info("AI Slide Generator API starting up...")
+    logger.info(f"CORS origins: {config.CORS_ORIGINS}")
+    logger.info(f"Gemini API configured: {bool(config.GEMINI_API_KEY)}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """应用关闭事件"""
+    logger.info("AI Slide Generator API shutting down...")
 
 
 @app.get("/")

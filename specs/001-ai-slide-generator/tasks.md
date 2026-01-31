@@ -49,13 +49,13 @@ description: "Task list for AI Slide Generator implementation"
 **Independent Test**: Clear `outline.yml`, open app -> Popup -> Generate 2 images -> Select one -> Saved to file.
 
 ### Backend Track (BE)
-- [ ] T008 [P] [US1] Implement POST `/style/init` endpoint in `Week7/backend/app/api/endpoints.py` (Generate candidates)
-- [ ] T009 [P] [US1] Implement POST `/style/select` endpoint in `Week7/backend/app/api/endpoints.py` (Save style to outline.yml)
+- [X] T008 [P] [US1] Implement POST `/style/init` endpoint in `Week7/backend/app/api/endpoints.py` (Generate candidates)
+- [X] T009 [P] [US1] Implement POST `/style/select` endpoint in `Week7/backend/app/api/endpoints.py` (Save style to outline.yml)
 
 ### Frontend Track (FE)
-- [ ] T010 [P] [US1] Create `StyleInitializer` component in `Week7/frontend/src/components/StyleInitializer.tsx` (Modal UI)
-- [ ] T011 [P] [US1] Integrate API calls in `Week7/frontend/src/api/client.ts` for style endpoints
-- [ ] T012 [P] [US1] Wire up `App.tsx` to check `ProjectState.style_reference` and show Modal if missing
+- [X] T010 [P] [US1] Create `StyleInitializer` component in `Week7/frontend/src/components/StyleInitializer.tsx` (Modal UI)
+- [X] T011 [P] [US1] Integrate API calls in `Week7/frontend/src/api/client.ts` for style endpoints
+- [X] T012 [P] [US1] Wire up `App.tsx` to check `ProjectState.style_reference` and show Modal if missing
 
 **Checkpoint**: User can launch app, enter prompt, see 2 images, select one, and it persists in `outline.yml`.
 

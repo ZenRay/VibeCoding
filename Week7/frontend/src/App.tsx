@@ -1,63 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import { api } from './api/client';
-import type { ProjectState } from './types';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
+import { useAppStore } from './store/appStore';
+import { StyleInitializer } from './components/StyleInitializer';
+import { Sidebar } from './components/Sidebar';
+import { SlideEditor } from './components/SlideEditor';
 import './index.css';
 
 function App() {
-  const [projectState, setProjectState] = useState<ProjectState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    style_reference,
+    slides,
+    loading,
+    error,
+    currentSlideId,
+    loadProject,
+    setCurrentSlide,
+    createSlide,
+    deleteSlide,
+    reorderSlides,
+    updateSlideInState,
+  } = useAppStore();
+
+  const [showCarousel, setShowCarousel] = useState(false);
 
   useEffect(() => {
     loadProject();
-  }, []);
+  }, [loadProject]);
 
-  const loadProject = async () => {
+  // 显示错误提示
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const handleStyleSelected = async () => {
+    // 重新加载项目状态
+    await loadProject();
+  };
+
+  const handleAddSlide = async () => {
     try {
-      setLoading(true);
-      const state = await api.getProject();
-      setProjectState(state);
+      await createSlide('新幻灯片\n\n点击编辑内容...');
+      toast.success('幻灯片已创建');
     } catch (err) {
-      setError('加载项目失败');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      toast.error('创建失败,请重试');
     }
   };
 
+  const handleDeleteSlide = async (slideId: string) => {
+    try {
+      await deleteSlide(slideId);
+      toast.success('幻灯片已删除');
+    } catch (err) {
+      toast.error('删除失败,请重试');
+    }
+  };
+
+  const handleReorderSlides = async (slideIds: string[]) => {
+    try {
+      await reorderSlides(slideIds);
+      toast.success('顺序已保存');
+    } catch (err) {
+      toast.error('保存顺序失败');
+    }
+  };
+
+  const handlePlayPresentation = () => {
+    if (slides.length === 0) {
+      toast.warning('没有可播放的幻灯片');
+      return;
+    }
+    setShowCarousel(true);
+  };
+
+  // 获取当前选中的幻灯片
+  const currentSlide = slides.find((s) => s.id === currentSlideId) || null;
+
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-xl">加载中...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-xl text-red-600">{error}</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+          <p className="text-lg font-medium text-gray-700">加载中...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4">
-          <h1 className="text-3xl font-bold text-gray-900">
-            AI Slide Generator
-          </h1>
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* Toast Notifications */}
+      <Toaster position="top-right" richColors />
+
+      {/* Style Initialization Modal */}
+      {!style_reference && (
+        <StyleInitializer onStyleSelected={handleStyleSelected} />
+      )}
+
+      {/* Main Content (only show after style is selected) */}
+      {style_reference && (
+        <>
+          {/* Sidebar */}
+          <Sidebar
+            slides={slides}
+            currentSlideId={currentSlideId}
+            onSelectSlide={setCurrentSlide}
+            onReorderSlides={handleReorderSlides}
+            onAddSlide={handleAddSlide}
+            onDeleteSlide={handleDeleteSlide}
+            onPlayPresentation={handlePlayPresentation}
+          />
+
+          {/* Editor */}
+          <SlideEditor
+            slide={currentSlide}
+            onSlideUpdated={updateSlideInState}
+          />
+        </>
+      )}
+
+      {/* Carousel (Phase 4 - TODO) */}
+      {showCarousel && (
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+          <div className="text-white text-center">
+            <p className="text-2xl mb-4">演示模式 (Phase 4 待实现)</p>
+            <button
+              onClick={() => setShowCarousel(false)}
+              className="bg-white text-black px-6 py-3 rounded-lg"
+            >
+              退出
+            </button>
+          </div>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 px-4">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">项目状态</h2>
-          <pre className="bg-gray-50 p-4 rounded overflow-auto">
-            {JSON.stringify(projectState, null, 2)}
-          </pre>
-        </div>
-      </main>
+      )}
     </div>
   );
 }

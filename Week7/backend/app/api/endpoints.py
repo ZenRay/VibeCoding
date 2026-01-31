@@ -10,6 +10,10 @@ from app.data.yaml_store import YAMLStore
 from app.core.generator import GeminiGenerator
 from app.core.config import config
 import uuid
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 yaml_store = YAMLStore()
@@ -23,19 +27,155 @@ async def get_project():
     return ProjectState(**data)
 
 
+@router.post("/test/reset")
+async def reset_project_for_testing():
+    """
+    重置项目状态 (仅用于测试)
+    
+    WARNING: This endpoint is for testing purposes only!
+    """
+    logger.warning("Resetting project state for testing")
+    
+    try:
+        # 使用 YAMLStore 的重置方法
+        yaml_store.reset()
+        
+        logger.info("Project state reset successfully")
+        return {"message": "Project reset successfully", "status": "ok"}
+    except Exception as e:
+        logger.error(f"Failed to reset project: {e}")
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
+
+
 @router.post("/style/init", response_model=list[StyleCandidate])
 async def init_style(prompt: StylePrompt):
-    """生成风格候选图"""
-    image_paths = generator.generate_style_candidates(prompt.description)
-    return [StyleCandidate(image_path=path) for path in image_paths]
+    """
+    生成风格候选图
+    
+    Args:
+        prompt: 包含风格描述的请求体
+    
+    Returns:
+        list[StyleCandidate]: 2张候选图片的路径列表
+    
+    Raises:
+        HTTPException 400: 输入验证失败
+        HTTPException 500: 图片生成失败
+    """
+    # 输入验证
+    description = prompt.description.strip()
+    if not description:
+        logger.warning("Style init called with empty description")
+        raise HTTPException(
+            status_code=400,
+            detail="风格描述不能为空"
+        )
+    
+    if len(description) > 500:
+        logger.warning(f"Style description too long: {len(description)} chars")
+        raise HTTPException(
+            status_code=400,
+            detail="风格描述不能超过500个字符"
+        )
+    
+    # 生成风格候选图
+    try:
+        logger.info(f"Generating style candidates for: {description[:50]}...")
+        image_paths = generator.generate_style_candidates(description)
+        
+        # 验证生成的图片路径
+        if not image_paths or len(image_paths) != 2:
+            logger.error(f"Generator returned invalid paths: {image_paths}")
+            raise HTTPException(
+                status_code=500,
+                detail="图片生成失败: 返回的图片数量不正确"
+            )
+        
+        # 在 stub 模式下,图片文件不会真正存在
+        # 在实际使用 Gemini API 时,应该验证文件是否存在
+        logger.info(f"Successfully generated {len(image_paths)} style candidates")
+        return [StyleCandidate(image_path=path) for path in image_paths]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error in style init: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"图片生成失败: {str(e)}"
+        )
 
 
 @router.post("/style/select", response_model=ProjectState)
 async def select_style(selected: SelectedStyle):
-    """保存选定的风格"""
-    yaml_store.set_style_reference(selected.image_path)
-    data = yaml_store.get_project_state()
-    return ProjectState(**data)
+    """
+    保存选定的风格
+    
+    Args:
+        selected: 包含选中图片路径的请求体
+    
+    Returns:
+        ProjectState: 更新后的完整项目状态
+    
+    Raises:
+        HTTPException 400: 图片路径无效或不存在
+        HTTPException 500: YAML 写入失败
+    """
+    # 验证输入
+    image_path = selected.image_path.strip()
+    if not image_path:
+        logger.warning("Style select called with empty image_path")
+        raise HTTPException(
+            status_code=400,
+            detail="图片路径不能为空"
+        )
+    
+    # 验证图片路径格式 (应该指向 assets/ 目录)
+    if "assets" not in image_path:
+        logger.warning(f"Invalid image path format: {image_path}")
+        raise HTTPException(
+            status_code=400,
+            detail="图片路径格式无效"
+        )
+    
+    # 在实际生产环境中,应该验证文件是否真实存在
+    # 在 stub 模式下,我们跳过文件存在性检查
+    # 如果启用了真实的 Gemini API,取消以下注释:
+    # path_obj = Path(image_path)
+    # if not path_obj.exists() or not path_obj.is_file():
+    #     logger.error(f"Selected image file not found: {image_path}")
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail="所选图片文件不存在"
+    #     )
+    
+    # 保存风格参考
+    try:
+        logger.info(f"Saving style reference: {image_path}")
+        yaml_store.set_style_reference(image_path)
+        
+        # 获取更新后的项目状态
+        data = yaml_store.get_project_state()
+        
+        # 验证更新是否成功
+        if data.get("style_reference") != image_path:
+            logger.error("Style reference was not saved correctly")
+            raise HTTPException(
+                status_code=500,
+                detail="风格保存失败: 验证失败"
+            )
+        
+        logger.info(f"Successfully saved style reference")
+        return ProjectState(**data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error saving style reference: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"风格保存失败: {str(e)}"
+        )
 
 
 @router.post("/slides", response_model=Slide)

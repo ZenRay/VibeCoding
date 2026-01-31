@@ -90,17 +90,59 @@ npm run dev
 
 ## 开发状态
 
-**Phase 1 完成** ✅
+**Phase 1 完成** ✅ (2026-02-01)
 - [x] 项目目录结构
 - [x] 后端 FastAPI 初始化
 - [x] 前端 React + Vite 初始化
 - [x] YAML 存储层
 - [x] Gemini AI 生成器封装 (Stub)
-- [x] API 端点定义
+- [x] API 端点定义 (8个)
 - [x] CORS 配置
 - [x] Cursor AI 开发规则
 
-**下一步**: Phase 2 - 风格初始化 UI 开发
+**Phase 2 完成** ✅ (2026-02-01)
+- [x] StyleInitializer 组件 (风格初始化模态框)
+- [x] 风格 API 集成
+- [x] 2 张候选图生成和选择
+- [x] App.tsx 集成
+
+**Phase 3 完成** ✅ (2026-02-01)
+- [x] Sidebar 组件 (拖拽排序)
+- [x] SlideEditor 组件 (文本编辑 + 图片预览)
+- [x] 自动保存机制 (防抖 1 秒)
+- [x] Hash 检测逻辑 (content vs image)
+- [x] "重新生成图片" 按钮
+- [x] Toast 通知 (sonner)
+- [x] Zustand 状态管理
+
+**Phase 4 待实现** ⏳
+- [ ] Carousel 组件 (全屏播放)
+- [ ] 自动翻页
+- [ ] 键盘导航
+
+**下一步**: Phase 4 - 全屏播放 Carousel 组件
+
+---
+
+## 📚 详细文档
+
+- **快速参考**: `QUICK_REFERENCE.md` ⭐
+- **实施总结**: `IMPLEMENTATION_SUMMARY.md`
+- **项目结构**: `PROJECT_STRUCTURE.md`
+- **任务进度**: `TASKS_STATUS.md`
+- **交付清单**: `DELIVERY_CHECKLIST.md`
+- **前端指南**: `frontend/README.md`
+
+---
+
+## 🚀 快速启动
+
+使用一键启动脚本:
+```bash
+./start-dev.sh
+```
+
+或查看 `QUICK_REFERENCE.md` 获取详细指引。
 
 ## 许可证
 
