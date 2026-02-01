@@ -38,6 +38,19 @@ fi
 if [ ! -f ".env" ]; then
     echo "⚠️  .env 文件不存在,使用 Stub 模式"
     echo "   (不会调用真实的 Gemini API)"
+else
+    # 加载 .env 中的代理配置（如果有）
+    if grep -q "^HTTP_PROXY=" .env 2>/dev/null; then
+        export $(grep "^HTTP_PROXY=" .env | xargs)
+        echo "🌐 已加载 HTTP 代理配置"
+    fi
+    if grep -q "^HTTPS_PROXY=" .env 2>/dev/null; then
+        export $(grep "^HTTPS_PROXY=" .env | xargs)
+        echo "🌐 已加载 HTTPS 代理配置"
+    fi
+    if grep -q "^NO_PROXY=" .env 2>/dev/null; then
+        export $(grep "^NO_PROXY=" .env | xargs)
+    fi
 fi
 
 echo ""

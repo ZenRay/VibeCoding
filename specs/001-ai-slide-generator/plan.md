@@ -1,6 +1,7 @@
 # 技术计划: AI Slide Generator (AI 幻灯片生成器)
 
-**状态**: ✅ **100% 完成 - 生产就绪**  
+**状态**: ✅ **v2.0.0 完成 - 生产就绪**  
+**版本**: v2.0.0 (多版本项目管理)  
 **最后更新**: 2026-02-01  
 **目标目录**: `Week7/`  
 **技术栈**: Python (FastAPI) + TypeScript (React/Vite)
@@ -16,19 +17,21 @@
 | Phase 3: 幻灯片管理 | ✅ 完成 | 100% |
 | Phase 4: 全屏播放 | ✅ 完成 | 100% |
 | Phase 5: 优化完善 | ✅ 完成 | 100% |
+| **Phase 6: 多版本管理** | ✅ 完成 | 100% |
 | **总计** | **✅ 完成** | **100%** |
 
 **已完成交付物**:
-- ✅ 完整的后端 API (8 个端点)
-- ✅ 4 个核心前端组件 (StyleInitializer, Sidebar, SlideEditor, Carousel)
+- ✅ 完整的后端 API (11 个端点，含版本管理)
+- ✅ 5 个核心前端组件 (VersionSelector, StyleInitializer, Sidebar, SlideEditor, Carousel)
 - ✅ Zustand 状态管理
 - ✅ Tailwind CSS 设计系统
 - ✅ Toast 通知和错误处理
 - ✅ 自动保存和 Hash 检测
 - ✅ 拖拽排序功能
 - ✅ 全屏播放功能
+- ✅ 多版本项目管理 (v2.0.0)
+- ✅ 候选图片交互优化
 - ✅ 端到端测试 (19 个自动化测试)
-- ⏳ Carousel 全屏播放组件
 
 ---
 
@@ -224,3 +227,525 @@ class SelectedStyle(BaseModel):
 *   `@dnd-kit/core`, `@dnd-kit/sortable` (拖拽)
 *   `clsx`, `tailwind-merge` (样式工具)
 *   `lucide-react` (图标)
+
+---
+
+## 6. Phase 6: Multi-Version Project Management (v2.0.0)
+
+### 6.1 架构目标
+
+**问题**: v1.0.0 只支持单个项目，所有数据存在一个 `outline.yml` 中。
+
+**解决方案**: 引入多版本项目管理，每个版本独立存储 `outline.yml` 和资源文件。
+
+### 6.2 目录结构更新
+
+```text
+Week7/
+├── assets/
+│   ├── v1/
+│   │   ├── outline.yml            # 版本 1 的项目数据
+│   │   ├── style_reference.png
+│   │   ├── style_candidate_*.png
+│   │   └── slide_*.png
+│   ├── v2/
+│   │   ├── outline.yml            # 版本 2 的项目数据
+│   │   └── ...
+│   └── v13/
+│       ├── outline.yml            # 版本 13 的项目数据
+│       └── ...
+```
+
+**特点**:
+- 每个版本完全隔离
+- 版本号自动递增
+- 支持并行编辑多个项目
+
+### 6.3 后端架构变更
+
+#### YAMLStore 版本化
+
+```python
+# app/data/yaml_store.py
+
+class YAMLStore:
+    def __init__(self, version: Optional[int] = None):
+        """
+        初始化 YAMLStore，支持版本化
+        
+        Args:
+            version: 版本号（如 1, 2, 3）
+                    如果为 None，使用根目录的 outline.yml（向后兼容）
+        """
+        if version is not None:
+            self.yaml_path = Path(f"assets/v{version}/outline.yml")
+            self.assets_dir = Path(f"assets/v{version}")
+        else:
+            self.yaml_path = Path("outline.yml")
+            self.assets_dir = Path("assets")
+        
+        self.assets_dir.mkdir(parents=True, exist_ok=True)
+    
+    def list_versions(self) -> List[int]:
+        """列出所有可用版本"""
+        assets_dir = Path("assets")
+        return sorted([
+            int(d.name[1:]) for d in assets_dir.iterdir() 
+            if d.is_dir() and d.name.startswith("v") and d.name[1:].isdigit()
+        ])
+    
+    def get_version_info(self, version: int) -> Dict:
+        """获取版本摘要信息"""
+        store = YAMLStore(version)
+        data = store.load()
+        return {
+            "version": version,
+            "created_at": data.get("created_at"),
+            "project_name": data.get("project_name"),
+            "style_reference": data.get("style_reference"),
+            "style_prompt": data.get("style_prompt"),
+            "slide_count": len(data.get("slides", []))
+        }
+    
+    def create_new_version(self, style_prompt: str = None, 
+                          project_name: str = None) -> int:
+        """创建新版本，返回版本号"""
+        versions = self.list_versions()
+        new_version = max(versions) + 1 if versions else 1
+        
+        store = YAMLStore(new_version)
+        initial_data = {
+            "version": new_version,
+            "created_at": datetime.utcnow().isoformat(),
+            "project_name": project_name or f"Project v{new_version}",
+            "style_reference": None,
+            "style_prompt": style_prompt,
+            "slides": []
+        }
+        store.save(initial_data)
+        return new_version
+```
+
+#### API 端点扩展
+
+**新增版本管理端点**:
+
+```python
+# app/api/endpoints.py
+
+@router.get("/versions", response_model=List[VersionInfo])
+async def list_versions():
+    """列出所有项目版本"""
+    store = YAMLStore()
+    versions = store.list_versions()
+    return [store.get_version_info(v) for v in versions]
+
+@router.get("/versions/{version}", response_model=VersionInfo)
+async def get_version_info(version: int):
+    """获取指定版本的信息"""
+    store = YAMLStore()
+    return store.get_version_info(version)
+
+@router.post("/versions/create", response_model=VersionCreated)
+async def create_version(prompt: Optional[StylePrompt] = None):
+    """创建新版本"""
+    store = YAMLStore()
+    new_version = store.create_new_version(
+        style_prompt=prompt.description if prompt else None
+    )
+    return {"version": new_version}
+```
+
+**修改现有端点，添加版本参数**:
+
+```python
+@router.get("/project", response_model=ProjectState)
+async def get_project(version: int = Query(...)):
+    """获取指定版本的项目数据"""
+    store = YAMLStore(version)
+    return store.load()
+
+@router.post("/style/init", response_model=List[StyleCandidate])
+async def init_style(
+    version: int = Query(...),
+    prompt: StylePrompt = Body(...)
+):
+    """为指定版本生成风格候选"""
+    generator = GeminiGenerator(version=version)
+    candidates = await generator.generate_style_candidates(prompt.description)
+    return candidates
+```
+
+#### GeminiGenerator 版本绑定
+
+```python
+# app/core/generator.py
+
+class GeminiGenerator:
+    def __init__(self, version: int):
+        """绑定到特定版本"""
+        self.version = version
+        self.assets_dir = Path(f"assets/v{version}")
+        self.assets_dir.mkdir(parents=True, exist_ok=True)
+    
+    async def generate_style_candidates(self, prompt: str) -> List[str]:
+        """生成并保存到版本化目录"""
+        images = []
+        for i in range(1, 3):
+            image_path = self.assets_dir / f"style_candidate_{i}_{timestamp}.png"
+            # ... AI 生成逻辑 ...
+            images.append(str(image_path))
+        return images
+```
+
+#### 资源缓存机制
+
+为了避免频繁创建 `YAMLStore` 和 `GeminiGenerator` 实例，使用字典缓存：
+
+```python
+# app/api/endpoints.py
+
+_version_resources: Dict[int, Tuple[YAMLStore, GeminiGenerator]] = {}
+
+def get_version_resources(version: int) -> Tuple[YAMLStore, GeminiGenerator]:
+    """获取或创建版本资源"""
+    if version not in _version_resources:
+        store = YAMLStore(version)
+        generator = GeminiGenerator(version)
+        _version_resources[version] = (store, generator)
+    return _version_resources[version]
+```
+
+### 6.4 前端架构变更
+
+#### 类型定义更新
+
+```typescript
+// frontend/src/types/index.ts
+
+export interface ProjectState {
+  version: number | null;
+  created_at: string | null;
+  project_name: string | null;
+  style_reference: string | null;
+  style_prompt: string | null;
+  slides: Slide[];
+}
+
+export interface VersionInfo {
+  version: number;
+  created_at: string | null;
+  project_name: string | null;
+  style_reference: string | null;
+  style_prompt: string | null;
+  slide_count: number;
+}
+```
+
+#### API 客户端更新
+
+```typescript
+// frontend/src/api/client.ts
+
+export const api = {
+  // 版本管理
+  listVersions: async (): Promise<VersionInfo[]> => {
+    const { data } = await client.get('/versions');
+    return data;
+  },
+  
+  createNewVersion: async (prompt?: StylePrompt): Promise<{ version: number }> => {
+    const { data } = await client.post('/versions/create', prompt);
+    return data;
+  },
+  
+  // 所有方法添加 version 参数
+  getProject: async (version: number): Promise<ProjectState> => {
+    const { data } = await client.get('/project', {
+      params: { version }
+    });
+    return data;
+  },
+  
+  initStyle: async (version: number, prompt: StylePrompt) => {
+    const { data } = await client.post('/style/init', prompt, {
+      params: { version }
+    });
+    return data;
+  },
+  
+  // ... 其他方法类似更新 ...
+};
+```
+
+#### Zustand Store 更新
+
+```typescript
+// frontend/src/store/appStore.ts
+
+interface AppState {
+  currentVersion: number | null;
+  
+  setVersion: (version: number) => void;
+  loadProject: (version: number) => Promise<void>;
+  
+  // 其他 action 自动使用 currentVersion
+  createSlide: () => Promise<void>;
+  // ...
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  currentVersion: null,
+  
+  setVersion: (version) => set({ currentVersion: version }),
+  
+  loadProject: async (version) => {
+    try {
+      const project = await api.getProject(version);
+      set({ 
+        currentVersion: version,
+        slides: project.slides,
+        styleReference: project.style_reference
+      });
+    } catch (err) {
+      // ...
+    }
+  },
+  
+  createSlide: async () => {
+    const { currentVersion } = get();
+    if (!currentVersion) return;
+    
+    const newSlide = await api.createSlide(currentVersion, {...});
+    // ...
+  }
+}));
+```
+
+#### 版本选择器组件
+
+```tsx
+// frontend/src/components/VersionSelector.tsx
+
+export function VersionSelector({ 
+  onSelectVersion 
+}: { 
+  onSelectVersion: (version: number) => void 
+}) {
+  const [versions, setVersions] = useState<VersionInfo[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  useEffect(() => {
+    api.listVersions().then(setVersions);
+  }, []);
+  
+  const handleCreateNew = async () => {
+    setIsCreating(true);
+    // 显示 StyleInitializer 模态框
+  };
+  
+  return (
+    <div className="version-selector">
+      <h1>选择项目</h1>
+      
+      <div className="versions-grid">
+        {versions.map(v => (
+          <div 
+            key={v.version} 
+            onClick={() => onSelectVersion(v.version)}
+            className="version-card"
+          >
+            <h3>项目 v{v.version}</h3>
+            <p>{v.slide_count} 张幻灯片</p>
+            <p>{v.created_at}</p>
+            {v.style_reference && (
+              <img src={v.style_reference} alt="Style" />
+            )}
+          </div>
+        ))}
+        
+        <button onClick={handleCreateNew}>
+          + 创建新项目
+        </button>
+      </div>
+      
+      {isCreating && (
+        <StyleInitializer 
+          onCreateVersion={...}
+          onCancel={...}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+#### App.tsx 重构
+
+```tsx
+// frontend/src/App.tsx
+
+export function App() {
+  const { currentVersion, setVersion, loadProject } = useAppStore();
+  
+  const handleSelectVersion = (version: number) => {
+    setVersion(version);
+    loadProject(version);
+  };
+  
+  if (!currentVersion) {
+    return <VersionSelector onSelectVersion={handleSelectVersion} />;
+  }
+  
+  return (
+    <div className="app">
+      {/* 主编辑界面 */}
+      <Sidebar />
+      <SlideViewer />
+    </div>
+  );
+}
+```
+
+### 6.5 候选图片交互优化
+
+#### 单击预览 vs 双击确认
+
+```tsx
+// frontend/src/components/ImageCandidatesPanel.tsx
+
+const handleClickCandidate = (candidate: ImageCandidate) => {
+  // 单击：预览（紫色边框）
+  setSelectedCandidateId(candidate.id);
+  onImagePreview(candidate.imagePath);
+  
+  // 临时更新左侧缩略图（不保存到 outline.yml）
+  const tempSlide = {
+    ...currentSlide,
+    image_path: candidate.imagePath
+  };
+  onSlideUpdated(tempSlide);
+};
+
+const handleDoubleClickCandidate = async (candidate: ImageCandidate) => {
+  // 双击：确认并保存（绿色边框 + ✓）
+  const updatedSlide = await api.updateSlide(
+    currentVersion, 
+    slideId, 
+    { image_path: candidate.imagePath }
+  );
+  
+  selectImageCandidate(slideId, candidate.id); // 标记为已选择
+  onSlideUpdated(updatedSlide); // 更新 store
+  onImagePreview(candidate.imagePath);
+};
+```
+
+#### 修复自动确认问题
+
+```typescript
+// frontend/src/store/appStore.ts
+
+addImageCandidate: (slideId, imagePath) => {
+  const candidateId = `${slideId}-${Date.now()}`;
+  const candidates = get().imageCandidates[slideId] || [];
+  
+  set({
+    imageCandidates: {
+      ...get().imageCandidates,
+      [slideId]: [
+        ...candidates.map(c => ({ ...c, isSelected: false })),
+        { 
+          id: candidateId, 
+          slideId, 
+          imagePath, 
+          isSelected: false  // 不自动确认
+        }
+      ]
+    }
+  });
+  
+  return candidateId;
+}
+```
+
+### 6.6 修复和改进
+
+#### CORS 配置更新
+
+```python
+# backend/app/core/config.py
+
+CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",  # Vite 备用端口
+    "http://127.0.0.1:5174",
+]
+```
+
+#### 缩略图实时更新
+
+添加回调链 `ImageCandidatesPanel` → `SlideViewer` → `App.tsx` → `appStore.updateSlideInState`：
+
+```tsx
+// 组件层级传递 onSlideUpdated 回调
+<SlideViewer 
+  onSlideUpdated={(slide) => updateSlideInState(slide)} 
+/>
+```
+
+### 6.7 测试策略
+
+#### 后端测试
+
+```bash
+# 测试版本管理 API
+curl http://localhost:8000/api/versions
+curl -X POST http://localhost:8000/api/versions/create \
+  -H "Content-Type: application/json" \
+  -d '{"description": "测试风格"}'
+
+# 测试版本隔离
+curl "http://localhost:8000/api/project?version=1"
+curl "http://localhost:8000/api/project?version=2"
+```
+
+#### 前端测试
+
+1. **版本选择器**: 显示所有版本卡片
+2. **创建新版本**: 输入提示词生成风格
+3. **版本切换**: 切换版本后数据正确加载
+4. **候选图片交互**:
+   - 生成：不自动标记为已选择 ✓
+   - 单击：预览 + 左侧缩略图更新 ✓
+   - 双击：确认 + 绿色边框 ✓
+
+### 6.8 技术债务
+
+#### 必需（v2.1）
+- 数据迁移脚本（将根目录 outline.yml 迁移到 assets/v1/）
+- 版本删除功能（带确认对话框）
+
+#### 可选（v2.2+）
+- 版本导出/导入
+- 项目重命名
+- 版本对比
+- 批量操作
+
+---
+
+## 7. 总结
+
+v2.0.0 通过引入**多版本项目管理**，实现了：
+- ✅ 完全隔离的项目版本
+- ✅ 直观的版本选择器 UI
+- ✅ 优化的候选图片交互体验
+- ✅ 实时的缩略图更新
+- ✅ 完善的错误处理
+
+**项目状态**: 生产就绪
+
+---
+
+**最后更新**: 2026-02-01

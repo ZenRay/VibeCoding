@@ -3,9 +3,11 @@ FastAPI 主应用
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import config
 from app.api.endpoints import router
 import logging
+from pathlib import Path
 
 # 配置日志
 logging.basicConfig(
@@ -33,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 挂载静态文件目录
+assets_dir = Path(__file__).parent.parent.parent / "assets"
+assets_dir.mkdir(exist_ok=True)
+app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
 # 注册路由
 app.include_router(router)

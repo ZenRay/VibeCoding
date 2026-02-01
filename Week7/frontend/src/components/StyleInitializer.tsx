@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
-import { X, Loader2, Sparkles } from 'lucide-react';
+import { X, Loader2, Sparkles, ArrowLeft } from 'lucide-react';
 import { api } from '../api/client';
 import type { StyleCandidate } from '../types';
 
 interface StyleInitializerProps {
   onStyleSelected: () => void;
+  onCreateVersion?: (stylePrompt: string) => Promise<void>;  // 新增：创建版本的回调
+  onCancel?: () => void;  // 新增：取消按钮回调
+  isCreating?: boolean;  // 新增：是否正在创建版本
+  version?: number;  // 新增：版本号（如果是为已有版本初始化风格）
 }
 
-export const StyleInitializer: React.FC<StyleInitializerProps> = ({ onStyleSelected }) => {
+export const StyleInitializer: React.FC<StyleInitializerProps> = ({ 
+  onStyleSelected, 
+  onCreateVersion,
+  onCancel,
+  isCreating = false,
+  version
+}) => {
   const [description, setDescription] = useState('');
   const [candidates, setCandidates] = useState<StyleCandidate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,10 +30,29 @@ export const StyleInitializer: React.FC<StyleInitializerProps> = ({ onStyleSelec
       return;
     }
 
+    // 如果是创建新版本流程，先创建版本
+    if (onCreateVersion && !version) {
+      try {
+        await onCreateVersion(description.trim());
+        // 版本创建后会自动切换，不需要继续生成风格
+        return;
+      } catch (err) {
+        setError('创建项目失败,请重试');
+        console.error(err);
+        return;
+      }
+    }
+
+    // 如果已有版本号，生成风格候选
+    if (!version) {
+      setError('版本号缺失');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const result = await api.initStyle({ description: description.trim() });
+      const result = await api.initStyle(version, { description: description.trim() });
       setCandidates(result);
     } catch (err) {
       setError('生成风格失败,请重试');
@@ -34,10 +63,18 @@ export const StyleInitializer: React.FC<StyleInitializerProps> = ({ onStyleSelec
   };
 
   const handleSelect = async (imagePath: string) => {
+    if (!version) {
+      setError('版本号缺失');
+      return;
+    }
+
     try {
       setSelecting(true);
       setError(null);
-      await api.selectStyle({ image_path: imagePath });
+      await api.selectStyle(version, { 
+        image_path: imagePath,
+        style_prompt: description
+      });
       onStyleSelected();
     } catch (err) {
       setError('保存风格失败,请重试');
@@ -69,6 +106,15 @@ export const StyleInitializer: React.FC<StyleInitializerProps> = ({ onStyleSelec
                 </p>
               </div>
             </div>
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                disabled={loading || selecting || isCreating}
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+            )}
           </div>
         </div>
 

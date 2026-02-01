@@ -16,7 +16,11 @@ class Slide(BaseModel):
 
 class ProjectState(BaseModel):
     """项目状态模型"""
+    version: Optional[int] = None  # 新增：版本号
+    created_at: Optional[str] = None  # 新增：创建时间
+    project_name: Optional[str] = None  # 新增：项目名称
     style_reference: Optional[str] = None
+    style_prompt: Optional[str] = None  # 风格 prompt
     slides: list[Slide] = []
 
 
@@ -51,6 +55,10 @@ class SelectedStyle(BaseModel):
         min_length=1,
         description="选中的风格图片路径"
     )
+    style_prompt: Optional[str] = Field(
+        None,
+        description="风格描述文本"
+    )
     
     @field_validator('image_path')
     @classmethod
@@ -69,4 +77,5 @@ class SlideCreate(BaseModel):
 
 class SlideUpdate(BaseModel):
     """更新幻灯片请求"""
-    text: str
+    text: Optional[str] = None
+    image_path: Optional[str] = None

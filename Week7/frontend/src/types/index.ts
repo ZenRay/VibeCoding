@@ -11,8 +11,21 @@ export interface Slide {
 }
 
 export interface ProjectState {
+  version: number | null;  // 新增：版本号
+  created_at: string | null;  // 新增：创建时间
+  project_name: string | null;  // 新增：项目名称
   style_reference: string | null;
+  style_prompt: string | null;
   slides: Slide[];
+}
+
+export interface VersionInfo {
+  version: number;
+  created_at: string | null;
+  project_name: string | null;
+  style_reference: string | null;
+  style_prompt: string | null;
+  slide_count: number;
 }
 
 export interface StylePrompt {
@@ -25,6 +38,7 @@ export interface StyleCandidate {
 
 export interface SelectedStyle {
   image_path: string;
+  style_prompt?: string;
 }
 
 export interface SlideCreate {
@@ -32,5 +46,6 @@ export interface SlideCreate {
 }
 
 export interface SlideUpdate {
-  text: string;
+  text?: string;
+  image_path?: string;
 }

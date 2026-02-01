@@ -1,149 +1,220 @@
-# AI Slide Generator (AI 幻灯片生成器)
+# AI Slide Generator
 
-基于 **Google Gemini AI** 的智能幻灯片生成应用。
+**版本**: v2.0.0 (多版本项目管理)  
+**日期**: 2026-02-01  
+**状态**: ✅ 生产就绪
 
-## 技术栈
-
-- **后端**: Python + FastAPI
-- **前端**: TypeScript + React + Vite + Tailwind CSS
-- **AI**: Google Gemini (`gemini-3-pro-image-preview`)
-
-## 项目结构
-
-```
-Week7/
-├── backend/         # Python FastAPI 后端
-│   ├── app/
-│   │   ├── api/      # API 端点
-│   │   ├── core/     # 核心逻辑 (生成器、配置)
-│   │   ├── data/     # 数据访问层 (YAML 存储)
-│   │   └── models/   # Pydantic 数据模型
-│   ├── .venv/        # Python 虚拟环境 (uv)
-│   └── requirements.txt
-├── frontend/        # React 前端
-│   ├── src/
-│   │   ├── api/      # API 客户端
-│   │   ├── components/  # UI 组件
-│   │   └── types/    # TypeScript 类型
-│   └── package.json
-├── assets/          # 生成的图片存储
-└── outline.yml      # 项目状态 (单一数据源)
-```
-
-## 快速开始
-
-### 1. 后端设置
-
-```bash
-cd Week7/backend
-
-# 创建虚拟环境 (使用 uv)
-uv venv .venv
-source .venv/bin/activate
-
-# 安装依赖
-uv pip install -r requirements.txt
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入 GEMINI_API_KEY
-
-# 启动开发服务器
-python run.py
-```
-
-后端将运行在 `http://localhost:8000`
-Swagger 文档: `http://localhost:8000/docs`
-
-### 2. 前端设置
-
-```bash
-cd Week7/frontend
-
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
-```
-
-前端将运行在 `http://localhost:5173`
-
-## API 端点
-
-- `GET /api/project` - 获取项目状态
-- `POST /api/style/init` - 生成风格候选图
-- `POST /api/style/select` - 保存选定风格
-- `POST /api/slides` - 创建新幻灯片
-- `PUT /api/slides/reorder` - 更新幻灯片顺序
-- `PUT /api/slides/{id}` - 更新幻灯片文本
-- `POST /api/slides/{id}/generate` - 重新生成图片
-- `DELETE /api/slides/{id}` - 删除幻灯片
-
-## 开发规则
-
-本项目使用 Cursor AI 规则文件来指导开发：
-- **后端规则**: `backend/.cursorrules` - Python/FastAPI 最佳实践
-- **前端规则**: `frontend/.cursorrules` - TypeScript/React 最佳实践
-
-详细说明请查看: [CURSORRULES.md](./CURSORRULES.md)
-
-## 开发状态
-
-**Phase 1 完成** ✅ (2026-02-01)
-- [x] 项目目录结构
-- [x] 后端 FastAPI 初始化
-- [x] 前端 React + Vite 初始化
-- [x] YAML 存储层
-- [x] Gemini AI 生成器封装 (Stub)
-- [x] API 端点定义 (8个)
-- [x] CORS 配置
-- [x] Cursor AI 开发规则
-
-**Phase 2 完成** ✅ (2026-02-01)
-- [x] StyleInitializer 组件 (风格初始化模态框)
-- [x] 风格 API 集成
-- [x] 2 张候选图生成和选择
-- [x] App.tsx 集成
-
-**Phase 3 完成** ✅ (2026-02-01)
-- [x] Sidebar 组件 (拖拽排序)
-- [x] SlideEditor 组件 (文本编辑 + 图片预览)
-- [x] 自动保存机制 (防抖 1 秒)
-- [x] Hash 检测逻辑 (content vs image)
-- [x] "重新生成图片" 按钮
-- [x] Toast 通知 (sonner)
-- [x] Zustand 状态管理
-
-**Phase 4 待实现** ⏳
-- [ ] Carousel 组件 (全屏播放)
-- [ ] 自动翻页
-- [ ] 键盘导航
-
-**下一步**: Phase 4 - 全屏播放 Carousel 组件
+基于 **Google Gemini AI** 的智能幻灯片生成应用，支持多版本项目管理。
 
 ---
 
-## 📚 详细文档
+## ✨ 核心特性
 
-- **快速参考**: `QUICK_REFERENCE.md` ⭐
-- **实施总结**: `IMPLEMENTATION_SUMMARY.md`
-- **项目结构**: `PROJECT_STRUCTURE.md`
-- **任务进度**: `TASKS_STATUS.md`
-- **交付清单**: `DELIVERY_CHECKLIST.md`
-- **前端指南**: `frontend/README.md`
+- 🎨 **AI 风格生成**：根据文字描述生成独特的视觉风格
+- 📊 **智能幻灯片生成**：自动将文本内容转换为带图片的幻灯片
+- 🗂️ **多版本项目管理**：支持创建和管理多个独立项目
+- 🖼️ **候选图片系统**：生成多个候选图片供用户选择
+- 🎯 **实时预览**：单击预览、双击确认的直观交互
+- 💾 **自动保存**：所有修改自动保存到本地文件
 
 ---
 
-## 🚀 快速启动
+## 🚀 快速开始
 
-使用一键启动脚本:
+### 一键启动
+
 ```bash
+cd Week7
 ./start-dev.sh
 ```
 
-或查看 `QUICK_REFERENCE.md` 获取详细指引。
+访问：http://localhost:5174
 
-## 许可证
+### 手动启动
 
-MIT
+```bash
+# 后端
+cd backend
+source .venv/bin/activate
+python run.py
+
+# 前端（新终端）
+cd frontend
+npm run dev
+```
+
+---
+
+## 📖 技术栈
+
+### 后端
+- Python 3.12+
+- FastAPI
+- Google Gemini AI / OpenRouter
+- Pillow (图片处理)
+- YAML (数据存储)
+
+### 前端
+- React 19 + TypeScript
+- Zustand (状态管理)
+- TailwindCSS
+- Vite
+- @dnd-kit (拖拽排序)
+
+---
+
+## ⚙️ 配置说明
+
+### 环境变量 (.env)
+
+```bash
+# AI 模式
+AI_MODE=real                 # stub (测试) 或 real (生产)
+
+# AI 提供商
+AI_PROVIDER=openrouter       # google 或 openrouter
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=google/gemini-3-pro-image-preview
+
+# 图片配置
+IMAGE_SIZE=1K                # 1K (快速), 2K (标准), 4K (高清)
+IMAGE_ASPECT_RATIO=16:9      # 16:9, 4:3, 1:1
+```
+
+### 推荐配置
+
+**开发测试**：
+```bash
+AI_MODE=stub                 # 瞬间生成，零成本
+IMAGE_SIZE=1K
+```
+
+**生产使用**：
+```bash
+AI_MODE=real
+AI_PROVIDER=openrouter       # 国内可直接访问
+OPENROUTER_MODEL=google/gemini-3-pro-image-preview  # 最佳文本渲染
+IMAGE_SIZE=1K                # 平衡质量和速度
+```
+
+---
+
+## 📁 项目结构
+
+```
+Week7/
+├── backend/              # FastAPI 后端
+│   ├── app/
+│   │   ├── api/         # API 端点
+│   │   ├── core/        # 核心逻辑
+│   │   ├── data/        # 数据存储
+│   │   └── models/      # 数据模型
+│   └── .env             # 环境配置
+├── frontend/            # React 前端
+│   └── src/
+│       ├── components/  # UI 组件
+│       ├── store/       # Zustand 状态
+│       └── api/         # API 客户端
+├── assets/              # 生成的资源
+│   ├── v1/              # 版本1
+│   │   ├── outline.yml  # 项目数据
+│   │   └── *.png        # 图片资源
+│   └── v2/              # 版本2
+└── instructions/        # 📚 详细文档
+    └── Week7/
+        ├── README.md                      # 项目概览
+        ├── VERSIONED_PROJECTS.md          # 多版本管理指南
+        ├── AI_CONFIGURATION.md            # AI 配置和优化
+        ├── FIXES_AND_IMPROVEMENTS.md      # 问题修复记录
+        └── TESTING_GUIDE.md               # 测试指南
+```
+
+---
+
+## 📚 文档导航
+
+### 📖 完整指南
+
+| 文档 | 说明 |
+|------|------|
+| [instructions/Week7/README.md](../instructions/Week7/README.md) | 项目概览和快速开始 |
+| [instructions/Week7/VERSIONED_PROJECTS.md](../instructions/Week7/VERSIONED_PROJECTS.md) | 多版本项目管理完整指南 |
+| [instructions/Week7/AI_CONFIGURATION.md](../instructions/Week7/AI_CONFIGURATION.md) | AI 提供商、模型、提示词配置 |
+| [instructions/Week7/FIXES_AND_IMPROVEMENTS.md](../instructions/Week7/FIXES_AND_IMPROVEMENTS.md) | 已知问题和解决方案 |
+| [instructions/Week7/TESTING_GUIDE.md](../instructions/Week7/TESTING_GUIDE.md) | 功能测试和验证指南 |
+
+### 🔧 开发参考
+
+- [CURSORRULES.md](./CURSORRULES.md) - AI 开发规则
+- [OPTIMIZATION_LOG.md](./OPTIMIZATION_LOG.md) - 优化历史记录
+
+---
+
+## 🎯 API 端点
+
+### 版本管理
+- `GET /api/versions` - 列出所有版本
+- `GET /api/versions/{version}` - 获取版本信息
+- `POST /api/versions/create` - 创建新版本
+
+### 项目操作（需要 version 参数）
+- `GET /api/project?version=X` - 获取项目状态
+- `POST /api/style/init?version=X` - 生成风格候选
+- `POST /api/style/select?version=X` - 保存选定风格
+- `POST /api/slides?version=X` - 创建新幻灯片
+- `PUT /api/slides/reorder?version=X` - 更新幻灯片顺序
+- `PUT /api/slides/{id}?version=X` - 更新幻灯片
+- `POST /api/slides/{id}/generate?version=X` - 重新生成图片
+- `DELETE /api/slides/{id}?version=X` - 删除幻灯片
+
+---
+
+## 🔧 开发工具
+
+### 脚本
+
+```bash
+./start-dev.sh        # 一键启动前后端
+./start-backend.sh    # 只启动后端
+./stop-backend.sh     # 停止后端
+./check-config.sh     # 检查配置
+./e2e-test.sh         # E2E 测试
+./test-openrouter.sh  # 测试 OpenRouter API
+./test-proxy.sh       # 测试代理配置
+```
+
+---
+
+## 🎉 版本历史
+
+### v2.0.0 (2026-02-01)
+- ✨ 多版本项目管理
+- ✨ 候选图片交互优化（单击预览、双击确认）
+- ✨ 缩略图实时更新
+- 🐛 修复自动确认问题
+- 🐛 修复 CORS 配置
+- 🐛 修复 SSL 连接错误
+
+### v1.0.0 (2026-01-30)
+- 🎉 初始发布
+- 风格生成和选择
+- 幻灯片创建和编辑
+- 拖拽排序
+- 演示播放
+
+---
+
+## 📝 许可证
+
+MIT License
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+**最后更新**: 2026-02-01  
+**维护者**: Ray

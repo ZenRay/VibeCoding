@@ -17,22 +17,29 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, Trash2, GripVertical, Play } from 'lucide-react';
+import { StyleManager } from './StyleManager';
 import type { Slide } from '../types';
 
 interface SidebarProps {
   slides: Slide[];
   currentSlideId: string | null;
+  currentStyle: string | null;
+  currentPrompt: string | null;
   onSelectSlide: (slideId: string) => void;
+  onDoubleClickSlide: (slideId: string) => void;  // 新增：双击事件
   onReorderSlides: (slideIds: string[]) => Promise<void>;
   onAddSlide: () => Promise<void>;
+  onAddSlideAt: (afterSlideId: string | null) => Promise<void>;
   onDeleteSlide: (slideId: string) => Promise<void>;
   onPlayPresentation: () => void;
+  onStyleUpdated: () => void;
 }
 
 interface SortableSlideItemProps {
   slide: Slide;
   isActive: boolean;
   onSelect: () => void;
+  onDoubleClick: () => void;  // 新增：双击事件
   onDelete: (e: React.MouseEvent) => void;
 }
 
@@ -40,6 +47,7 @@ const SortableSlideItem: React.FC<SortableSlideItemProps> = ({
   slide,
   isActive,
   onSelect,
+  onDoubleClick,
   onDelete,
 }) => {
   const {
@@ -70,55 +78,124 @@ const SortableSlideItem: React.FC<SortableSlideItemProps> = ({
         ${isDragging ? 'z-50 shadow-2xl' : ''}
       `}
     >
-      <div className="flex items-start gap-2 p-3" onClick={onSelect}>
-        {/* Drag Handle */}
+      <div 
+        className="relative" 
+        onClick={onSelect}
+        onDoubleClick={onDoubleClick}  // 添加双击事件
+      >
+        {/* Drag Handle - 浮动在左上角 */}
         <div
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing pt-1"
+          className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-sm rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing shadow-sm"
         >
-          <GripVertical className="w-5 h-5" />
+          <GripVertical className="w-4 h-4" />
         </div>
 
-        {/* Thumbnail */}
-        <div className="flex-shrink-0 w-20 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded overflow-hidden">
-          {slide.image_path ? (
-            <img
-              src={`http://localhost:8000/${slide.image_path}`}
-              alt="幻灯片缩略图"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-              无图片
-            </div>
-          )}
-        </div>
-
-        {/* Text Preview */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-800 line-clamp-2 leading-tight">
-            {slide.text || '空白幻灯片'}
-          </p>
-          {slide.content_hash !== slide.image_hash && slide.image_path && (
-            <span className="inline-block mt-1 text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
-              需重新生成
-            </span>
-          )}
-        </div>
-
-        {/* Delete Button */}
+        {/* Delete Button - 浮动在右上角 */}
         <button
           onClick={onDelete}
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded text-red-500 hover:text-red-700"
+          className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-700 shadow-sm"
           title="删除幻灯片"
         >
           <Trash2 className="w-4 h-4" />
         </button>
+
+        {/* Thumbnail - 16:9 比例，纯图片展示 */}
+        <div className="w-full aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
+          {slide.image_path ? (
+            <img
+              src={`http://localhost:8000/${slide.image_path}`}
+              alt={`幻灯片 ${slide.id.substring(0, 8)}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.classList.add('flex', 'items-center', 'justify-center');
+                  parent.innerHTML = `
+                    <div class="text-center text-gray-400">
+                      <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <p class="text-xs">图片加载失败</p>
+                    </div>
+                  `;
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+              <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-xs">尚未生成</p>
+            </div>
+          )}
+        </div>
+
+        {/* 状态指示器 - 浮动在底部 */}
+        {slide.content_hash !== slide.image_hash && slide.image_path && (
+          <div className="absolute bottom-2 left-2 right-2 flex justify-center">
+            <span className="inline-block text-xs text-orange-600 bg-orange-50/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
+              内容已更新
+            </span>
+          </div>
+        )}
       </div>
+    </div>
+  );
+};
+
+// 插入分隔线组件
+interface InsertDividerProps {
+  onClick: () => void;
+  position: 'top' | 'between';
+}
+
+const InsertDivider: React.FC<InsertDividerProps> = ({ onClick }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <div
+      className="relative group/divider h-3 flex items-center cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      role="button"
+      aria-label="在此处插入幻灯片"
+    >
+      {/* 横实线 */}
+      <div 
+        className={`
+          absolute inset-x-0 h-0.5 transition-all
+          ${isHovered || isFocused 
+            ? 'bg-purple-500 h-1' 
+            : 'bg-gray-300 opacity-0 group-hover/divider:opacity-100'
+          }
+        `}
+      />
+      
+      {/* Plus 按钮 */}
+      {(isHovered || isFocused) && (
+        <div className="absolute left-1/2 -translate-x-1/2 -top-3">
+          <div className="bg-purple-500 text-white rounded-full p-1 shadow-lg animate-in fade-in zoom-in duration-150">
+            <Plus className="w-3 h-3" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -126,11 +203,16 @@ const SortableSlideItem: React.FC<SortableSlideItemProps> = ({
 export const Sidebar: React.FC<SidebarProps> = ({
   slides,
   currentSlideId,
+  currentStyle,
+  currentPrompt,
   onSelectSlide,
+  onDoubleClickSlide,
   onReorderSlides,
   onAddSlide,
+  onAddSlideAt,
   onDeleteSlide,
   onPlayPresentation,
+  onStyleUpdated,
 }) => {
   const [isReordering, setIsReordering] = useState(false);
 
@@ -168,8 +250,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, slideId: string) => {
     e.stopPropagation();
-    if (confirm('确定要删除这张幻灯片吗?')) {
-      await onDeleteSlide(slideId);
+    await onDeleteSlide(slideId);
+  };
+
+  const handleInsertAt = async (afterSlideId: string | null) => {
+    try {
+      await onAddSlideAt(afterSlideId);
+    } catch (err) {
+      console.error('Insert slide failed:', err);
+      alert('插入幻灯片失败，请重试');
     }
   };
 
@@ -181,13 +270,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Action Buttons */}
         <div className="space-y-2">
-          <button
-            onClick={onAddSlide}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Plus className="w-5 h-5" />
-            添加幻灯片
-          </button>
+          {/* 新风格生成按钮 */}
+          <StyleManager
+            currentStyle={currentStyle}
+            currentPrompt={currentPrompt}
+            onStyleUpdated={onStyleUpdated}
+          />
 
           {slides.length > 0 && (
             <button
@@ -202,11 +290,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {slides.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-sm">暂无幻灯片</p>
-            <p className="text-xs mt-1">点击上方按钮添加</p>
+          <div className="text-center py-12">
+            <div className="text-gray-500 mb-6">
+              <p className="text-sm">暂无幻灯片</p>
+              <p className="text-xs mt-1">点击下方按钮添加第一张</p>
+            </div>
+            <button
+              onClick={onAddSlide}
+              className="mx-auto bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-lg"
+            >
+              <Plus className="w-5 h-5" />
+              添加第一张幻灯片
+            </button>
           </div>
         ) : (
           <DndContext
@@ -218,14 +315,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               items={slides.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
             >
+              {/* 顶部插入区 */}
+              <InsertDivider 
+                position="top"
+                onClick={() => handleInsertAt(null)} 
+              />
+              
               {slides.map((slide) => (
-                <SortableSlideItem
-                  key={slide.id}
-                  slide={slide}
-                  isActive={slide.id === currentSlideId}
-                  onSelect={() => onSelectSlide(slide.id)}
-                  onDelete={(e) => handleDelete(e, slide.id)}
-                />
+                <React.Fragment key={slide.id}>
+                  <SortableSlideItem
+                    slide={slide}
+                    isActive={slide.id === currentSlideId}
+                    onSelect={() => onSelectSlide(slide.id)}
+                    onDoubleClick={() => onDoubleClickSlide(slide.id)}
+                    onDelete={(e) => handleDelete(e, slide.id)}
+                  />
+                  
+                  {/* 每个 Slide 后面都有插入区（包括最后一个） */}
+                  <InsertDivider 
+                    position="between"
+                    onClick={() => handleInsertAt(slide.id)} 
+                  />
+                </React.Fragment>
               ))}
             </SortableContext>
           </DndContext>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, RefreshCw, ImageIcon, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
+import { useAppStore } from '../store/appStore';
 import type { Slide } from '../types';
 
 interface SlideEditorProps {
@@ -13,6 +14,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const currentVersion = useAppStore((state) => state.currentVersion);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -47,14 +49,14 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
   };
 
   const saveText = async (newText: string) => {
-    if (!slide || newText === slide.text) {
+    if (!slide || !currentVersion || newText === slide.text) {
       setSaveStatus('idle');
       return;
     }
 
     try {
       setIsSaving(true);
-      const updated = await api.updateSlide(slide.id, { text: newText });
+      const updated = await api.updateSlide(currentVersion, slide.id, { text: newText });
       onSlideUpdated(updated);
       setSaveStatus('saved');
       
@@ -84,11 +86,11 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
   };
 
   const handleRegenerate = async () => {
-    if (!slide) return;
+    if (!slide || !currentVersion) return;
 
     try {
       setIsGenerating(true);
-      const updated = await api.regenerateImage(slide.id);
+      const updated = await api.regenerateImage(currentVersion, slide.id);
       onSlideUpdated(updated);
     } catch (err) {
       console.error('重新生成失败:', err);
@@ -98,8 +100,13 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
     }
   };
 
-  // 检测是否需要重新生成
-  const needsRegeneration = slide && slide.content_hash !== slide.image_hash && slide.image_path;
+  // 检测是否需要生成图片
+  // 情况1: 从未生成过图片 (image_path 为 null)
+  // 情况2: 内容已修改 (content_hash !== image_hash)
+  const needsGeneration = slide && (
+    !slide.image_path || // 从未生成
+    slide.content_hash !== slide.image_hash // 内容已修改
+  );
 
   if (!slide) {
     return (
@@ -134,8 +141,8 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
           </div>
         </div>
 
-        {/* Regenerate Button */}
-        {needsRegeneration && (
+        {/* Regenerate Button - Only show when image exists and content changed */}
+        {slide.image_path && needsGeneration && text.trim() && (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg">
               <AlertCircle className="w-4 h-4" />
@@ -230,7 +237,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
                 />
                 
                 {/* Hash Mismatch Indicator */}
-                {needsRegeneration && (
+                {needsGeneration && slide.image_path && (
                   <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
                     需要更新
@@ -238,10 +245,23 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSlideUpdated 
                 )}
               </div>
             ) : (
-              <div className="text-center text-gray-400">
-                <ImageIcon className="w-20 h-20 mx-auto mb-4" />
-                <p className="text-lg font-medium">暂无图片</p>
-                <p className="text-sm mt-2">保存文本后将自动生成</p>
+              <div className="flex flex-col items-center gap-4 text-center">
+                <ImageIcon className="w-20 h-20 text-gray-300" />
+                <div>
+                  <p className="text-gray-600 font-medium text-lg mb-2">暂无图片</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {text.trim() ? '保存文本后点击"生成图片"按钮' : '请先输入幻灯片内容'}
+                  </p>
+                  {text.trim() && needsGeneration && (
+                    <button
+                      onClick={handleRegenerate}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors inline-flex items-center gap-2 shadow-md"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      生成图片
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

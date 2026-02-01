@@ -2,19 +2,24 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { useAppStore } from './store/appStore';
+import { VersionSelector } from './components/VersionSelector';
 import { StyleInitializer } from './components/StyleInitializer';
 import { Sidebar } from './components/Sidebar';
-import { SlideEditor } from './components/SlideEditor';
+import { SlideViewer } from './components/SlideViewer';
+import { SlideEditModal } from './components/SlideEditModal';
 import { Carousel } from './components/Carousel';
 import './index.css';
 
 function App() {
   const {
+    currentVersion,
     style_reference,
+    style_prompt,
     slides,
     loading,
     error,
     currentSlideId,
+    setVersion,
     loadProject,
     setCurrentSlide,
     createSlide,
@@ -24,10 +29,7 @@ function App() {
   } = useAppStore();
 
   const [showCarousel, setShowCarousel] = useState(false);
-
-  useEffect(() => {
-    loadProject();
-  }, [loadProject]);
+  const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
 
   // 显示错误提示
   useEffect(() => {
@@ -36,9 +38,16 @@ function App() {
     }
   }, [error]);
 
+  const handleSelectVersion = async (version: number) => {
+    setVersion(version);
+    await loadProject(version);
+  };
+
   const handleStyleSelected = async () => {
-    // 重新加载项目状态
-    await loadProject();
+    // 风格选择后重新加载项目
+    if (currentVersion) {
+      await loadProject(currentVersion);
+    }
   };
 
   const handleAddSlide = async () => {
@@ -47,6 +56,15 @@ function App() {
       toast.success('幻灯片已创建');
     } catch (err) {
       toast.error('创建失败,请重试');
+    }
+  };
+
+  const handleAddSlideAt = async (afterSlideId: string | null) => {
+    try {
+      await createSlide('新幻灯片\n\n点击编辑内容...', afterSlideId);
+      toast.success('幻灯片已插入');
+    } catch (err) {
+      toast.error('插入失败,请重试');
     }
   };
 
@@ -76,8 +94,37 @@ function App() {
     setShowCarousel(true);
   };
 
+  const handleStyleUpdated = async () => {
+    // 风格更新后重新加载项目
+    if (currentVersion) {
+      await loadProject(currentVersion);
+    }
+    toast.success('风格已更新');
+  };
+
+  const handleDoubleClickSlide = (slideId: string) => {
+    setEditingSlideId(slideId);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingSlideId(null);
+  };
+
+  // 如果没有选择版本，显示版本选择器
+  if (!currentVersion) {
+    return (
+      <>
+        <Toaster position="top-right" richColors />
+        <VersionSelector onSelectVersion={handleSelectVersion} />
+      </>
+    );
+  }
+
   // 获取当前选中的幻灯片
   const currentSlide = slides.find((s) => s.id === currentSlideId) || null;
+  
+  // 获取正在编辑的幻灯片
+  const editingSlide = slides.find((s) => s.id === editingSlideId) || null;
 
   // Loading state
   if (loading) {
@@ -98,7 +145,10 @@ function App() {
 
       {/* Style Initialization Modal */}
       {!style_reference && (
-        <StyleInitializer onStyleSelected={handleStyleSelected} />
+        <StyleInitializer 
+          onStyleSelected={handleStyleSelected}
+          version={currentVersion}
+        />
       )}
 
       {/* Main Content (only show after style is selected) */}
@@ -108,18 +158,33 @@ function App() {
           <Sidebar
             slides={slides}
             currentSlideId={currentSlideId}
+            currentStyle={style_reference}
+            currentPrompt={style_prompt}
             onSelectSlide={setCurrentSlide}
+            onDoubleClickSlide={handleDoubleClickSlide}
             onReorderSlides={handleReorderSlides}
             onAddSlide={handleAddSlide}
+            onAddSlideAt={handleAddSlideAt}
             onDeleteSlide={handleDeleteSlide}
             onPlayPresentation={handlePlayPresentation}
+            onStyleUpdated={handleStyleUpdated}
           />
 
-          {/* Editor */}
-          <SlideEditor
-            slide={currentSlide}
+          {/* Viewer - 居中显示幻灯片 */}
+          <SlideViewer 
+            slide={currentSlide} 
             onSlideUpdated={updateSlideInState}
           />
+          
+          {/* Edit Modal - 双击缩略图后显示 */}
+          {editingSlide && (
+            <SlideEditModal
+              slide={editingSlide}
+              isOpen={!!editingSlideId}
+              onClose={handleCloseEditModal}
+              onSlideUpdated={updateSlideInState}
+            />
+          )}
         </>
       )}
 

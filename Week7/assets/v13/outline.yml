@@ -1,0 +1,16 @@
+created_at: '2026-02-01 12:25:05'
+project_name: null
+slides:
+- content_hash: ad1f83c6c95022967072c1367731abb7
+  id: 5ff82352-48b1-48b5-a281-ba996789d437
+  image_hash: ad1f83c6c95022967072c1367731abb7
+  image_path: assets/v13/slide_ad1f83c6c95022967072c1367731abb7.png
+  text: New Slide Content
+- content_hash: c379c152862f2a34336191482e5b8e13
+  id: 8772ea7e-c8e0-427a-8ade-81f7aea1c389
+  image_hash: c379c152862f2a34336191482e5b8e13
+  image_path: assets/v13/slide_c379c152862f2a34336191482e5b8e13.png
+  text: New Slide Content康健好
+style_prompt: 现代简约风
+style_reference: assets/v13/style_candidate_2_1769919936.png
+version: 13

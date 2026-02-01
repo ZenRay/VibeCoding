@@ -120,6 +120,727 @@ CLAUDE
 **并行开发前后端代码**
 /speckit.implement 针对 phase2 和 phase3使用 两个不同 subagent 进行开发，分别完成前端和后端的开发。当前项目的状态可以参考@Week7/PHASE1_REPORT.md 
 
+
+使用浅黄色/红褐色的水彩画风格，走卡通路线,类似motherduck的风格 ,主要角色是一只黄色的可爱的鸭子
+
+**生成架构图ASCII**用于 生成架构图
+根据Week7项目代码分别生成如下asciichart:
+1.前端架构
+2.后端架构
+3.数据流图
+4.前端技术栈
+5.后端技术栈
+
+
+  1. 前端架构 (Frontend Architecture)                                           
+                          
+  ┌─────────────────────────────────────────────────────────────────────────┐   
+  │                       AI Slide Generator Frontend                       │   
+  │                      (React 19 + TypeScript + Vite)                     │   
+  └─────────────────────────────────────────────────────────────────────────┘   
+                                     │                                          
+                  ┌──────────────────┼──────────────────┐                       
+                  ▼                  ▼                  ▼                       
+          ┌───────────────┐  ┌──────────────┐  ┌──────────────┐                 
+          │   App.tsx     │  │  main.tsx    │  │  index.html  │                 
+          │ (Main Entry)  │  │  (Bootstrap) │  │  (HTML Root) │                 
+          └───────┬───────┘  └──────────────┘  └──────────────┘                 
+                  │       
+      ┌───────────┼────────────┬─────────────┬────────────┐                     
+      ▼           ▼            ▼             ▼            ▼                     
+  ┌─────────┐ ┌─────────┐ ┌───────────┐ ┌─────────┐ ┌────────────┐              
+  │Components│ │ Stores  │ │  Services │ │  Hooks  │ │   Utils    │             
+  │  (UI)   │ │ (State) │ │   (API)   │ │ (Logic) │ │ (Helpers)  │              
+  └─────────┘ └─────────┘ └───────────┘ └─────────┘ └────────────┘              
+      │           │            │             │            │                     
+      │           │            │             │            │                     
+  ┌───┴───────────┴────────────┴─────────────┴────────────┴────┐                
+  │                      Component Layer                         │              
+  ├──────────────────────────────────────────────────────────────┤              
+  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │                
+  │  │ StyleInit    │  │   Sidebar    │  │ SlideEditor  │      │                
+  │  │ (Modal)      │  │  (LeftPanel) │  │ (MainPanel)  │      │                
+  │  └──────────────┘  └──────────────┘  └──────────────┘      │                
+  │                                                               │             
+  │  ┌──────────────────────────────────────────────────────┐   │               
+  │  │              Carousel (Fullscreen Player)            │   │               
+  │  └──────────────────────────────────────────────────────┘   │               
+  └──────────────────────────────────────────────────────────────┘              
+                                 │                                              
+  ┌──────────────────────────────┼──────────────────────────────┐               
+  │                     State Management (Zustand)               │              
+  ├──────────────────────────────────────────────────────────────┤              
+  │  ┌────────────────────────────────────────────────────────┐ │               
+  │  │              appStore (Global State)                   │ │               
+  │  ├────────────────────────────────────────────────────────┤ │               
+  │  │ • style_reference      │ • slides[]                    │ │               
+  │  │ • loading/error        │ • currentSlideId              │ │               
+  │  ├────────────────────────┴───────────────────────────────┤ │               
+  │  │ Actions:                                                │ │              
+  │  │ - loadProject()        - selectStyle()                 │ │               
+  │  │ - createSlide()        - updateSlide()                 │ │               
+  │  │ - deleteSlide()        - reorderSlides()               │ │               
+  │  │ - regenerateSlideImage()                                │ │              
+  │  └────────────────────────────────────────────────────────┘ │               
+  └──────────────────────────────────────────────────────────────┘              
+                                 │                                              
+                                 ▼                                              
+                      ┌─────────────────────┐                                   
+                      │   API Client Layer  │                                   
+                      ├─────────────────────┤                                   
+                      │ • axios instance    │                                   
+                      │ • base URL config   │                                   
+                      │ • error interceptor │                                   
+                      └──────────┬──────────┘                                   
+                                 │                                              
+                                 ▼                                              
+                      (HTTP/REST to Backend)                                    
+                          
+  2. 后端架构 (Backend Architecture)                                            
+                          
+  ┌─────────────────────────────────────────────────────────────────────────┐   
+  │                   AI Slide Generator Backend API                        │   
+  │                    (FastAPI + Python 3.13 + Uvicorn)                    │   
+  └─────────────────────────────────────────────────────────────────────────┘   
+                                     │                                          
+                      ┌──────────────┴──────────────┐                           
+                      ▼                             ▼                           
+              ┌──────────────┐              ┌──────────────┐                    
+              │   app/       │              │  Static      │                    
+              │   main.py    │◄─────────────┤  Assets      │                    
+              │  (FastAPI)   │  mount /assets│  (Images)    │                   
+              └──────┬───────┘              └──────────────┘                    
+                     │    
+         ┌───────────┼───────────┬──────────────┬────────────┐                  
+         ▼           ▼           ▼              ▼            ▼                  
+     ┌───────┐  ┌────────┐  ┌────────┐   ┌─────────┐  ┌──────────┐              
+     │  API  │  │  Core  │  │ Models │   │  Data   │  │  Misc    │              
+     │ Layer │  │ Logic  │  │(Schemas)│   │ (YAML)  │  │ (Utils)  │             
+     └───┬───┘  └───┬────┘  └───┬────┘   └────┬────┘  └──────────┘              
+         │          │            │              │                               
+  ┌──────┴──────────┴────────────┴──────────────┴──────────────────┐            
+  │                         API Endpoints (endpoints.py)            │           
+  ├─────────────────────────────────────────────────────────────────┤           
+  │ GET  /api/project              → Get complete project state     │           
+  │ POST /api/style/init           → Generate style candidates      │           
+  │ POST /api/style/select         → Save selected style            │           
+  │ POST /api/slides               → Create new slide               │           
+  │ PUT  /api/slides/{id}          → Update slide text              │           
+  │ POST /api/slides/{id}/generate → Regenerate slide image         │           
+  │ PUT  /api/slides/reorder       → Update slide order             │           
+  │ DELETE /api/slides/{id}        → Delete slide                   │           
+  │ POST /api/test/reset           → Reset project (test only)      │           
+  └─────────────────────────────────────────────────────────────────┘           
+                     │                              │                           
+           ┌─────────┴─────────┐          ┌────────┴────────┐                   
+           ▼                   ▼          ▼                 ▼                   
+  ┌─────────────────┐  ┌─────────────────────────┐  ┌──────────────┐            
+  │  YAMLStore      │  │  GeminiGenerator        │  │   Config     │            
+  │  (Data Layer)   │  │  (AI Image Generation)  │  │ (Settings)   │            
+  ├─────────────────┤  ├─────────────────────────┤  ├──────────────┤            
+  │• get_state()    │  │• generate_style_        │  │• GEMINI_KEY  │            
+  │• set_style()    │  │  candidates()           │  │• AI_MODE     │            
+  │• add_slide()    │  │• generate_slide_image() │  │• AI_PROVIDER │            
+  │• update_slide() │  │                         │  │• CORS config │            
+  │• delete_slide() │  │ Supports:               │  └──────────────┘            
+  │• reorder()      │  │ - Google Gemini API     │                              
+  │• reset()        │  │ - OpenRouter Proxy      │                              
+  └────────┬────────┘  │ - STUB mode (testing)   │                              
+           │           └──────────┬──────────────┘                              
+           ▼                      ▼                                             
+  ┌──────────────────┐   ┌───────────────────────┐                              
+  │  outline.yml     │   │  External AI Services │                              
+  │  (Persistence)   │   ├───────────────────────┤                              
+  ├──────────────────┤   │ • Google Gemini API   │                              
+  │style_reference:  │   │   (gemini-2.5-flash)  │                              
+  │  assets/v1/...   │   │                       │                              
+  │slides:           │   │ • OpenRouter          │                              
+  │  - id: uuid      │   │   (proxy to Gemini)   │                              
+  │    text: "..."   │   └───────────────────────┘                              
+  │    image_path: ..│    
+  │    order: 0      │   ┌───────────────────────┐                              
+  └──────────────────┘   │  Image Assets         │                              
+                         ├───────────────────────┤                              
+                         │  assets/              │                              
+                         │    v1/                │                              
+                         │      style_*.png      │                              
+                         │      slide_*.png      │                              
+                         │    v2/                │                              
+                         │      ...              │                              
+                         └───────────────────────┘                              
+                          
+  3. 数据流图 (Data Flow Diagram)                                               
+                          
+  ┌─────────────────────────────────────────────────────────────────────────┐   
+  │                           User Interaction Flow                         │   
+  └─────────────────────────────────────────────────────────────────────────┘   
+                          
+  ═══════════════════════════ Flow 1: Style Initialization ════════════════════ 
+                          
+    [User]                  [Frontend]               [Backend]        [AI API]  
+      │                         │                        │               │      
+      │ 1. Open app             │                        │               │      
+      ├────────────────────────>│                        │               │      
+      │                         │ GET /api/project       │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │                        │ Read YAML     │      
+      │                         │<───────────────────────┤               │      
+      │                         │ {style: null,          │               │      
+      │                         │  slides: []}           │               │      
+      │                         │                        │               │      
+      │ 2. Show modal           │                        │               │      
+      │ "Enter style prompt"    │                        │               │      
+      │<────────────────────────┤                        │               │      
+      │                         │                        │               │      
+      │ 3. Input: "科技风"       │                        │               │     
+      ├────────────────────────>│                        │               │      
+      │                         │ POST /api/style/init   │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │ {description: "科技风"} │               │     
+      │                         │                        │ Generate 2×   │      
+      │                         │                        ├──────────────>│      
+      │                         │                        │"Generate tech │      
+      │                         │                        │ style image..." │    
+      │                         │                        │<──────────────┤      
+      │                         │                        │ [image1.png]  │      
+      │                         │                        │<──────────────┤      
+      │                         │                        │ [image2.png]  │      
+      │                         │<───────────────────────┤               │      
+      │                         │ [{path: "assets/v1/   │               │       
+      │                         │   style_1.png"}, ...]  │               │      
+      │ 4. Show 2 candidates    │                        │               │      
+      │<────────────────────────┤                        │               │      
+      │                         │                        │               │      
+      │ 5. Select candidate #2  │                        │               │      
+      ├────────────────────────>│                        │               │      
+      │                         │ POST /api/style/select │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │ {image_path: "..."}    │               │      
+      │                         │                        │ Save to YAML  │      
+      │                         │<───────────────────────┤               │      
+      │                         │ {style_reference: "...",│               │     
+      │                         │  slides: []}           │               │      
+      │ 6. Close modal,         │                        │               │      
+      │    show main UI         │                        │               │      
+      │<────────────────────────┤                        │               │      
+                          
+  ═══════════════════════════ Flow 2: Slide Creation ══════════════════════════ 
+                          
+    [User]                  [Frontend]               [Backend]        [AI API]  
+      │                         │                        │               │      
+      │ 1. Click "Add Slide"    │                        │               │      
+      ├────────────────────────>│                        │               │      
+      │                         │ POST /api/slides       │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │ {text: "新幻灯片"}      │               │     
+      │                         │                        │ Add to YAML   │      
+      │                         │<───────────────────────┤               │      
+      │                         │ {id: "uuid",           │               │      
+      │                         │  text: "新幻灯片",      │               │     
+      │                         │  image_path: null}     │               │      
+      │                         │                        │               │      
+      │ 2. Slide appears        │ Update Zustand store   │               │      
+      │<────────────────────────┤                        │               │      
+      │                         │                        │               │      
+      │ 3. Edit text            │                        │               │      
+      ├────────────────────────>│                        │               │      
+      │                         │ PUT /api/slides/{id}   │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │ {text: "AI的未来"}      │               │     
+      │                         │                        │ Update YAML   │      
+      │                         │<───────────────────────┤               │      
+      │                         │ {id, text: "AI的未来",  │               │     
+      │                         │  image_path: null}     │               │      
+      │                         │                        │               │      
+      │ 4. Click "Generate"     │                        │               │      
+      ├────────────────────────>│                        │               │      
+      │                         │ POST /api/slides/{id}/  │               │     
+      │                         │      generate          │               │      
+      │                         ├───────────────────────>│               │      
+      │                         │                        │ Generate image│      
+      │                         │                        ├──────────────>│      
+      │                         │                        │"Create slide  │      
+      │                         │                        │ for 'AI的未来'│      
+      │                         │                        │ using style...│      
+      │                         │                        │<──────────────┤      
+      │                         │                        │ [slide.png]   │      
+      │                         │                        │ Save to YAML  │      
+      │                         │<───────────────────────┤               │      
+      │                         │ {id, text: "AI的未来",  │               │     
+      │                         │  image_path: "assets/  │               │      
+      │                         │   v1/slide_abc.png"}   │               │      
+      │ 5. Show generated image │                        │               │      
+      │<────────────────────────┤                        │               │      
+                          
+  ═══════════════════════════ Flow 3: Drag & Drop Reorder ═════════════════════ 
+                          
+    [User]                  [Frontend]               [Backend]                  
+      │                         │                        │                      
+      │ 1. Drag slide #3        │                        │                      
+      │    to position #1       │                        │                      
+      ├────────────────────────>│                        │                      
+      │                         │ onDrop event           │                      
+      │                         │ (dnd-kit)              │                      
+      │                         │ Reorder locally        │                      
+      │                         │ [s2, s1, s3] -> [s3,   │                      
+      │                         │  s2, s1]               │                      
+      │                         │                        │                      
+      │                         │ PUT /api/slides/reorder│                      
+      │                         ├───────────────────────>│                      
+      │                         │ ["id3", "id2", "id1"]  │                      
+      │                         │                        │ Update order in      
+      │                         │                        │ YAML                 
+      │                         │<───────────────────────┤                      
+      │                         │ {slides: [...]}        │                      
+      │ 2. UI updated           │                        │                      
+      │<────────────────────────┤                        │                      
+                          
+  ═══════════════════════════ Flow 4: Fullscreen Playback ═════════════════════ 
+                          
+    [User]                  [Frontend]                                          
+      │                         │                                               
+      │ 1. Click "Play"         │                                               
+      ├────────────────────────>│                                               
+      │                         │ Open <Carousel>                               
+      │ 2. Fullscreen view      │ component                                     
+      │<────────────────────────┤                                               
+      │                         │ Load slides from                              
+      │                         │ Zustand store                                 
+      │ 3. Arrow keys ←/→       │ (No backend call)                             
+      ├────────────────────────>│                                               
+      │                         │ Navigate slides                               
+      │ 4. Press ESC            │                                               
+      ├────────────────────────>│                                               
+      │                         │ Close Carousel                                
+      │ 5. Back to editor       │                                               
+      │<────────────────────────┤                                               
+                          
+  4. 前端技术栈 (Frontend Tech Stack)                                           
+                          
+  ┌─────────────────────────────────────────────────────────────────────────┐   
+  │                        Frontend Technology Stack                        │   
+  └─────────────────────────────────────────────────────────────────────────┘   
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                         Core Framework                                ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                     React 19.0.0                            │     ║      
+  ║  │  • Function components with hooks                          │     ║       
+  ║  │  • Concurrent rendering                                     │     ║      
+  ║  │  • Suspense & lazy loading                                  │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                  TypeScript 5.6.0                           │     ║      
+  ║  │  • Strict type checking                                     │     ║      
+  ║  │  • Type-safe API clients                                    │     ║      
+  ║  │  • Interface definitions (.d.ts)                            │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                       Build & Development                             ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                      Vite 6.0.0                             │     ║      
+  ║  │  • Lightning-fast HMR                                       │     ║      
+  ║  │  • ES modules for instant server start                     │     ║       
+  ║  │  • Optimized production builds                              │     ║      
+  ║  │  • Plugin system (@vitejs/plugin-react)                     │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                      State Management                                 ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                    Zustand 5.0.2                            │     ║      
+  ║  │  • Minimal boilerplate                                      │     ║      
+  ║  │  • React hooks integration                                  │     ║      
+  ║  │  • Devtools support                                         │     ║      
+  ║  │  • Persist middleware (localStorage)                        │     ║      
+  ║  │                                                              │     ║     
+  ║  │  appStore:                                                   │     ║     
+  ║  │    - Project state (style_reference, slides[])              │     ║      
+  ║  │    - UI state (loading, error, currentSlideId)              │     ║      
+  ║  │    - Actions (CRUD operations)                              │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                           Styling                                     ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                 TailwindCSS 3.4.17                          │     ║      
+  ║  │  • Utility-first CSS framework                              │     ║      
+  ║  │  • JIT compiler for instant builds                          │     ║      
+  ║  │  • Custom color palette (primary/secondary)                 │     ║      
+  ║  │  • Responsive design utilities                              │     ║      
+  ║  │  • Custom animations (slide-in, fade-in)                    │     ║      
+  ║  │                                                              │     ║     
+  ║  │  + PostCSS 8.4.0                                            │     ║      
+  ║  │  + Autoprefixer 10.4.0                                      │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                 tailwind-merge 2.5.0                        │     ║      
+  ║  │  • Merge Tailwind classes intelligently                     │     ║      
+  ║  │  • Resolve class conflicts (e.g., p-4 + p-2 → p-2)          │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                       HTTP & API Client                               ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                     Axios 1.7.0                             │     ║      
+  ║  │  • Promise-based HTTP client                                │     ║      
+  ║  │  • Request/response interceptors                            │     ║      
+  ║  │  • Automatic JSON transformation                            │     ║      
+  ║  │  • Error handling middleware                                │     ║      
+  ║  │                                                              │     ║     
+  ║  │  API client wrapper:                                         │     ║     
+  ║  │    - Base URL: http://localhost:8000                        │     ║      
+  ║  │    - Error interceptor (global error handling)              │     ║      
+  ║  │    - Type-safe methods (get, post, put, delete)             │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                     Drag & Drop System                                ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                   @dnd-kit/core 6.3.0                       │     ║      
+  ║  │  • Performant drag and drop toolkit                         │     ║      
+  ║  │  • Keyboard accessible                                       │     ║     
+  ║  │  • Touch screen support                                      │     ║     
+  ║  │                                                              │     ║     
+  ║  │  + @dnd-kit/sortable 9.0.0                                  │     ║      
+  ║  │    - Sortable list components                               │     ║      
+  ║  │    - Auto-scrolling                                          │     ║     
+  ║  │    - Animation helpers                                       │     ║     
+  ║  │                                                              │     ║     
+  ║  │  + @dnd-kit/utilities 3.2.2                                 │     ║      
+  ║  │    - CSS transform utilities                                │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Used for: Slide reordering in Sidebar                      │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                          UI Components                                ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                 lucide-react 0.469.0                        │     ║      
+  ║  │  • Beautiful, consistent icons                              │     ║      
+  ║  │  • Tree-shakeable (import only what you need)               │     ║      
+  ║  │  • Components: Play, Plus, Trash2, Loader2, etc.            │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                    sonner 1.7.1                             │     ║      
+  ║  │  • Toast notification library                               │     ║      
+  ║  │  • Beautiful animations                                      │     ║     
+  ║  │  • Rich colors (success/error/warning)                      │     ║      
+  ║  │  • Auto-dismiss with timeout                                │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Used for: User feedback (slide created, saved, etc.)       │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                      clsx 2.1.0                             │     ║      
+  ║  │  • Utility for conditional class names                      │     ║      
+  ║  │  • Combine with tailwind-merge for dynamic styling          │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                        Development Tools                              ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  • @types/react, @types/react-dom, @types/node                       ║      
+  ║    - Type definitions for TypeScript                                  ║     
+  ║  • @vitejs/plugin-react                                               ║     
+  ║    - Vite plugin for React Fast Refresh                               ║     
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ┌───────────────────────────────────────────────────────────────────────┐     
+  │                       Project Structure Summary                       │     
+  ├───────────────────────────────────────────────────────────────────────┤     
+  │  src/                                                                 │     
+  │    ├── components/     (UI: StyleInitializer, Sidebar, SlideEditor,  │      
+  │    │                    Carousel)                                     │     
+  │    ├── store/          (Zustand: appStore.ts)                        │      
+  │    ├── api/            (Axios client: client.ts)                     │      
+  │    ├── types/          (TypeScript interfaces)                       │      
+  │    ├── lib/            (Utilities: dnd-kit helpers, tailwind merge)  │      
+  │    ├── App.tsx         (Main component)                              │      
+  │    └── main.tsx        (Entry point)                                 │      
+  │                                                                       │     
+  │  Build Output: dist/                                                  │     
+  │  Dev Server: http://localhost:5173                                    │     
+  └───────────────────────────────────────────────────────────────────────┘     
+                          
+  5. 后端技术栈 (Backend Tech Stack)                                            
+                          
+  ┌─────────────────────────────────────────────────────────────────────────┐   
+  │                        Backend Technology Stack                         │   
+  └─────────────────────────────────────────────────────────────────────────┘   
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                       Core Framework                                  ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                   Python 3.13                               │     ║      
+  ║  │  • Latest stable Python release                             │     ║      
+  ║  │  • Type hints support (typing module)                       │     ║      
+  ║  │  • Async/await native support                               │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                  FastAPI >= 0.115.0                         │     ║      
+  ║  │  • Modern async web framework                               │     ║      
+  ║  │  • Auto-generated OpenAPI docs (/docs)                      │     ║      
+  ║  │  • Pydantic integration for validation                      │     ║      
+  ║  │  • Dependency injection system                              │     ║      
+  ║  │  • CORS middleware for frontend access                      │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Router: /api (prefix)                                       │     ║     
+  ║  │  Endpoints: 9 total                                          │     ║     
+  ║  │    - Project: GET /api/project                              │     ║      
+  ║  │    - Style: POST /api/style/init, /api/style/select         │     ║      
+  ║  │    - Slides: CRUD operations                                │     ║      
+  ║  │    - Test: POST /api/test/reset                             │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ║                                                                       ║     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │            Uvicorn[standard] >= 0.32.0                      │     ║      
+  ║  │  • Lightning-fast ASGI server                               │     ║      
+  ║  │  • HTTP/1.1 and HTTP/2 support                              │     ║      
+  ║  │  • WebSocket support                                         │     ║     
+  ║  │  • Auto-reload in dev mode                                   │     ║     
+  ║  │  • Production-ready performance                              │     ║     
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                     Data Validation & Schemas                         ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                 Pydantic >= 2.10.0                          │     ║      
+  ║  │  • Data validation using Python type hints                  │     ║      
+  ║  │  • JSON schema generation                                   │     ║      
+  ║  │  • Automatic request/response validation                    │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Models defined (app/models/schemas.py):                    │     ║      
+  ║  │    - ProjectState: Complete project data                    │     ║      
+  ║  │    - StylePrompt: User style description input              │     ║      
+  ║  │    - StyleCandidate: Generated style image path             │     ║      
+  ║  │    - SelectedStyle: User's chosen style                     │     ║      
+  ║  │    - SlideCreate: New slide creation payload                │     ║      
+  ║  │    - SlideUpdate: Slide text update payload                 │     ║      
+  ║  │    - Slide: Complete slide object                           │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                        Storage Layer                                  ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                   PyYAML >= 6.0.0                           │     ║      
+  ║  │  • YAML file parsing and generation                         │     ║      
+  ║  │  • Human-readable data persistence                          │     ║      
+  ║  │                                                              │     ║     
+  ║  │  YAMLStore (app/data/yaml_store.py):                        │     ║      
+  ║  │    - File: outline.yml (project root)                       │     ║      
+  ║  │    - Schema:                                                 │     ║     
+  ║  │        style_reference: string                              │     ║      
+  ║  │        slides:                                               │     ║     
+  ║  │          - id: uuid                                          │     ║     
+  ║  │            text: string                                      │     ║     
+  ║  │            image_path: string | null                         │     ║     
+  ║  │            order: int                                        │     ║     
+  ║  │                                                              │     ║     
+  ║  │    Methods:                                                  │     ║     
+  ║  │      • get_project_state() → dict                           │     ║      
+  ║  │      • set_style_reference(path: str)                       │     ║      
+  ║  │      • add_slide(id, text) → dict                           │     ║      
+  ║  │      • update_slide(id, **kwargs) → dict                    │     ║      
+  ║  │      • delete_slide(id) → bool                              │     ║      
+  ║  │      • reorder_slides(slide_ids: list)                      │     ║      
+  ║  │      • reset() → None                                        │     ║     
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                     AI Image Generation                               ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │            google-generativeai >= 0.8.0                     │     ║      
+  ║  │  • Official Google Gemini AI SDK                            │     ║      
+  ║  │  • Text-to-image generation (Gemini 2.5 Flash Image)        │     ║      
+  ║  │  • Style-conditioned image generation                       │     ║      
+  ║  │  • Support for image references                             │     ║      
+  ║  │                                                              │     ║     
+  ║  │  GeminiGenerator (app/core/generator.py):                   │     ║      
+  ║  │    ┌───────────────────────────────────────────────┐        │     ║      
+  ║  │    │ Multi-Provider Support:                       │        │     ║      
+  ║  │    │                                                │        │     ║     
+  ║  │    │ 1. Google Gemini API (Direct)                 │        │     ║      
+  ║  │    │    - Model: gemini-2.5-flash-image            │        │     ║      
+  ║  │    │    - Requires: GEMINI_API_KEY                 │        │     ║      
+  ║  │    │                                                │        │     ║     
+  ║  │    │ 2. OpenRouter (Proxy)                         │        │     ║      
+  ║  │    │    - Model: google/gemini-2.5-flash-image     │        │     ║      
+  ║  │    │    - Requires: OPENROUTER_API_KEY             │        │     ║      
+  ║  │    │    - Uses httpx for HTTP client               │        │     ║      
+  ║  │    │                                                │        │     ║     
+  ║  │    │ 3. STUB Mode (Testing)                        │        │     ║      
+  ║  │    │    - Generates placeholder images             │        │     ║      
+  ║  │    │    - No API calls                             │        │     ║      
+  ║  │    │    - Uses PIL (Pillow) for mock images        │        │     ║      
+  ║  │    └───────────────────────────────────────────────┘        │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Methods:                                                    │     ║     
+  ║  │    • generate_style_candidates(prompt) → list[str]          │     ║      
+  ║  │      - Generates 2 style reference images                   │     ║      
+  ║  │      - Returns asset paths: assets/vX/style_*.png           │     ║      
+  ║  │                                                              │     ║     
+  ║  │    • generate_slide_image(text, style_ref) → str            │     ║      
+  ║  │      - Generates slide image with style reference           │     ║      
+  ║  │      - Intelligent prompt engineering:                      │     ║      
+  ║  │        * Parses user intent (title, list, Q&A, etc.)        │     ║      
+  ║  │        * Converts design instructions to visuals            │     ║      
+  ║  │        * Handles mermaid diagrams, code blocks              │     ║      
+  ║  │        * Maintains style consistency                        │     ║      
+  ║  │      - Returns: assets/vX/slide_*.png                       │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Asset Versioning:                                           │     ║     
+  ║  │    • Auto-detects version from outline.yml                  │     ║      
+  ║  │    • Creates assets/vN/ directories                         │     ║      
+  ║  │    • Prevents mixing old/new styles                         │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                      Image Processing                                 ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                   Pillow >= 10.0.0                          │     ║      
+  ║  │  • Python Imaging Library (PIL fork)                        │     ║      
+  ║  │  • Image format support (PNG, JPEG, etc.)                   │     ║      
+  ║  │  • Image manipulation utilities                             │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Used for:                                                   │     ║     
+  ║  │    - STUB mode placeholder generation                       │     ║      
+  ║  │    - Image file I/O operations                              │     ║      
+  ║  │    - Converting AI responses to PNG format                  │     ║      
+  ║  │    - Base64 encoding/decoding (OpenRouter)                  │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                      Configuration & Env                              ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │              python-dotenv >= 1.0.0                         │     ║      
+  ║  │  • Load environment variables from .env file                │     ║      
+  ║  │  • Separate dev/prod configurations                         │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Config (app/core/config.py):                               │     ║      
+  ║  │    Environment Variables:                                    │     ║     
+  ║  │      • GEMINI_API_KEY       - Google Gemini API key         │     ║      
+  ║  │      • GEMINI_MODEL         - Model name (default: flash)   │     ║      
+  ║  │      • AI_MODE              - "real" or "stub"              │     ║      
+  ║  │      • AI_PROVIDER          - "google" or "openrouter"      │     ║      
+  ║  │      • OPENROUTER_API_KEY   - OpenRouter API key            │     ║      
+  ║  │      • OPENROUTER_MODEL     - OpenRouter model name         │     ║      
+  ║  │      • HOST                 - Server host (0.0.0.0)         │     ║      
+  ║  │      • PORT                 - Server port (8000)            │     ║      
+  ║  │                                                              │     ║     
+  ║  │    Features:                                                 │     ║     
+  ║  │      • Config validation on startup                         │     ║      
+  ║  │      • CORS origins whitelist                               │     ║      
+  ║  │      • Provider-specific validation                         │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                          Logging                                      ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ┌─────────────────────────────────────────────────────────────┐     ║      
+  ║  │                Python logging module                        │     ║      
+  ║  │  • Built-in logging (no external deps)                      │     ║      
+  ║  │  • Configured in app/main.py                                │     ║      
+  ║  │                                                              │     ║     
+  ║  │  Configuration:                                              │     ║     
+  ║  │    - Level: INFO                                             │     ║     
+  ║  │    - Handlers:                                               │     ║     
+  ║  │      * StreamHandler (console output)                       │     ║      
+  ║  │      * FileHandler (api.log file)                           │     ║      
+  ║  │    - Format: timestamp - name - level - message             │     ║      
+  ║  │    - Encoding: UTF-8                                         │     ║     
+  ║  │                                                              │     ║     
+  ║  │  Used in:                                                    │     ║     
+  ║  │    - API endpoints (request/response logging)               │     ║      
+  ║  │    - GeminiGenerator (AI API calls)                         │     ║      
+  ║  │    - YAMLStore (data operations)                            │     ║      
+  ║  └─────────────────────────────────────────────────────────────┘     ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                          
+  ┌───────────────────────────────────────────────────────────────────────┐     
+  │                       Project Architecture                            │     
+  ├───────────────────────────────────────────────────────────────────────┤     
+  │  backend/                                                             │     
+  │    ├── app/                                                           │     
+  │    │   ├── main.py          (FastAPI app, CORS, static files)        │      
+  │    │   ├── api/             (endpoints.py - 9 REST endpoints)        │      
+  │    │   ├── core/            (config.py, generator.py)                │      
+  │    │   ├── models/          (Pydantic schemas)                       │      
+  │    │   └── data/            (yaml_store.py - YAML I/O)               │      
+  │    ├── requirements.txt     (7 core dependencies)                    │      
+  │    ├── .env                 (Environment variables)                  │      
+  │    └── run.py               (Uvicorn launcher)                       │      
+  │                                                                       │     
+  │  Data Files:                                                          │     
+  │    ├── outline.yml          (Project state persistence)              │      
+  │    └── assets/              (Generated images)                       │      
+  │          ├── v1/            (Version 1 images)                        │     
+  │          ├── v2/            (Version 2 images)                        │     
+  │          └── ...                                                      │     
+  │                                                                       │     
+  │  Server: http://0.0.0.0:8000                                          │     
+  │  API Docs: http://localhost:8000/docs (Auto-generated Swagger UI)    │      
+  │  Static Files: /assets → ../assets/                                   │     
+  └───────────────────────────────────────────────────────────────────────┘     
+                          
+  ╔═══════════════════════════════════════════════════════════════════════╗     
+  ║                    Key Features Summary                               ║     
+  ╠═══════════════════════════════════════════════════════════════════════╣     
+  ║  ✓ RESTful API with 9 endpoints                                      ║      
+  ║  ✓ AI-powered image generation (Google Gemini 2.5 Flash)             ║      
+  ║  ✓ Multi-provider support (Google, OpenRouter, STUB)                 ║      
+  ║  ✓ Intelligent prompt engineering for slide design                   ║      
+  ║  ✓ Asset versioning system (prevents style mixing)                   ║      
+  ║  ✓ YAML-based persistence (human-readable)                           ║      
+  ║  ✓ Type-safe validation (Pydantic)                                   ║      
+  ║  ✓ CORS-enabled for frontend integration                             ║      
+  ║  ✓ Auto-generated API documentation                                  ║      
+  ║  ✓ Comprehensive logging (console + file)                            ║      
+  ║  ✓ Environment-based configuration                                   ║      
+  ╚═══════════════════════════════════════════════════════════════════════╝     
+                           
+
+
+
+2.缩略图需要调整为可以双击,双击后呼出一个编辑框(需要居中),会将slide现在的文本内容在编辑框中出现,没有编辑过的slide显示New
+Slide Content就行。可以对slide的具体内容的编辑。也就是说slide的内容是需要有内容绑定记录的,
+3.编辑框提供两个按钮,保存和返回。保存后会为当前slide重新生成一个图片,
+4.删除中间栏位的文本编辑栏位,上面的这种设计后文本编辑失去了意义,上面这种方式也可以直观修改slide。现在右侧的位放大以完整slide
+形式展示
+Think ultra hard看看现有代码哪些需要重构的,会设计到前后端的重构请仔细修改
+
+
 ##  Design2Plan
 
 ### 1.1

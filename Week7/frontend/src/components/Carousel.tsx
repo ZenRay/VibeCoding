@@ -130,9 +130,9 @@ export const Carousel: React.FC<CarouselProps> = ({
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          {/* Image */}
+          {/* Image Only - No Text in Presentation Mode */}
           {currentSlide.image_path ? (
-            <div className="flex-1 flex items-center justify-center w-full max-w-6xl">
+            <div className="flex-1 flex items-center justify-center w-full max-w-7xl">
               <img
                 src={`http://localhost:8000/${currentSlide.image_path}`}
                 alt={`幻灯片 ${currentIndex + 1}`}
@@ -147,16 +147,8 @@ export const Carousel: React.FC<CarouselProps> = ({
               <div className="text-white/50 text-center">
                 <div className="text-6xl mb-4">📄</div>
                 <p className="text-xl">暂无图片</p>
+                <p className="text-sm mt-2">请先生成幻灯片图片</p>
               </div>
-            </div>
-          )}
-
-          {/* Text Content */}
-          {currentSlide.text && (
-            <div className="mt-8 max-w-4xl text-center">
-              <p className="text-white text-2xl leading-relaxed whitespace-pre-wrap">
-                {currentSlide.text}
-              </p>
             </div>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 **Feature Branch**: `001-ai-slide-generator`  
 **Created**: 2026-02-01  
+**Version**: v2.0.0 (Multi-Version Project Management)  
 **Status**: ✅ **100% Complete - Production Ready**  
 **Last Updated**: 2026-02-01  
 **Input**: User description: "这个 app是一个本地运行的单页app,使用nano banana pro生成图片 slides,可以以走马灯的形式全屏播出。后端使用Python,前端使用Typescript。参考NotebookLM的slide功能，要求图片的视觉风格要统一，用户可以提供一个视觉风格图片或者文字描述。"
@@ -12,6 +13,7 @@
 3. Manual regeneration button for content changes.
 4. First-run style selection workflow (2 options -> save to outline.yml).
 5. Update model to `gemini-3-pro-image-preview`.
+6. **v2.0.0**: Multi-version project management (2026-02-01).
 
 ---
 
@@ -23,20 +25,20 @@
 - **Phase 3**: Slide management (CRUD + drag-and-drop + auto-save + hash detection)
 - **Phase 4**: Carousel fullscreen presentation (auto-advance + keyboard navigation + controls)
 - **Phase 5**: Polish & testing (error handling + E2E tests)
+- **Phase 6**: Multi-version project management (v2.0.0)
 - **UI/UX**: Modern gradient design, toast notifications, loading states, error handling
 - **Infrastructure**: Structured logging, three-layer error handling, atomic YAML writes
 - **Testing**: 19 automated API tests (100% pass rate) + comprehensive frontend test checklist
 
 ### 🎉 Project Complete
-All 28 tasks completed, 4 User Stories fully implemented and tested.
-  - Keyboard navigation (←/→ arrows, ESC)
-  - Page indicators
+All 38 tasks completed, 5 User Stories fully implemented and tested.
 
 ### 📊 Metrics
-- **Code**: ~3,600 lines (Backend: 1,200 lines, Frontend: 2,400 lines)
-- **Components**: 3 core React components (StyleInitializer, Sidebar, SlideEditor)
-- **API Endpoints**: 8 RESTful endpoints
-- **Tests**: Manual verification complete, automated tests optional
+- **Code**: ~5,000 lines (Backend: 1,500 lines, Frontend: 3,500 lines)
+- **Components**: 5 core React components (VersionSelector, StyleInitializer, Sidebar, SlideEditor, Carousel)
+- **API Endpoints**: 11 RESTful endpoints (including version management)
+- **Tests**: 19 automated backend tests + comprehensive E2E testing
+- **Documentation**: 5 consolidated guides (~1,320 lines)
 
 ---
 
@@ -112,6 +114,30 @@ All 28 tasks completed, 4 User Stories fully implemented and tested.
 2. **Given** 全屏模式, **Then** 图片自动循环播放。
 3. **Given** 全屏模式, **When** 我按 Esc 键, **Then** 应用程序退出全屏。
 
+---
+
+### User Story 5 - 多版本项目管理 (Priority: P2) ✨ **v2.0.0 新增**
+
+作为一个内容创作者，我希望创建和管理多个独立的幻灯片项目，以便我可以为不同场景准备不同的演示。
+
+**Why this priority**: 支持多项目工作流，提升应用实用性。
+
+**Independent Test**: 启动应用，选择现有版本或创建新项目，验证版本之间完全隔离。
+
+**Acceptance Scenarios**:
+
+1. **Given** 启动应用程序且未选择版本, **When** 我查看版本选择器, **Then** 显示所有可用的项目版本卡片。
+2. **Given** 版本选择器, **When** 我点击某个版本卡片, **Then** 加载该版本的所有幻灯片和风格数据。
+3. **Given** 版本选择器, **When** 我点击"创建新项目", **Then** 显示风格初始化模态框。
+4. **Given** 风格初始化模态框, **When** 我输入提示词并选择风格, **Then** 自动创建新版本并进入编辑界面。
+5. **Given** 我在版本 A 中编辑, **When** 我切换到版本 B, **Then** 版本 A 的数据被保存，版本 B 的数据被加载。
+6. **Given** 多个版本, **Then** 每个版本的 `outline.yml` 和图片资源完全独立存储在 `assets/vX/` 目录中。
+7. **Given** 候选图片面板, **When** 我单击候选图片, **Then** 预览图片并更新左侧缩略图（不保存到 outline.yml）。
+8. **Given** 候选图片面板, **When** 我双击候选图片, **Then** 确认选择（绿色边框 + ✓）并保存到 outline.yml。
+9. **Given** 生成新的候选图片, **Then** 不自动标记为已选择，需要用户双击确认。
+
+---
+
 ### Edge Cases
 
 - **Gemini API Error**: 如果 **Google AI SDK** 返回错误 (配额/网络)，显示 Toast 通知。
@@ -133,6 +159,11 @@ All 28 tasks completed, 4 User Stories fully implemented and tested.
 - **FR-009**: 系统必须要求并验证 `GEMINI_API_KEY` 环境变量。
 - **FR-010**: 系统必须启用 **Swagger UI** (`/docs`) 以进行 API 文档和测试。
 - **FR-011**: 数据持久化必须**仅使用** `outline.yml` 文件 (Single Source of Truth)，不使用额外数据库。
+- **FR-012** ✨: 系统必须支持多版本项目管理，每个版本存储在独立的 `assets/vX/outline.yml` 目录中 (v2.0.0)。
+- **FR-013** ✨: 启动时必须显示版本选择器，列出所有可用版本 (v2.0.0)。
+- **FR-014** ✨: 用户必须能够创建新版本，通过输入风格提示词并选择生成的风格 (v2.0.0)。
+- **FR-015** ✨: 候选图片单击必须仅预览（不保存），双击必须确认并保存到 outline.yml (v2.0.0)。
+- **FR-016** ✨: 新生成的候选图片不得自动标记为已选择 (v2.0.0)。
 
 ### Key Entities
 
