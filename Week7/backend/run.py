@@ -1,0 +1,13 @@
+"""
+开发服务器启动脚本
+"""
+import uvicorn
+from app.core.config import config
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host=config.HOST,
+        port=config.PORT,
+        reload=True
+    )

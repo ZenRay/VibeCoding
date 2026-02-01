@@ -1,0 +1,24 @@
+created_at: '2026-02-01 12:12:54'
+project_name: null
+slides:
+- content_hash: f7c70a249eba1aa5eeccd5c67667a243
+  id: 528291ba-b018-44c6-a604-03e46f421bb0
+  image_hash: f7c70a249eba1aa5eeccd5c67667a243
+  image_path: assets/v1/slide_f7c70a249eba1aa5eeccd5c67667a243_1769921133.png
+  text: '新幻灯片
+
+
+    点击编辑内容...'
+- content_hash: f8ced78b3b5a3a4ef9f6245fd9e2f48d
+  id: 2d357edd-c985-4576-999a-1c310a3b5f97
+  image_hash: f8ced78b3b5a3a4ef9f6245fd9e2f48d
+  image_path: assets/v1/slide_f8ced78b3b5a3a4ef9f6245fd9e2f48d_1769921404.png
+  text: '标题: 测试
+
+    我不厚道的进行一个测试
+
+
+    footer: 增加内容测试'
+style_prompt: 末日黄昏风格，红色颜色，燃烧的土地
+style_reference: assets/v1/style_47c1265c0e9e089f4826bf92d2d08790_1_1769921073.png
+version: 1

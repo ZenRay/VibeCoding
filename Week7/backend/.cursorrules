@@ -1,0 +1,283 @@
+# Backend Development Rules - AI Slide Generator
+
+## Project Context
+
+**Project**: AI Slide Generator Backend (FastAPI)
+**Tech Stack**: Python 3.12+, FastAPI, Pydantic, Google Gemini AI SDK
+**Environment**: uv + venv (.venv in backend/)
+**Data Layer**: YAML-only (outline.yml)
+
+## Architecture Principles
+
+### SOLID Principles
+- **Single Responsibility**: Each module has ONE clear purpose
+  - `yaml_store.py`: ONLY YAML file operations
+  - `generator.py`: ONLY Gemini API calls
+  - `endpoints.py`: ONLY HTTP request/response handling
+  - `config.py`: ONLY configuration management
+- **Open/Closed**: Extend via dependency injection, not modification
+- **Liskov Substitution**: All generators must implement same interface
+- **Interface Segregation**: Small, focused abstractions (YAMLStore, Generator)
+- **Dependency Inversion**: Depend on abstractions (protocols), not concrete classes
+
+### Additional Principles
+- **YAGNI (You Aren't Gonna Need It)**: Only implement current requirements, no speculative features
+- **KISS (Keep It Simple, Stupid)**: Prefer simple solutions over clever ones
+- **DRY (Don't Repeat Yourself)**: Extract common logic into reusable functions
+
+## Code Organization
+
+### Directory Structure
+```
+backend/
+├── app/
+│   ├── api/           # HTTP layer only
+│   ├── core/          # Business logic (generator, config)
+│   ├── data/          # Data access (yaml_store)
+│   ├── models/        # Pydantic schemas
+│   └── main.py        # App bootstrap
+├── .venv/             # Virtual environment (managed by uv)
+├── requirements.txt
+└── run.py
+```
+
+### Module Responsibilities
+- **api/endpoints.py**: Route definitions, request validation, response serialization
+- **core/generator.py**: Gemini API client, image generation logic
+- **core/config.py**: Environment variables, app settings
+- **data/yaml_store.py**: File I/O, atomic writes, CRUD operations
+- **models/schemas.py**: Pydantic models for validation
+
+## Python Best Practices
+
+### Code Style
+- Use **Python 3.12+ features**: type hints, match/case, f-strings
+- Follow **PEP 8**: 4 spaces, snake_case, max line 100 chars
+- Use **type hints everywhere**: `def foo(x: int) -> str:`
+- Prefer **composition over inheritance**
+- Use **dataclasses** or **Pydantic** for data structures
+
+### Error Handling
+```python
+# Good: Specific exceptions with context
+try:
+    data = yaml_store.read()
+except FileNotFoundError:
+    raise HTTPException(status_code=404, detail="Project file not found")
+except yaml.YAMLError as e:
+    logger.error(f"YAML parse error: {e}")
+    raise HTTPException(status_code=500, detail="Corrupted project file")
+
+# Bad: Generic exceptions
+try:
+    data = yaml_store.read()
+except Exception:  # Too broad
+    raise HTTPException(status_code=500)
+```
+
+### Logging
+- Use **structlog** for structured logging
+- Log levels: DEBUG (development), INFO (key events), WARNING (recoverable issues), ERROR (failures)
+- Include context: request_id, user_id, slide_id
+
+```python
+import structlog
+logger = structlog.get_logger()
+
+logger.info("slide_created", slide_id=slide.id, text_length=len(slide.text))
+logger.error("gemini_api_error", error=str(e), prompt=prompt[:50])
+```
+
+### Async/Await
+- Use **async** for I/O-bound operations (API calls, file writes)
+- Use **sync** for CPU-bound operations (hashing, YAML parsing)
+- FastAPI endpoints should be **async def** when calling async functions
+
+```python
+# Good
+async def regenerate_image(slide_id: str):
+    slide = yaml_store.get_slide(slide_id)  # sync - fast
+    image_path = await generator.generate_image(slide.text)  # async - I/O
+    yaml_store.update_slide(slide_id, image_path=image_path)  # sync - fast
+    return slide
+
+# Bad: Mixing without await
+async def regenerate_image(slide_id: str):
+    image_path = generator.generate_image(slide.text)  # Missing await!
+```
+
+## Concurrency
+
+### Thread Safety
+- **YAML Store**: Use file locks for atomic writes
+- **Generator**: Gemini API is I/O-bound, use asyncio (no threading needed)
+- **Endpoints**: FastAPI handles concurrency via asyncio event loop
+
+### Race Conditions
+```python
+# Good: Atomic write
+def update_slide(slide_id: str, **updates):
+    with file_lock(self.file_path):
+        data = self._read()
+        # ... modify data ...
+        self._write(data)
+
+# Bad: Non-atomic
+def update_slide(slide_id: str, **updates):
+    data = self._read()  # Another process could write here
+    # ... modify data ...
+    self._write(data)    # Overwrites other changes
+```
+
+## Environment Management
+
+### uv + venv Workflow
+```bash
+# Setup (only once)
+cd backend
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+
+# Development
+source .venv/bin/activate
+python run.py
+
+# Add dependencies
+uv pip install new-package
+uv pip freeze > requirements.txt
+```
+
+### Requirements
+- **Pin major versions**: `fastapi>=0.115.0,<1.0.0`
+- **Use latest stable**: Check PyPI for current versions
+- **Group logically**:
+  ```
+  # Web Framework
+  fastapi>=0.115.0
+  uvicorn[standard]>=0.32.0
+  
+  # Data Validation
+  pydantic>=2.10.0
+  
+  # AI
+  google-generativeai>=0.8.0
+  ```
+
+## FastAPI Specific
+
+### Dependency Injection
+```python
+# Good: Inject dependencies
+def get_yaml_store() -> YAMLStore:
+    return YAMLStore(file_path="../outline.yml")
+
+@router.get("/project")
+async def get_project(store: YAMLStore = Depends(get_yaml_store)):
+    return store.get_project_state()
+
+# Bad: Global state
+yaml_store = YAMLStore()  # Hard to test
+
+@router.get("/project")
+async def get_project():
+    return yaml_store.get_project_state()
+```
+
+### Error Responses
+```python
+# Good: Consistent error format
+raise HTTPException(
+    status_code=404,
+    detail={
+        "error": "slide_not_found",
+        "message": "Slide with ID 'abc123' does not exist",
+        "slide_id": "abc123"
+    }
+)
+
+# Bad: String only
+raise HTTPException(status_code=404, detail="Not found")
+```
+
+### Request Validation
+- Use **Pydantic models** for all request bodies
+- Use **Path/Query parameters** with type hints
+- Validate early, fail fast
+
+```python
+# Good
+class SlideUpdate(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+
+@router.put("/slides/{slide_id}")
+async def update_slide(
+    slide_id: str = Path(..., regex="^[a-f0-9-]{36}$"),
+    data: SlideUpdate = Body(...)
+):
+    # slide_id and data.text already validated
+```
+
+## Testing Guidelines
+
+### Structure
+```
+tests/
+├── unit/              # Fast, isolated tests
+│   ├── test_yaml_store.py
+│   ├── test_generator.py
+│   └── test_schemas.py
+└── integration/       # API endpoint tests
+    └── test_endpoints.py
+```
+
+### Patterns
+```python
+# Good: Test one thing
+def test_yaml_store_atomic_write():
+    store = YAMLStore(":memory:")
+    store.add_slide("1", "Hello")
+    assert store.get_project_state()["slides"][0]["text"] == "Hello"
+
+# Good: Mock external services
+@patch("app.core.generator.genai.Client")
+def test_generator_retry_on_error(mock_client):
+    mock_client.side_effect = [ConnectionError(), Mock(success=True)]
+    generator = GeminiGenerator("fake-key")
+    result = generator.generate_image("test")
+    assert result is not None
+```
+
+## Code Review Checklist
+
+Before committing, verify:
+- [ ] Type hints on all function signatures
+- [ ] Docstrings for public functions
+- [ ] Error handling for all external calls (Gemini API, file I/O)
+- [ ] Logging for key events and errors
+- [ ] Atomic operations for file writes
+- [ ] Validation for all user inputs
+- [ ] No hardcoded credentials (use .env)
+- [ ] Tests pass: `pytest tests/`
+- [ ] Linting passes: `ruff check .`
+- [ ] Format applied: `ruff format .`
+
+## Common Pitfalls to Avoid
+
+❌ **Don't**:
+- Use `print()` for logging (use structlog)
+- Catch generic `Exception` without re-raising
+- Store state in global variables
+- Use blocking I/O in async functions
+- Hardcode file paths (use Path, config)
+- Return internal errors to client (sanitize)
+- Skip input validation (always validate)
+
+✅ **Do**:
+- Use dependency injection
+- Return meaningful error messages
+- Write atomic file operations
+- Use async for I/O operations
+- Log errors with context
+- Validate early and often
+- Keep functions small (<20 lines)

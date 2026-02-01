@@ -1,0 +1,320 @@
+slides:
+- content_hash: b615ab09c91d8ca21e1f85124b823ebc
+  id: 0b364cff-f40d-4105-9ef1-03b612787a15
+  image_hash: b615ab09c91d8ca21e1f85124b823ebc
+  image_path: assets/v12/slide_b615ab09c91d8ca21e1f85124b823ebc_1769917368.png
+  text: '标题: 你好
+
+    这个一个测试文本内容'
+- content_hash: cfa4325b6275f5543eb960e3f1bc0047
+  id: b153120d-4dfe-418b-84ad-7a195f7dc917
+  image_hash: cfa4325b6275f5543eb960e3f1bc0047
+  image_path: assets/v12/slide_b2a90a60936b8194a208ef83907f3386_1769917423.png
+  text: "标题: 前端技术栈 (Frontend Tech Stack)                                         \
+    \  \n                          \n  ┌─────────────────────────────────────────────────────────────────────────┐\
+    \   \n  │                        Frontend Technology Stack                   \
+    \     │   \n  └─────────────────────────────────────────────────────────────────────────┘\
+    \   \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                         Core Framework                           \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                     React 19.0.0                        \
+    \    │     ║      \n  ║  │  • Function components with hooks                 \
+    \         │     ║       \n  ║  │  • Concurrent rendering                     \
+    \                │     ║      \n  ║  │  • Suspense & lazy loading            \
+    \                      │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ║                                                           \
+    \            ║     \n  ║  ┌─────────────────────────────────────────────────────────────┐\
+    \     ║      \n  ║  │                  TypeScript 5.6.0                      \
+    \     │     ║      \n  ║  │  • Strict type checking                          \
+    \           │     ║      \n  ║  │  • Type-safe API clients                   \
+    \                 │     ║      \n  ║  │  • Interface definitions (.d.ts)     \
+    \                       │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                       Build & Development                        \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                      Vite 6.0.0                         \
+    \    │     ║      \n  ║  │  • Lightning-fast HMR                             \
+    \          │     ║      \n  ║  │  • ES modules for instant server start      \
+    \               │     ║       \n  ║  │  • Optimized production builds        \
+    \                      │     ║      \n  ║  │  • Plugin system (@vitejs/plugin-react)\
+    \                     │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                      State Management                            \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                    Zustand 5.0.2                        \
+    \    │     ║      \n  ║  │  • Minimal boilerplate                            \
+    \          │     ║      \n  ║  │  • React hooks integration                  \
+    \                │     ║      \n  ║  │  • Devtools support                   \
+    \                      │     ║      \n  ║  │  • Persist middleware (localStorage)\
+    \                        │     ║      \n  ║  │                               \
+    \                               │     ║     \n  ║  │  appStore:              \
+    \                                     │     ║     \n  ║  │    - Project state\
+    \ (style_reference, slides[])              │     ║      \n  ║  │    - UI state\
+    \ (loading, error, currentSlideId)              │     ║      \n  ║  │    - Actions\
+    \ (CRUD operations)                              │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                           Styling                                \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                 TailwindCSS 3.4.17                      \
+    \    │     ║      \n  ║  │  • Utility-first CSS framework                    \
+    \          │     ║      \n  ║  │  • JIT compiler for instant builds          \
+    \                │     ║      \n  ║  │  • Custom color palette (primary/secondary)\
+    \                 │     ║      \n  ║  │  • Responsive design utilities       \
+    \                       │     ║      \n  ║  │  • Custom animations (slide-in,\
+    \ fade-in)                    │     ║      \n  ║  │                          \
+    \                                    │     ║     \n  ║  │  + PostCSS 8.4.0   \
+    \                                         │     ║      \n  ║  │  + Autoprefixer\
+    \ 10.4.0                                      │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ║                                                           \
+    \            ║     \n  ║  ┌─────────────────────────────────────────────────────────────┐\
+    \     ║      \n  ║  │                 tailwind-merge 2.5.0                   \
+    \     │     ║      \n  ║  │  • Merge Tailwind classes intelligently          \
+    \           │     ║      \n  ║  │  • Resolve class conflicts (e.g., p-4 + p-2\
+    \ → p-2)          │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                       HTTP & API Client                          \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                     Axios 1.7.0                         \
+    \    │     ║      \n  ║  │  • Promise-based HTTP client                      \
+    \          │     ║      \n  ║  │  • Request/response interceptors            \
+    \                │     ║      \n  ║  │  • Automatic JSON transformation      \
+    \                      │     ║      \n  ║  │  • Error handling middleware    \
+    \                            │     ║      \n  ║  │                           \
+    \                                   │     ║     \n  ║  │  API client wrapper:\
+    \                                         │     ║     \n  ║  │    - Base URL:\
+    \ http://localhost:8000                        │     ║      \n  ║  │    - Error\
+    \ interceptor (global error handling)              │     ║      \n  ║  │    -\
+    \ Type-safe methods (get, post, put, delete)             │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                     Drag & Drop System                           \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                   @dnd-kit/core 6.3.0                   \
+    \    │     ║      \n  ║  │  • Performant drag and drop toolkit               \
+    \          │     ║      \n  ║  │  • Keyboard accessible                      \
+    \                 │     ║     \n  ║  │  • Touch screen support               \
+    \                       │     ║     \n  ║  │                                 \
+    \                             │     ║     \n  ║  │  + @dnd-kit/sortable 9.0.0\
+    \                                  │     ║      \n  ║  │    - Sortable list components\
+    \                               │     ║      \n  ║  │    - Auto-scrolling    \
+    \                                      │     ║     \n  ║  │    - Animation helpers\
+    \                                       │     ║     \n  ║  │                 \
+    \                                             │     ║     \n  ║  │  + @dnd-kit/utilities\
+    \ 3.2.2                                 │     ║      \n  ║  │    - CSS transform\
+    \ utilities                                │     ║      \n  ║  │             \
+    \                                                 │     ║     \n  ║  │  Used for:\
+    \ Slide reordering in Sidebar                      │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                          UI Components                           \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  ┌─────────────────────────────────────────────────────────────┐ \
+    \    ║      \n  ║  │                 lucide-react 0.469.0                    \
+    \    │     ║      \n  ║  │  • Beautiful, consistent icons                    \
+    \          │     ║      \n  ║  │  • Tree-shakeable (import only what you need)\
+    \               │     ║      \n  ║  │  • Components: Play, Plus, Trash2, Loader2,\
+    \ etc.            │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ║                                                           \
+    \            ║     \n  ║  ┌─────────────────────────────────────────────────────────────┐\
+    \     ║      \n  ║  │                    sonner 1.7.1                        \
+    \     │     ║      \n  ║  │  • Toast notification library                    \
+    \           │     ║      \n  ║  │  • Beautiful animations                    \
+    \                  │     ║     \n  ║  │  • Rich colors (success/error/warning)\
+    \                      │     ║      \n  ║  │  • Auto-dismiss with timeout    \
+    \                            │     ║      \n  ║  │                           \
+    \                                   │     ║     \n  ║  │  Used for: User feedback\
+    \ (slide created, saved, etc.)       │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ║                                                           \
+    \            ║     \n  ║  ┌─────────────────────────────────────────────────────────────┐\
+    \     ║      \n  ║  │                      clsx 2.1.0                        \
+    \     │     ║      \n  ║  │  • Utility for conditional class names           \
+    \           │     ║      \n  ║  │  • Combine with tailwind-merge for dynamic styling\
+    \          │     ║      \n  ║  └─────────────────────────────────────────────────────────────┘\
+    \     ║      \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ╔═══════════════════════════════════════════════════════════════════════╗\
+    \     \n  ║                        Development Tools                         \
+    \     ║     \n  ╠═══════════════════════════════════════════════════════════════════════╣\
+    \     \n  ║  • @types/react, @types/react-dom, @types/node                   \
+    \    ║      \n  ║    - Type definitions for TypeScript                       \
+    \           ║     \n  ║  • @vitejs/plugin-react                              \
+    \                 ║     \n  ║    - Vite plugin for React Fast Refresh        \
+    \                       ║     \n  ╚═══════════════════════════════════════════════════════════════════════╝\
+    \     \n                          \n  ┌───────────────────────────────────────────────────────────────────────┐\
+    \     \n  │                       Project Structure Summary                  \
+    \     │     \n  ├───────────────────────────────────────────────────────────────────────┤\
+    \     \n  │  src/                                                            \
+    \     │     \n  │    ├── components/     (UI: StyleInitializer, Sidebar, SlideEditor,\
+    \  │      \n  │    │                    Carousel)                            \
+    \         │     \n  │    ├── store/          (Zustand: appStore.ts)          \
+    \              │      \n  │    ├── api/            (Axios client: client.ts) \
+    \                    │      \n  │    ├── types/          (TypeScript interfaces)\
+    \                       │      \n  │    ├── lib/            (Utilities: dnd-kit\
+    \ helpers, tailwind merge)  │      \n  │    ├── App.tsx         (Main component)\
+    \                              │      \n  │    └── main.tsx        (Entry point)\
+    \                                 │      \n  │                               \
+    \                                        │     \n  │  Build Output: dist/    \
+    \                                              │     \n  │  Dev Server: http://localhost:5173\
+    \                                    │     \n  └───────────────────────────────────────────────────────────────────────┘\
+    \   "
+- content_hash: 91e233fee79f8fcb46f0405d53a49783
+  id: 709f3bd7-eb1d-4af5-85c9-345bc299a31c
+  image_hash: 91e233fee79f8fcb46f0405d53a49783
+  image_path: assets/v12/slide_e70086a444003704ce933e85337ca818_1769918274.png
+  text: "标题:数据流图 (Data Flow Diagram)                                             \
+    \  \n                          \n  ┌─────────────────────────────────────────────────────────────────────────┐\
+    \   \n  │                           User Interaction Flow                    \
+    \     │   \n  └─────────────────────────────────────────────────────────────────────────┘\
+    \   \n                          \n  ═══════════════════════════ Flow 1: Style\
+    \ Initialization ════════════════════ \n                          \n    [User]\
+    \                  [Frontend]               [Backend]        [AI API]  \n    \
+    \  │                         │                        │               │      \n\
+    \      │ 1. Open app             │                        │               │  \
+    \    \n      ├────────────────────────>│                        │            \
+    \   │      \n      │                         │ GET /api/project       │      \
+    \         │      \n      │                         ├───────────────────────>│\
+    \               │      \n      │                         │                   \
+    \     │ Read YAML     │      \n      │                         │<───────────────────────┤\
+    \               │      \n      │                         │ {style: null,     \
+    \     │               │      \n      │                         │  slides: []}\
+    \           │               │      \n      │                         │       \
+    \                 │               │      \n      │ 2. Show modal           │ \
+    \                       │               │      \n      │ \"Enter style prompt\"\
+    \    │                        │               │      \n      │<────────────────────────┤\
+    \                        │               │      \n      │                    \
+    \     │                        │               │      \n      │ 3. Input: \"科技风\"\
+    \       │                        │               │     \n      ├────────────────────────>│\
+    \                        │               │      \n      │                    \
+    \     │ POST /api/style/init   │               │      \n      │              \
+    \           ├───────────────────────>│               │      \n      │        \
+    \                 │ {description: \"科技风\"} │               │     \n      │   \
+    \                      │                        │ Generate 2×   │      \n    \
+    \  │                         │                        ├──────────────>│      \n\
+    \      │                         │                        │\"Generate tech │ \
+    \     \n      │                         │                        │ style image...\"\
+    \ │    \n      │                         │                        │<──────────────┤\
+    \      \n      │                         │                        │ [image1.png]\
+    \  │      \n      │                         │                        │<──────────────┤\
+    \      \n      │                         │                        │ [image2.png]\
+    \  │      \n      │                         │<───────────────────────┤       \
+    \        │      \n      │                         │ [{path: \"assets/v1/   │ \
+    \              │       \n      │                         │   style_1.png\"}, ...]\
+    \  │               │      \n      │ 4. Show 2 candidates    │                \
+    \        │               │      \n      │<────────────────────────┤          \
+    \              │               │      \n      │                         │    \
+    \                    │               │      \n      │ 5. Select candidate #2 \
+    \ │                        │               │      \n      ├────────────────────────>│\
+    \                        │               │      \n      │                    \
+    \     │ POST /api/style/select │               │      \n      │              \
+    \           ├───────────────────────>│               │      \n      │        \
+    \                 │ {image_path: \"...\"}    │               │      \n      │\
+    \                         │                        │ Save to YAML  │      \n \
+    \     │                         │<───────────────────────┤               │   \
+    \   \n      │                         │ {style_reference: \"...\",│          \
+    \     │     \n      │                         │  slides: []}           │     \
+    \          │      \n      │ 6. Close modal,         │                        │\
+    \               │      \n      │    show main UI         │                   \
+    \     │               │      \n      │<────────────────────────┤             \
+    \           │               │      \n                          \n  ═══════════════════════════\
+    \ Flow 2: Slide Creation ══════════════════════════ \n                       \
+    \   \n    [User]                  [Frontend]               [Backend]        [AI\
+    \ API]  \n      │                         │                        │         \
+    \      │      \n      │ 1. Click \"Add Slide\"    │                        │ \
+    \              │      \n      ├────────────────────────>│                    \
+    \    │               │      \n      │                         │ POST /api/slides\
+    \       │               │      \n      │                         ├───────────────────────>│\
+    \               │      \n      │                         │ {text: \"新幻灯片\"}  \
+    \    │               │     \n      │                         │               \
+    \         │ Add to YAML   │      \n      │                         │<───────────────────────┤\
+    \               │      \n      │                         │ {id: \"uuid\",    \
+    \       │               │      \n      │                         │  text: \"新幻灯片\"\
+    ,      │               │     \n      │                         │  image_path:\
+    \ null}     │               │      \n      │                         │       \
+    \                 │               │      \n      │ 2. Slide appears        │ Update\
+    \ Zustand store   │               │      \n      │<────────────────────────┤ \
+    \                       │               │      \n      │                     \
+    \    │                        │               │      \n      │ 3. Edit text  \
+    \          │                        │               │      \n      ├────────────────────────>│\
+    \                        │               │      \n      │                    \
+    \     │ PUT /api/slides/{id}   │               │      \n      │              \
+    \           ├───────────────────────>│               │      \n      │        \
+    \                 │ {text: \"AI的未来\"}      │               │     \n      │   \
+    \                      │                        │ Update YAML   │      \n    \
+    \  │                         │<───────────────────────┤               │      \n\
+    \      │                         │ {id, text: \"AI的未来\",  │               │  \
+    \   \n      │                         │  image_path: null}     │             \
+    \  │      \n      │                         │                        │       \
+    \        │      \n      │ 4. Click \"Generate\"     │                        │\
+    \               │      \n      ├────────────────────────>│                   \
+    \     │               │      \n      │                         │ POST /api/slides/{id}/\
+    \  │               │     \n      │                         │      generate   \
+    \       │               │      \n      │                         ├───────────────────────>│\
+    \               │      \n      │                         │                   \
+    \     │ Generate image│      \n      │                         │             \
+    \           ├──────────────>│      \n      │                         │       \
+    \                 │\"Create slide  │      \n      │                         │\
+    \                        │ for 'AI的未来'│      \n      │                       \
+    \  │                        │ using style...│      \n      │                 \
+    \        │                        │<──────────────┤      \n      │           \
+    \              │                        │ [slide.png]   │      \n      │     \
+    \                    │                        │ Save to YAML  │      \n      │\
+    \                         │<───────────────────────┤               │      \n \
+    \     │                         │ {id, text: \"AI的未来\",  │               │   \
+    \  \n      │                         │  image_path: \"assets/  │             \
+    \  │      \n      │                         │   v1/slide_abc.png\"}   │      \
+    \         │      \n      │ 5. Show generated image │                        │\
+    \               │      \n      │<────────────────────────┤                   \
+    \     │               │      \n                          \n  ═══════════════════════════\
+    \ Flow 3: Drag & Drop Reorder ═════════════════════ \n                       \
+    \   \n    [User]                  [Frontend]               [Backend]         \
+    \         \n      │                         │                        │       \
+    \               \n      │ 1. Drag slide #3        │                        │ \
+    \                     \n      │    to position #1       │                    \
+    \    │                      \n      ├────────────────────────>│              \
+    \          │                      \n      │                         │ onDrop event\
+    \           │                      \n      │                         │ (dnd-kit)\
+    \              │                      \n      │                         │ Reorder\
+    \ locally        │                      \n      │                         │ [s2,\
+    \ s1, s3] -> [s3,   │                      \n      │                         │\
+    \  s2, s1]               │                      \n      │                    \
+    \     │                        │                      \n      │              \
+    \           │ PUT /api/slides/reorder│                      \n      │        \
+    \                 ├───────────────────────>│                      \n      │  \
+    \                       │ [\"id3\", \"id2\", \"id1\"]  │                     \
+    \ \n      │                         │                        │ Update order in\
+    \      \n      │                         │                        │ YAML     \
+    \            \n      │                         │<───────────────────────┤    \
+    \                  \n      │                         │ {slides: [...]}       \
+    \ │                      \n      │ 2. UI updated           │                 \
+    \       │                      \n      │<────────────────────────┤           \
+    \             │                      \n                          \n  ═══════════════════════════\
+    \ Flow 4: Fullscreen Playback ═════════════════════ \n                       \
+    \   \n    [User]                  [Frontend]                                 \
+    \         \n      │                         │                                \
+    \               \n      │ 1. Click \"Play\"         │                        \
+    \                       \n      ├────────────────────────>│                  \
+    \                             \n      │                         │ Open <Carousel>\
+    \                               \n      │ 2. Fullscreen view      │ component\
+    \                                     \n      │<────────────────────────┤    \
+    \                                           \n      │                        \
+    \ │ Load slides from                              \n      │                  \
+    \       │ Zustand store                                 \n      │ 3. Arrow keys\
+    \ ←/→       │ (No backend call)                             \n      ├────────────────────────>│\
+    \                                               \n      │                    \
+    \     │ Navigate slides                               \n      │ 4. Press ESC \
+    \           │                                               \n      ├────────────────────────>│\
+    \                                               \n      │                    \
+    \     │ Close Carousel                                \n      │ 5. Back to editor\
+    \       │                                               \n      │<────────────────────────┤\
+    \              "
+style_prompt: 使用浅黄色/红褐色的水彩画风格，走卡通路线,类似motherduck的风格 ,主要角色是一只黄色的可爱的鸭子
+style_reference: assets/v12/style_f7d86f77f3ba9d508cdd891b6a78c3ab_0_1769912893.png

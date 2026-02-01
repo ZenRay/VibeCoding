@@ -1,0 +1,24 @@
+---
+description: Enforce Simplified Chinese output for documentation and explanations
+globs: 
+alwaysApply: true
+---
+
+# Language Preference
+
+All documentation, explanations, and natural language outputs must be provided in **Simplified Chinese** (简体中文).
+
+## Exceptions
+
+The following items should be kept in English or their original language:
+- **Code Examples**: Variable names, function names, class names, etc.
+- **Entities**: Specific entity names that are defined in code.
+- **Industry Terminology**: Standard technical terms (e.g., Redis, React, OAuth, JWT) unless a standard Chinese equivalent is more commonly used in the context.
+
+## Examples
+
+**Bad:**
+> To implement the User Authentication, we will use the JWT token stored in the LocalStorage.
+
+**Good:**
+> 为了实现**用户认证 (User Authentication)**，我们将使用存储在 **LocalStorage** 中的 **JWT token**。

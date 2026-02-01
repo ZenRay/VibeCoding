@@ -1,0 +1,48 @@
+# Phase 2 过程性文档（不需要跟踪）
+PHASE2_*.md
+CSS_REFACTOR_REPORT.md
+TAILWIND_FIX_v2.md
+UI_STYLE_FIX.md
+
+# 测试相关脚本和结果
+test-phase2.sh
+verify-phase2.sh
+run-e2e-tests.sh
+tests/
+
+# 备份文件
+*.backup
+outline.yml.backup
+
+# 临时文档
+SETUP_COMPLETE.md
+DELIVERY_CHECKLIST.md
+IMPLEMENTATION_SUMMARY.md
+PROJECT_STRUCTURE.md
+
+# Node modules
+frontend/node_modules/
+backend/.venv/
+
+# 构建输出
+frontend/dist/
+frontend/build/
+
+# 日志文件
+*.log
+backend/api.log
+
+# 环境变量
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 生成的图片（可选，如果想保留示例图片可以注释掉）
+# assets/*.jpg
+# assets/*.png

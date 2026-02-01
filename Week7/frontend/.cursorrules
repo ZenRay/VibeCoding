@@ -1,0 +1,490 @@
+# Frontend Development Rules - AI Slide Generator
+
+## Project Context
+
+**Project**: AI Slide Generator Frontend (React SPA)
+**Tech Stack**: TypeScript 5.6+, React 19, Vite 6, Tailwind CSS 4, Zustand, @dnd-kit
+**API**: FastAPI backend at `http://localhost:8000/api`
+**State**: Single source of truth from backend (outline.yml)
+
+## Architecture Principles
+
+### SOLID Principles (React Context)
+- **Single Responsibility**: Each component has ONE purpose
+  - `StyleInitializer`: ONLY first-run style selection
+  - `Sidebar`: ONLY slide list and reordering
+  - `SlideEditor`: ONLY text/image editing
+  - `Carousel`: ONLY fullscreen playback
+- **Open/Closed**: Extend via composition (higher-order components, hooks)
+- **Liskov Substitution**: All components accept same prop interface patterns
+- **Interface Segregation**: Small, focused hook APIs (useSlides, useStyle, useCarousel)
+- **Dependency Inversion**: Components depend on contracts (TypeScript interfaces), not implementations
+
+### Additional Principles
+- **YAGNI**: No premature optimization, implement features as needed
+- **KISS**: Simple component hierarchy, avoid over-engineering
+- **DRY**: Extract reusable UI patterns into custom hooks/components
+
+## Code Organization
+
+### Directory Structure
+```
+frontend/
+├── src/
+│   ├── api/              # Backend communication
+│   │   └── client.ts     # Axios wrapper
+│   ├── components/       # UI components
+│   │   ├── StyleInitializer.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── SlideEditor.tsx
+│   │   └── Carousel.tsx
+│   ├── hooks/            # Custom React hooks
+│   │   ├── useProjectState.ts
+│   │   └── useSlides.ts
+│   ├── types/            # TypeScript interfaces
+│   │   └── index.ts
+│   ├── utils/            # Helper functions
+│   │   └── hash.ts
+│   ├── App.tsx           # Root component
+│   └── main.tsx          # Entry point
+├── package.json
+├── tailwind.config.js
+└── vite.config.ts
+```
+
+### Component Patterns
+- **Container/Presentational**: Separate logic from UI
+  - `SidebarContainer` (logic) → `SidebarView` (UI)
+- **Composition**: Build complex UIs from simple components
+  - `<SlideEditor><TextArea /><ImagePreview /></SlideEditor>`
+- **Hooks**: Extract stateful logic into reusable hooks
+  - `useSlides()`, `useStyle()`, `useCarousel()`
+
+## TypeScript Best Practices
+
+### Type Safety
+```typescript
+// Good: Explicit types everywhere
+interface SlideEditorProps {
+  slide: Slide;
+  onUpdate: (text: string) => Promise<void>;
+  onRegenerate: () => Promise<void>;
+}
+
+function SlideEditor({ slide, onUpdate, onRegenerate }: SlideEditorProps) {
+  // ...
+}
+
+// Bad: Implicit any
+function SlideEditor({ slide, onUpdate, onRegenerate }: any) {
+  // ...
+}
+```
+
+### Avoid Type Assertions
+```typescript
+// Good: Type guards
+function isSlide(obj: unknown): obj is Slide {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'id' in obj &&
+    'text' in obj
+  );
+}
+
+if (isSlide(data)) {
+  console.log(data.text); // TypeScript knows data is Slide
+}
+
+// Bad: Type assertions
+const slide = data as Slide; // Unsafe!
+```
+
+### Generics for Reusability
+```typescript
+// Good: Generic async hook
+function useAsync<T>(asyncFn: () => Promise<T>) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  
+  // ... implementation
+  
+  return { data, loading, error };
+}
+
+// Usage
+const { data: project } = useAsync(() => api.getProject());
+```
+
+## React Best Practices
+
+### Functional Components with Hooks
+```typescript
+// Good: Functional component
+function SlideEditor({ slide }: SlideEditorProps) {
+  const [text, setText] = useState(slide.text);
+  
+  useEffect(() => {
+    setText(slide.text);
+  }, [slide.text]);
+  
+  return <textarea value={text} onChange={e => setText(e.target.value)} />;
+}
+
+// Bad: Class component (outdated)
+class SlideEditor extends React.Component {
+  // Don't use classes for new code
+}
+```
+
+### Memoization
+```typescript
+// Good: Memoize expensive computations
+const slidesByOrder = useMemo(() => {
+  return slides.sort((a, b) => a.order - b.order);
+}, [slides]);
+
+// Good: Memoize callbacks passed to children
+const handleUpdate = useCallback((text: string) => {
+  return api.updateSlide(slide.id, { text });
+}, [slide.id]);
+
+// Bad: Creating new functions every render
+function SlideEditor() {
+  return <Child onChange={(text) => api.updateSlide(slide.id, { text })} />;
+  // This creates a new function on every render!
+}
+```
+
+### Effects and Dependencies
+```typescript
+// Good: Complete dependency array
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentIndex((i) => (i + 1) % slides.length);
+  }, 5000);
+  
+  return () => clearInterval(timer);
+}, [slides.length]); // slides.length is a dependency
+
+// Bad: Missing dependencies
+useEffect(() => {
+  setCurrentIndex((i) => (i + 1) % slides.length);
+}, []); // Should include slides.length!
+```
+
+## State Management (Zustand)
+
+### Store Structure
+```typescript
+// Good: Simple Zustand store
+interface ProjectStore {
+  project: ProjectState | null;
+  loading: boolean;
+  error: string | null;
+  
+  fetchProject: () => Promise<void>;
+  updateSlide: (id: string, text: string) => Promise<void>;
+  reorderSlides: (ids: string[]) => Promise<void>;
+}
+
+const useProjectStore = create<ProjectStore>((set) => ({
+  project: null,
+  loading: false,
+  error: null,
+  
+  fetchProject: async () => {
+    set({ loading: true, error: null });
+    try {
+      const project = await api.getProject();
+      set({ project, loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  },
+  
+  // ... other actions
+}));
+
+// Usage in component
+function App() {
+  const { project, loading, fetchProject } = useProjectStore();
+  
+  useEffect(() => {
+    fetchProject();
+  }, [fetchProject]);
+  
+  // ...
+}
+```
+
+### Avoid Prop Drilling
+```typescript
+// Good: Use store/context
+function SidebarContainer() {
+  const slides = useProjectStore(state => state.project?.slides ?? []);
+  return <Sidebar slides={slides} />;
+}
+
+// Bad: Prop drilling
+function App() {
+  return <Parent slides={slides}>
+    <Child slides={slides}>
+      <GrandChild slides={slides} /> {/* Too deep! */}
+    </Child>
+  </Parent>;
+}
+```
+
+## Styling (Tailwind CSS)
+
+### Consistent Design System
+```typescript
+// Good: Reusable style constants
+const buttonStyles = {
+  base: "px-4 py-2 rounded font-medium transition-colors",
+  primary: "bg-blue-600 text-white hover:bg-blue-700",
+  secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
+};
+
+<button className={`${buttonStyles.base} ${buttonStyles.primary}`}>
+  Generate
+</button>
+
+// Good: Use clsx for conditional styles
+import clsx from 'clsx';
+
+<div className={clsx(
+  "slide-item",
+  isActive && "border-blue-500",
+  isDragging && "opacity-50"
+)}>
+```
+
+### Component-Level Styles
+```typescript
+// Good: Co-locate styles with component
+function SlideCard({ slide, isActive }: SlideCardProps) {
+  return (
+    <div className={clsx(
+      "rounded-lg border-2 p-4 transition-all",
+      isActive ? "border-blue-500 shadow-lg" : "border-gray-200"
+    )}>
+      {/* ... */}
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+### User-Facing Errors
+```typescript
+// Good: Toast notifications for errors
+import { toast } from 'sonner';
+
+async function handleRegenerate() {
+  try {
+    const slide = await api.regenerateImage(slideId);
+    toast.success("Image regenerated successfully");
+    updateSlide(slide);
+  } catch (error) {
+    if (error.response?.status === 429) {
+      toast.error("API quota exceeded. Please try again later.");
+    } else if (error.response?.status === 500) {
+      toast.error("Server error. Please contact support.");
+    } else {
+      toast.error("Failed to regenerate image. Please try again.");
+    }
+    console.error("Regenerate error:", error);
+  }
+}
+
+// Bad: Silent failures
+async function handleRegenerate() {
+  try {
+    await api.regenerateImage(slideId);
+  } catch (error) {
+    // User doesn't know what happened!
+  }
+}
+```
+
+### Error Boundaries
+```typescript
+// Good: Catch rendering errors
+class ErrorBoundary extends React.Component<{children: React.ReactNode}> {
+  state = { hasError: false, error: null };
+  
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("React error:", error, info);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+
+// Usage
+<ErrorBoundary>
+  <App />
+</ErrorBoundary>
+```
+
+## Performance
+
+### Code Splitting
+```typescript
+// Good: Lazy load heavy components
+const Carousel = lazy(() => import('./components/Carousel'));
+
+function App() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      {showCarousel && <Carousel slides={slides} />}
+    </Suspense>
+  );
+}
+```
+
+### Debouncing User Input
+```typescript
+// Good: Debounce text input
+import { useDebouncedCallback } from 'use-debounce';
+
+function SlideEditor({ slide }: SlideEditorProps) {
+  const [text, setText] = useState(slide.text);
+  
+  const debouncedSave = useDebouncedCallback(
+    (newText: string) => {
+      api.updateSlide(slide.id, { text: newText });
+    },
+    1000 // Wait 1 second after user stops typing
+  );
+  
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    debouncedSave(newText);
+  };
+  
+  return <textarea value={text} onChange={handleChange} />;
+}
+```
+
+## Accessibility (a11y)
+
+### Semantic HTML
+```typescript
+// Good: Semantic elements
+<nav aria-label="Slide navigation">
+  <ul>
+    {slides.map(slide => (
+      <li key={slide.id}>
+        <button onClick={() => selectSlide(slide.id)}>
+          {slide.text}
+        </button>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+// Bad: Div soup
+<div>
+  <div>
+    {slides.map(slide => (
+      <div key={slide.id} onClick={() => selectSlide(slide.id)}>
+        {slide.text}
+      </div>
+    ))}
+  </div>
+</div>
+```
+
+### Keyboard Navigation
+```typescript
+// Good: Handle keyboard events
+function Carousel({ slides }: CarouselProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowLeft') {
+        previousSlide();
+      } else if (e.key === 'ArrowRight') {
+        nextSlide();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, previousSlide, nextSlide]);
+  
+  // ...
+}
+```
+
+## Testing
+
+### Component Tests
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { SlideEditor } from './SlideEditor';
+
+describe('SlideEditor', () => {
+  it('shows regenerate button when text changes', async () => {
+    const slide = { id: '1', text: 'Hello', content_hash: 'abc', image_hash: 'abc' };
+    render(<SlideEditor slide={slide} />);
+    
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'World' } });
+    
+    expect(await screen.findByText('Regenerate Image')).toBeInTheDocument();
+  });
+});
+```
+
+## Code Review Checklist
+
+Before committing, verify:
+- [ ] All types explicitly defined (no `any`)
+- [ ] Components are functional with hooks (no classes)
+- [ ] Memoization used for expensive operations
+- [ ] Effects have complete dependency arrays
+- [ ] Error handling for all API calls
+- [ ] Loading states for async operations
+- [ ] Accessibility: semantic HTML, keyboard support, ARIA labels
+- [ ] Responsive design (mobile-friendly)
+- [ ] Tests pass: `npm test`
+- [ ] Linting passes: `npm run lint`
+- [ ] Build succeeds: `npm run build`
+
+## Common Pitfalls to Avoid
+
+❌ **Don't**:
+- Use `any` type (use `unknown` or proper types)
+- Create new functions/objects in render (use `useCallback`/`useMemo`)
+- Forget cleanup in `useEffect` (return cleanup function)
+- Mutate state directly (use setState/immutable updates)
+- Use `index` as key in lists (use stable IDs)
+- Fetch data in render (use `useEffect` or data fetching library)
+- Ignore TypeScript errors (fix or properly type)
+
+✅ **Do**:
+- Use TypeScript strict mode
+- Extract reusable logic into custom hooks
+- Keep components small (<200 lines)
+- Use semantic HTML elements
+- Handle loading and error states
+- Provide keyboard navigation
+- Write meaningful component names
+- Add comments for complex logic only
