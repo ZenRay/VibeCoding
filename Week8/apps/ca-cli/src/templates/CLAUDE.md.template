@@ -1,67 +1,228 @@
-# {PROJECT_NAME} - AI 开发文档
+# {PROJECT_NAME} - AI Development Documentation
 
-> **由 Code Agent 管理** | 最后更新: {DATE}
+> **Managed by Code Agent** | Last updated: {DATE}
 
-## 项目概述
+---
 
-[待完善] 简要描述项目的目标、技术栈和核心功能
+## What is this file?
 
-## 项目结构
+This is a CLAUDE.md file that provides Claude with project-specific context. It helps AI assistants understand your codebase structure, conventions, and workflows without needing to repeat this information in every conversation.
 
-[待完善] 关键目录和文件的说明
+**Reference**: [Claude Code Best Practices](https://docs.anthropic.com/en/docs/claude-code/best-practices)
+
+---
+
+## Project Overview
+
+**Purpose**: [Brief description of what this project does]
+
+**Tech Stack**:
+- Language: [e.g., Rust, Python, TypeScript]
+- Framework: [e.g., Tokio, FastAPI, React]
+- Database: [e.g., PostgreSQL, Redis]
+- Key Dependencies: [List major dependencies]
+
+**Target Users**: [Who uses this project?]
+
+---
+
+## Project Structure
 
 ```
 project-root/
-├── src/           # 源代码
-├── specs/         # Code Agent 功能规格 (自动生成)
-├── tests/         # 测试代码
-└── CLAUDE.md      # 本文档
+├── src/              # Source code
+│   ├── main/         # Main application logic
+│   ├── lib/          # Library code
+│   └── tests/        # Test files
+├── specs/            # Code Agent feature specifications (auto-generated)
+│   └── 001-*/        # Individual feature directories
+├── docs/             # Documentation
+├── config/           # Configuration files
+└── CLAUDE.md         # This file
 ```
 
-## 开发规范
+### Key Directories
 
-### 编码规范
+- **`src/`**: [Explanation of source code organization]
+- **`specs/`**: Feature specifications managed by Code Agent (DO NOT manually edit)
+- **`tests/`**: [Test organization and conventions]
+- **`docs/`**: [Documentation structure]
 
-[待完善] 编码风格、命名约定、注释规范
+---
 
-### Git 工作流
+## Development Workflows
 
-[待完善] 分支策略、提交信息规范
-
-### 测试要求
-
-[待完善] 测试覆盖率、测试类型要求
-
-## 当前功能开发
-
-### 进行中的 Features
-
-_使用 `code-agent plan <feature-name>` 规划新功能后，此处会自动更新_
-
-### 已完成的 Features
-
-_功能完成后会自动记录到此处_
-
-## 技术债务与待办
-
-[待完善] 需要改进的技术点、性能优化项
-
-## 常见问题
-
-### 如何添加新功能？
+### Getting Started
 
 ```bash
-# 1. 规划功能
-code-agent plan <feature-name>
+# Setup environment
+[installation commands]
 
-# 2. 执行开发
-code-agent run <feature-name>
+# Run the project
+[run commands]
 
-# 3. 查看状态
-code-agent status <feature-name>
+# Run tests
+[test commands]
+```
+
+### Common Commands
+
+```bash
+# Development
+[dev commands]
+
+# Build
+[build commands]
+
+# Test
+[test commands with important flags]
+
+# Lint
+[lint commands]
+```
+
+### How to Verify Changes
+
+1. [Step-by-step verification process]
+2. [Important checks before committing]
+3. [How to run integration tests]
+
+---
+
+## Coding Standards
+
+### Code Style
+
+- **Naming Conventions**: [e.g., snake_case for functions, PascalCase for types]
+- **File Organization**: [How to organize new files]
+- **Import Order**: [Conventions for imports/use statements]
+- **Documentation**: [When and how to write comments/docstrings]
+
+### Best Practices
+
+- [Key practice 1]
+- [Key practice 2]
+- [Key practice 3]
+
+### Common Patterns
+
+**Pattern**: [Common code pattern in this codebase]
+```
+[Code example showing the pattern]
 ```
 
 ---
 
-**Code Agent 版本**: v0.1.0
-**最后更新**: {DATE}
+## Testing Requirements
+
+- **Unit Tests**: [Requirements and conventions]
+- **Integration Tests**: [Requirements and location]
+- **Test Coverage**: [Expected coverage thresholds]
+- **Test Data**: [How to manage test fixtures/data]
+
+---
+
+## Git Workflow
+
+### Branch Naming
+
+- Feature branches: `feature/<id>-<slug>`
+- Bug fixes: `fix/<issue-id>-<description>`
+- Hotfixes: `hotfix/<issue-id>-<description>`
+
+### Commit Messages
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types**: feat, fix, docs, style, refactor, test, chore
+
+### PR Requirements
+
+- [ ] All tests passing
+- [ ] Code review approved
+- [ ] Documentation updated
+- [ ] Changelog updated (if applicable)
+
+---
+
+## Code Agent Integration
+
+This project uses **Code Agent** for AI-assisted feature development.
+
+### Active Features
+
+_Features managed by Code Agent will be listed here automatically_
+
+### Completed Features
+
+_Completed features will be archived here_
+
+### Usage
+
+```bash
+# Plan a new feature
+code-agent plan <feature-name>
+
+# Execute feature development
+code-agent run <feature-name>
+
+# Check feature status
+code-agent feature status <feature-name>
+
+# List all features
+code-agent feature list
+```
+
+---
+
+## Project-Specific Notes
+
+### Important Constraints
+
+- [Critical constraint 1]
+- [Critical constraint 2]
+
+### Known Issues
+
+- [Known issue 1 and workaround]
+- [Known issue 2 and workaround]
+
+### External Dependencies
+
+- [External service 1]: [What it does, how to access]
+- [External service 2]: [What it does, how to access]
+
+---
+
+## Architecture Decisions
+
+### Key Design Choices
+
+1. **[Decision topic]**: [Why this approach was chosen]
+2. **[Decision topic]**: [Why this approach was chosen]
+
+### Performance Considerations
+
+- [Key performance requirement 1]
+- [Key performance requirement 2]
+
+---
+
+## Resources
+
+- **Documentation**: [Link to main docs]
+- **API Reference**: [Link if applicable]
+- **Design Documents**: [Link to design specs]
+- **Issue Tracker**: [Link to GitHub/JIRA]
+
+---
+
+**Last Updated**: {DATE}  
+**Code Agent Version**: [Version]  
+**Maintainers**: [Team/Person responsible]
