@@ -1,0 +1,66 @@
+# Task: Build Implementation Plan (Phase 2)
+
+## Context
+Based on the observer analysis, create a detailed implementation plan.
+
+{% if observer_results %}
+## Observer Analysis
+{{ observer_results }}
+{% endif %}
+
+{% if feature_spec %}
+## Feature Specification
+{{ feature_spec }}
+{% endif %}
+
+## Your Task
+Create a comprehensive implementation plan that breaks down the work into manageable tasks.
+
+### Planning Requirements
+1. **Task Breakdown**
+   - Individual, atomic tasks
+   - Clear acceptance criteria
+   - Completable in one phase
+
+2. **Task Ordering**
+   - Order by dependencies
+   - Group related tasks
+   - Identify parallel work
+
+3. **Phase Assignment**
+   - Assign to Phase 3 or Phase 4
+   - Balance complexity
+   - Ensure testability
+
+4. **Resource Estimation**
+   - Estimated effort per task
+   - Identify high-risk tasks
+
+## Output Format
+Provide:
+
+### Implementation Strategy
+- Overall approach
+- Key design decisions
+- Technology choices
+
+### Phase 3 Tasks
+For each task:
+- Task ID
+- Task Kind (implementation/refactoring/bugfix/testing/verification)
+- Description
+- Files to modify/create
+- Dependencies
+- Acceptance criteria
+- Complexity estimate
+
+### Phase 4 Tasks
+(Same format as Phase 3)
+
+### Testing Strategy
+- Unit tests
+- Integration tests
+- Manual verification steps
+
+### Risk Mitigation
+- For each high-risk task, provide mitigation strategy

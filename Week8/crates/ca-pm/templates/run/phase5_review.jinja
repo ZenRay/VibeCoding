@@ -1,0 +1,99 @@
+# Task: Code Review
+
+## Context
+Review the implemented code changes for quality, correctness, and best practices.
+
+## Implementation Summary
+{{ implementation.summary }}
+
+## Changes Made
+{% for change in changes %}
+### {{ change.file_path }}
+**Change Type**: {{ change.type }}
+**Phase**: {{ change.phase }}
+
+```{{ change.language }}
+{{ change.content }}
+```
+
+**Explanation**: {{ change.explanation }}
+{% endfor %}
+
+## Tests Added
+{% for test in tests %}
+- {{ test.file }}: {{ test.description }}
+{% endfor %}
+
+## Review Criteria
+1. **Code Quality**
+   - Clean code principles
+   - SOLID principles
+   - DRY principle
+   - Appropriate abstractions
+
+2. **Correctness**
+   - Logic correctness
+   - Edge case handling
+   - Error handling
+   - Type safety
+
+3. **Performance**
+   - Algorithm efficiency
+   - Resource usage
+   - Scalability concerns
+
+4. **Security**
+   - Input validation
+   - Security best practices
+   - Potential vulnerabilities
+
+5. **Testing**
+   - Test coverage
+   - Test quality
+   - Missing test cases
+
+6. **Documentation**
+   - Code comments
+   - API documentation
+   - README updates
+
+## Your Task
+Provide a comprehensive code review.
+
+### Output Format
+
+#### Overall Assessment
+- Quality Score: 1-10
+- Ready for merge: Yes/No/With fixes
+- Major concerns: List if any
+
+#### Issues Found
+For each issue:
+- Severity: Critical/High/Medium/Low
+- Category: Quality/Correctness/Performance/Security/Testing/Documentation
+- Location: File and line
+- Description: What is the issue
+- Recommendation: How to fix it
+- Example: Code example if helpful
+
+#### Positive Aspects
+- What was done well
+- Good practices followed
+- Improvements made
+
+#### Suggestions
+- Optional improvements
+- Alternative approaches
+- Refactoring opportunities
+
+#### Action Items
+- Must-fix items (blocking)
+- Should-fix items (important)
+- Could-fix items (nice-to-have)
+
+## Guidelines
+- Be constructive and specific
+- Provide code examples for fixes
+- Prioritize issues by severity
+- Acknowledge good practices
+- Focus on actionable feedback

@@ -1,0 +1,82 @@
+# Task: Apply Code Review Fixes
+
+## Context
+Address the issues identified in the code review.
+
+## Code Review Results
+{{ review.results }}
+
+## Issues to Fix
+{% for issue in issues %}
+### Issue {{ loop.index }}: {{ issue.title }}
+- **Severity**: {{ issue.severity }}
+- **Category**: {{ issue.category }}
+- **Location**: {{ issue.location }}
+- **Description**: {{ issue.description }}
+- **Recommendation**: {{ issue.recommendation }}
+{% if issue.example %}
+**Example**:
+```{{ issue.language }}
+{{ issue.example }}
+```
+{% endif %}
+{% endfor %}
+
+## Current Code
+{% for file in affected_files %}
+### {{ file.path }}
+```{{ file.language }}
+{{ file.content }}
+```
+{% endfor %}
+
+## Your Task
+Fix all the issues identified in the code review.
+
+### Fix Requirements
+1. **Address All Critical Issues**
+   - Must fix all critical and high severity issues
+   - Provide clear explanation for each fix
+
+2. **Code Quality**
+   - Maintain or improve code quality
+   - Follow review recommendations
+   - Preserve existing functionality
+
+3. **Testing**
+   - Update tests to reflect fixes
+   - Add tests for newly covered cases
+   - Ensure all tests pass
+
+## Output Format
+Provide your fixes with:
+
+### Fixes Applied
+For each issue fixed:
+- Issue ID: Reference to review issue
+- Fix Summary: What was changed
+- File: File path
+- Changes: Description of changes
+
+### Updated Code
+For each modified file:
+- File path
+- Complete updated content
+- Explanation of changes
+
+### Tests Updated
+- Test files modified
+- New test cases added
+- Test results
+
+### Verification
+- How to verify the fixes
+- What to check
+- Expected behavior
+
+## Guidelines
+- Fix all critical issues
+- Maintain code consistency
+- Preserve functionality
+- Add tests for fixes
+- Explain each fix clearly

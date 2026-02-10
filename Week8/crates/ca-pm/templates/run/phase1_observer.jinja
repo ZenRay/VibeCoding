@@ -1,0 +1,56 @@
+# Task: Build Observer (Phase 1)
+
+## Context
+Analyze the codebase to understand the current structure and identify areas that need modification for implementing the feature.
+
+{% if project %}
+## Project Information
+- Repository: {{ project.repo_path }}
+{% if project.primary_language %}
+- Language: {{ project.primary_language }}
+{% endif %}
+{% endif %}
+
+{% if feature_spec %}
+## Feature Specification
+{{ feature_spec }}
+{% endif %}
+
+{% if files %}
+## Project Files
+{% for file in files %}
+- {{ file.path }}{% if file.language %} ({{ file.language }}){% endif %}
+{% endfor %}
+{% endif %}
+
+## Your Task
+Provide a comprehensive observer report to guide the implementation.
+
+### Analysis Requirements
+1. **File Analysis**
+   - Files to modify
+   - New files to create
+   - Indirectly affected files
+
+2. **Dependency Analysis**
+   - Component dependencies
+   - External dependencies needed
+   - Potential conflicts
+
+3. **Risk Assessment**
+   - Technical risks
+   - High complexity areas
+   - Compatibility concerns
+
+4. **Architecture Impact**
+   - Existing architecture changes
+   - Patterns to follow
+   - Refactoring opportunities
+
+## Output Format
+Provide structured analysis with:
+- Files to modify (with reasons and complexity)
+- Files to create (with purpose and dependencies)
+- Dependency changes
+- Risk assessment with mitigations
+- Implementation recommendations

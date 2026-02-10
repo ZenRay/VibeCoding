@@ -1,0 +1,69 @@
+# Task: Feature Analysis and Planning
+
+## Feature Description
+{{ feature_description }}
+
+{% if project %}
+## Project Context
+- Repository: {{ project.repo_path }}
+{% if project.primary_language %}
+- Language: {{ project.primary_language }}
+{% endif %}
+{% if project.framework %}
+- Framework: {{ project.framework }}
+{% endif %}
+{% endif %}
+
+{% if files %}
+## Current Project Structure
+{% for file in files %}
+- {{ file.path }} ({{ file.content | length }} chars)
+{% endfor %}
+{% endif %}
+
+## Your Task
+Analyze the feature requirements and the current codebase to create a comprehensive plan.
+
+### Analysis Requirements
+1. **Feature Scope**
+   - Clearly define the feature boundaries
+   - Identify affected components
+   - Estimate complexity
+
+2. **Technical Design**
+   - Propose architecture changes
+   - Identify design patterns to use
+   - Consider scalability and maintainability
+
+3. **Task Breakdown**
+   - Break down into implementable tasks
+   - Identify dependencies
+   - Prioritize tasks
+
+4. **Risk Assessment**
+   - Technical risks
+   - Integration challenges
+   - Performance implications
+
+## Output Format
+Please provide:
+
+### Feature Specification
+- Overview
+- Requirements
+- Technical approach
+
+### Design Document
+- Architecture changes
+- Component interactions
+- Data models
+
+### Implementation Plan
+- Task list with priorities
+- Dependencies
+- Estimated effort
+
+### Tasks Breakdown
+- Individual tasks
+- Acceptance criteria
+- Files to modify/create

@@ -1,0 +1,99 @@
+# Task: Final Verification
+
+## Implementation Summary
+{{ implementation_summary }}
+
+## All Changes
+{% for change in all_changes %}
+- {{ change.file }}: {{ change.type }}
+{% endfor %}
+
+## Tests
+{% for test in tests %}
+- {{ test.file }}: {{ test.description }}
+{% endfor %}
+
+## Your Task
+Perform comprehensive verification before creating the Pull Request.
+
+### Verify
+1. **Functionality**
+   - All features implemented
+   - Acceptance criteria met
+   - Edge cases handled
+
+2. **Quality**
+   - Code follows conventions
+   - No code smells
+   - Well-documented
+
+3. **Testing**
+   - All tests pass
+   - Coverage adequate (>80%)
+   - No flaky tests
+
+4. **Security**
+   - No vulnerabilities
+   - Input validation present
+   - Best practices followed
+
+### Report
+
+#### Verification Results
+- Overall Status: Pass/Fail
+- Tests: X passed, Y failed
+- Coverage: X%
+
+#### Issues Found
+For each issue:
+- Severity (Critical/High/Medium/Low)
+- Description
+- Recommendation
+
+#### Final Assessment
+- Ready for PR: Yes/No
+- Conditions (if any)
+- Known limitations
+
+### Pull Request
+
+#### PR Title
+`feat: {{ feature_name }} - Complete implementation`
+
+#### PR Description
+```markdown
+## Summary
+<What was implemented>
+
+## Changes
+- <Key change 1>
+- <Key change 2>
+
+## Testing
+- [ ] Unit tests added and passing
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+
+## Files Changed
+{% for change in all_changes %}
+- {{ change.file }} - <purpose>
+{% endfor %}
+
+## Checklist
+- [ ] Code follows project style
+- [ ] Tests added/updated
+- [ ] Documentation updated
+- [ ] No breaking changes
+```
+
+#### GitHub CLI Command
+```bash
+cd {{ repo_path }}
+gh pr create \
+  --title "feat: {{ feature_name }} - Complete implementation" \
+  --body-file .ca-state/pr-description.md \
+  --base main \
+  --head {{ branch_name }}
+```
+
+**Note**: Save PR description to `.ca-state/pr-description.md` first.

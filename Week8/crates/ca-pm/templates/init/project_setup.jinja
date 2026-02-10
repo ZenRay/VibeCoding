@@ -1,0 +1,26 @@
+# Task: Project Setup
+
+## Objective
+Initialize a new Code Agent project with default configuration and structure.
+
+{% if project %}
+## Project Information
+- Name: {{ project.name }}
+- Repository: {{ project.repo_path }}
+{% if project.primary_language %}
+- Primary Language: {{ project.primary_language }}
+{% endif %}
+{% endif %}
+
+## Tasks
+1. Create project directory structure
+2. Initialize configuration
+3. Set up default templates
+4. Validate environment
+
+## Output Requirements
+Please provide:
+1. Created directory structure
+2. Configuration files generated
+3. Any warnings or recommendations
+4. Next steps for the user
