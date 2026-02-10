@@ -56,6 +56,9 @@ ignore = "0.4.23"
 # UUID generation
 uuid = { version = "1.11", features = ["v4", "serde"] }
 
+# Testing utilities
+tempfile = "3.14"
+
 # Internal workspace crates
 ca-core = { path = "crates/ca-core" }
 ca-pm = { path = "crates/ca-pm" }

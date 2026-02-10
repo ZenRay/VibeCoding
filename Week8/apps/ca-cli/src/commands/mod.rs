@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use ca_pm::{PromptConfig, PromptManager};
-
 use crate::config::AppConfig;
 
 mod init;
@@ -10,6 +8,7 @@ mod run;
 mod list;
 mod status;
 mod clean;
+mod templates;
 
 pub use init::execute_init;
 pub use plan::execute_plan;
@@ -17,6 +16,7 @@ pub use run::execute_run;
 pub use list::execute_list;
 pub use status::execute_status;
 pub use clean::execute_clean;
+pub use templates::execute_templates;
 
 pub enum Command {
     Init {
@@ -78,48 +78,4 @@ pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Re
             execute_clean(dry_run, all, config).await
         }
     }
-}
-
-async fn execute_templates(verbose: bool, config: &AppConfig) -> anyhow::Result<()> {
-    println!("📋 可用模板:");
-
-    let prompt_config = PromptConfig {
-        template_dir: config.prompt.template_dir.clone(),
-        default_template: Some(config.prompt.default_template.clone()),
-    };
-
-    let manager = PromptManager::new(prompt_config)?;
-    let templates = manager.list_templates();
-
-    if templates.is_empty() {
-        println!("  (无模板)");
-    } else {
-        for template_name in templates {
-            print!("  - {}", template_name);
-
-            if template_name == config.prompt.default_template {
-                print!(" (默认)");
-            }
-
-            println!();
-
-            if verbose && let Some(template) = manager.get_template(template_name) {
-                if let Some(desc) = &template.description {
-                    println!("    描述: {}", desc);
-                }
-                println!("    内容预览:");
-                let preview: String = template
-                    .content
-                    .lines()
-                    .take(3)
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                println!("    {}", preview.replace('\n', "\n    "));
-            }
-        }
-    }
-
-    println!("\n📂 模板目录: {}", config.prompt.template_dir.display());
-
-    Ok(())
 }

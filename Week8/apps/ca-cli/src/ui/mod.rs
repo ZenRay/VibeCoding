@@ -1,172 +1,50 @@
-use std::io;
-use std::path::Path;
-use std::time::Duration;
+//! TUI 模块：Plan 交互式界面 (3 区域布局 + Worker 并发)。
 
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
-};
-use ratatui::{
-    Frame, Terminal,
-    backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
-};
+mod plan_app;
+mod plan_worker;
+
+pub use plan_app::run_plan_tui_blocking;
+pub use plan_worker::run_plan_worker;
+
+use std::path::PathBuf;
+use tokio::sync::mpsc;
 
 use crate::config::AppConfig;
 
-pub async fn run_tui(repo_path: &Path, config: &AppConfig) -> anyhow::Result<()> {
-    // 设置终端
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+/// 启动 Plan TUI：TUI Task (阻塞线程) + Worker Task (async)，通过 mpsc 通信。
+pub async fn execute_plan_tui(
+    feature_slug: String,
+    repo_path: PathBuf,
+    config: AppConfig,
+) -> anyhow::Result<()> {
+    let (ui_tx, ui_rx) = mpsc::channel(100);
+    let (worker_tx, worker_rx) = mpsc::channel(100);
 
-    // 创建应用状态
-    let mut app = App::new(repo_path, config);
+    let slug = feature_slug.clone();
+    let path = repo_path.clone();
 
-    // 运行应用
-    let res = run_app(&mut terminal, &mut app).await;
+    let ui_handle = tokio::task::spawn_blocking(move || {
+        run_plan_tui_blocking(ui_rx, worker_tx, slug, &path)
+    });
 
-    // 恢复终端
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    let worker_handle = tokio::spawn(async move {
+        run_plan_worker(worker_rx, ui_tx, feature_slug, repo_path, config).await
+    });
 
-    if let Err(err) = res {
-        println!("错误: {:?}", err);
-    }
-
-    Ok(())
-}
-
-#[allow(dead_code)]
-struct App<'a> {
-    repo_path: &'a Path,
-    config: &'a AppConfig,
-    input: String,
-    messages: Vec<String>,
-    should_quit: bool,
-}
-
-impl<'a> App<'a> {
-    fn new(repo_path: &'a Path, config: &'a AppConfig) -> Self {
-        Self {
-            repo_path,
-            config,
-            input: String::new(),
-            messages: vec![
-                "欢迎使用 Code Agent TUI!".to_string(),
-                format!("工作目录: {}", repo_path.display()),
-                "输入任务描述并按回车执行,按 Esc 退出".to_string(),
-            ],
-            should_quit: false,
+    tokio::select! {
+        ui_res = ui_handle => {
+            match ui_res {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => tracing::error!("TUI 错误: {:?}", e),
+                Err(e) => tracing::error!("TUI task 异常: {:?}", e),
+            }
         }
-    }
-
-    fn add_message(&mut self, msg: String) {
-        self.messages.push(msg);
-        // 保持最近 50 条消息
-        if self.messages.len() > 50 {
-            self.messages.remove(0);
-        }
-    }
-}
-
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App<'_>) -> anyhow::Result<()> {
-    loop {
-        terminal
-            .draw(|f| ui(f, app))
-            .map_err(|e| anyhow::anyhow!("Terminal draw error: {}", e))?;
-
-        if app.should_quit {
-            return Ok(());
-        }
-
-        if event::poll(Duration::from_millis(100))?
-            && let Event::Key(key) = event::read()?
-        {
-            match key.code {
-                KeyCode::Esc => {
-                    app.should_quit = true;
-                }
-                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    app.should_quit = true;
-                }
-                KeyCode::Enter => {
-                    if !app.input.is_empty() {
-                        let task = app.input.clone();
-                        app.add_message(format!("> {}", task));
-                        app.input.clear();
-
-                        // 这里应该异步执行任务,为了简化,先显示提示
-                        app.add_message("⚙️  执行中...".to_string());
-                        app.add_message("✅ (模拟) 任务完成".to_string());
-                    }
-                }
-                KeyCode::Char(c) => {
-                    app.input.push(c);
-                }
-                KeyCode::Backspace => {
-                    app.input.pop();
-                }
-                _ => {}
+        worker_res = worker_handle => {
+            if let Err(e) = worker_res {
+                tracing::error!("Worker task 异常: {:?}", e);
             }
         }
     }
-}
 
-fn ui(f: &mut Frame, app: &App) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(1),
-            Constraint::Length(3),
-        ])
-        .split(f.area());
-
-    // 标题
-    let title = Paragraph::new("Code Agent TUI")
-        .style(
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL));
-    f.render_widget(title, chunks[0]);
-
-    // 消息列表
-    let messages: Vec<ListItem> = app
-        .messages
-        .iter()
-        .map(|m| {
-            let content = Line::from(Span::raw(m));
-            ListItem::new(content)
-        })
-        .collect();
-
-    let messages_list =
-        List::new(messages).block(Block::default().borders(Borders::ALL).title("消息"));
-    f.render_widget(messages_list, chunks[1]);
-
-    // 输入框
-    let input = Paragraph::new(app.input.as_str())
-        .style(Style::default().fg(Color::Yellow))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("输入 (Enter: 执行, Esc: 退出)"),
-        );
-    f.render_widget(input, chunks[2]);
+    Ok(())
 }

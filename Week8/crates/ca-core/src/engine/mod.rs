@@ -3,8 +3,9 @@ pub mod phase_config;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::agent::{Agent, AgentRequest};
+use crate::agent::{Agent, AgentRequest, PhaseRequestConfig};
 use crate::error::Result;
+use crate::event::EventHandler;
 use crate::repository::Repository;
 use crate::state::StateManager;
 
@@ -18,6 +19,8 @@ pub struct ExecutionEngine {
     repository: Arc<Repository>,
     /// State Manager
     state_manager: Option<StateManager>,
+    /// Event Handler (用于流式输出和 TUI 更新)
+    event_handler: Option<Box<dyn EventHandler>>,
 }
 
 impl ExecutionEngine {
@@ -27,6 +30,7 @@ impl ExecutionEngine {
             agent,
             repository,
             state_manager: None,
+            event_handler: None,
         }
     }
 
@@ -36,20 +40,78 @@ impl ExecutionEngine {
         self
     }
 
-    /// 执行指定阶段
-    pub async fn execute_phase(&self, phase: Phase, prompt: String) -> Result<ExecutionResult> {
-        tracing::info!(phase = ?phase, "Starting phase execution");
+    /// 设置 event handler
+    pub fn with_event_handler(mut self, handler: Box<dyn EventHandler>) -> Self {
+        self.event_handler = Some(handler);
+        self
+    }
+
+    /// 执行指定阶段 (新版本 - 支持 TaskTemplate 和 TemplateContext)
+    ///
+    /// # 参数
+    ///
+    /// * `phase` - 执行阶段
+    /// * `task_config` - 任务配置 (从 TaskTemplate.config)
+    /// * `system_prompt` - 系统提示词 (从 TaskTemplate.system_template 渲染)
+    /// * `user_prompt` - 用户提示词 (从 TaskTemplate.user_template 渲染)
+    pub async fn execute_phase_with_config(
+        &mut self,
+        phase: Phase,
+        task_config: &ca_pm::TaskConfig,
+        system_prompt: Option<String>,
+        user_prompt: String,
+    ) -> Result<ExecutionResult> {
+        tracing::info!(phase = ?phase, "Starting phase execution with config");
+
+        // 1. 构建 PhaseRequestConfig (从 TaskConfig)
+        let phase_config = PhaseRequestConfig {
+            preset: task_config.preset,
+            disallowed_tools: task_config.disallowed_tools.clone(),
+            permission_mode: Self::convert_permission_mode(task_config.permission_mode),
+            max_turns: task_config.max_turns,
+            max_budget_usd: Some(task_config.max_budget_usd),
+        };
+
+        // 2. 构建 AgentRequest
+        let request = AgentRequest {
+            id: uuid::Uuid::new_v4().to_string(),
+            prompt: user_prompt.clone(),
+            system_prompt,
+            context_files: Vec::new(),
+            max_tokens: None,
+            temperature: None,
+            metadata: std::collections::HashMap::new(),
+            phase_config: Some(phase_config),
+        };
+
+        // 3. 执行请求
+        let response = self.agent.execute(request).await?;
+
+        // 4. 触发事件 (如果有 EventHandler)
+        if let Some(ref mut handler) = self.event_handler {
+            handler.on_text(&response.content);
+            handler.on_complete();
+        }
+
+        // 5. 构建结果
+        Ok(ExecutionResult {
+            success: true,
+            phase,
+            message: response.content,
+            files_changed: response.file_changes.len(),
+            tokens_used: response.tokens_used.unwrap_or(0),
+            turns: 1, // TODO: 从响应中获取实际轮次
+            cost_usd: 0.0, // TODO: 从响应中计算实际成本
+        })
+    }
+
+    /// 执行指定阶段 (旧版本 - 向后兼容)
+    pub async fn execute_phase(&mut self, phase: Phase, prompt: String) -> Result<ExecutionResult> {
+        tracing::info!(phase = ?phase, "Starting phase execution (legacy mode)");
 
         // 获取 phase 配置
         let config = PhaseConfig::for_phase(phase)?;
 
-        // 配置 Agent 的 Permission Mode 和其他选项
-        // 注意: 这里需要确保 agent 是可变的,但我们使用 Arc<dyn Agent>
-        // 解决方案: 通过 ClaudeAgent 的 configure 方法在执行前配置
-        
-        // TODO: 目前无法直接修改 Arc<dyn Agent>,需要重构为支持运行时配置
-        // 临时方案: 在创建 Agent 时就配置好所有选项
-        
         // 构建 Agent 请求
         let request = AgentRequest {
             id: uuid::Uuid::new_v4().to_string(),
@@ -59,6 +121,7 @@ impl ExecutionEngine {
             max_tokens: None,
             temperature: None,
             metadata: std::collections::HashMap::new(),
+            phase_config: None, // 旧模式不传递 phase_config
         };
 
         // 执行请求
@@ -71,7 +134,19 @@ impl ExecutionEngine {
             message: response.content,
             files_changed: response.file_changes.len(),
             tokens_used: response.tokens_used.unwrap_or(0),
+            turns: 1,
+            cost_usd: 0.0,
         })
+    }
+
+    /// 转换权限模式
+    fn convert_permission_mode(mode: ca_pm::PermissionMode) -> crate::agent::PermissionMode {
+        match mode {
+            ca_pm::PermissionMode::Default => crate::agent::PermissionMode::Default,
+            ca_pm::PermissionMode::AcceptEdits => crate::agent::PermissionMode::AcceptEdits,
+            ca_pm::PermissionMode::Plan => crate::agent::PermissionMode::Plan,
+            ca_pm::PermissionMode::BypassPermissions => crate::agent::PermissionMode::BypassPermissions,
+        }
     }
 
     /// 获取 repository
@@ -103,6 +178,10 @@ pub struct ExecutionResult {
     pub files_changed: usize,
     /// 使用的 tokens
     pub tokens_used: u32,
+    /// 执行轮次
+    pub turns: usize,
+    /// 成本 (USD)
+    pub cost_usd: f64,
 }
 
 #[cfg(test)]
@@ -126,5 +205,6 @@ mod tests {
 
         let engine = ExecutionEngine::new(agent, repo);
         assert!(engine.state_manager.is_none());
+        assert!(engine.event_handler.is_none());
     }
 }

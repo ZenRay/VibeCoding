@@ -207,10 +207,10 @@ async fn print_delivery_info(state: &FeatureState) {
             }
         }
 
-        if state.delivery.merged {
-            if let Some(merged_at) = state.delivery.merged_at {
-                println!("  • 合并时间: {}", format_datetime(&merged_at));
-            }
+        if state.delivery.merged
+            && let Some(merged_at) = state.delivery.merged_at
+        {
+            println!("  • 合并时间: {}", format_datetime(&merged_at));
         }
     } else {
         println!("  (尚未创建 PR)");

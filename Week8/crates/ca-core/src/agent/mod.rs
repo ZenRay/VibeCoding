@@ -110,6 +110,38 @@ pub struct AgentRequest {
     pub temperature: Option<f32>,
     /// 元数据
     pub metadata: HashMap<String, serde_json::Value>,
+    /// Phase 配置 (用于运行时配置 Agent)
+    pub phase_config: Option<PhaseRequestConfig>,
+}
+
+/// Phase 请求配置
+///
+/// 用于在 AgentRequest 中传递运行时配置,支持 Agent 根据不同 Phase 调整行为。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PhaseRequestConfig {
+    /// 是否使用 preset (如 claude_code)
+    pub preset: bool,
+    /// 禁止的工具列表
+    pub disallowed_tools: Vec<String>,
+    /// 权限模式
+    pub permission_mode: PermissionMode,
+    /// 最大轮次
+    pub max_turns: usize,
+    /// 最大预算 (USD)
+    pub max_budget_usd: Option<f64>,
+}
+
+/// 权限模式
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum PermissionMode {
+    /// 默认模式 - 需要审批
+    Default,
+    /// 接受编辑 - 自动批准编辑
+    AcceptEdits,
+    /// 计划模式 - 只读,相当于 ReadOnly
+    Plan,
+    /// 绕过权限 - 完全自动化
+    BypassPermissions,
 }
 
 impl AgentRequest {
@@ -123,6 +155,7 @@ impl AgentRequest {
             max_tokens: None,
             temperature: None,
             metadata: HashMap::new(),
+            phase_config: None,
         }
     }
 }

@@ -179,6 +179,7 @@ impl ClaudeAgent {
     }
 
     /// 使用简单的 query API 执行请求
+    #[allow(dead_code)]
     async fn execute_simple(&self, prompt: &str) -> Result<AgentResponse> {
         let start = Instant::now();
 
@@ -312,6 +313,126 @@ impl Agent for ClaudeAgent {
             "Executing Claude Agent request"
         );
 
+        // 构建选项 (根据是否有 phase_config)
+        let options = if let Some(ref phase_config) = request.phase_config {
+            tracing::info!(
+                preset = phase_config.preset,
+                disallowed_tools = ?phase_config.disallowed_tools,
+                permission_mode = ?phase_config.permission_mode,
+                max_turns = phase_config.max_turns,
+                "Applying phase config to agent"
+            );
+
+            // 转换 PermissionMode
+            let perm_mode = match phase_config.permission_mode {
+                crate::agent::PermissionMode::Default => 
+                    claude_agent_sdk_rs::PermissionMode::Default,
+                crate::agent::PermissionMode::AcceptEdits => 
+                    claude_agent_sdk_rs::PermissionMode::AcceptEdits,
+                crate::agent::PermissionMode::Plan => 
+                    claude_agent_sdk_rs::PermissionMode::Plan,
+                crate::agent::PermissionMode::BypassPermissions => 
+                    claude_agent_sdk_rs::PermissionMode::BypassPermissions,
+            };
+
+            // 构建选项 (一次性完成,不能分开 reassign)
+            // 根据不同的配置组合构建
+            match (
+                request.system_prompt.as_ref(),
+                !phase_config.disallowed_tools.is_empty(),
+                phase_config.max_budget_usd,
+            ) {
+                (Some(sys_prompt), true, Some(budget)) => {
+                    // 有系统提示词 + 禁止工具 + 预算
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .system_prompt(SystemPrompt::Text(sys_prompt.clone()))
+                        .disallowed_tools(phase_config.disallowed_tools.clone())
+                        .max_budget_usd(budget)
+                        .build()
+                }
+                (Some(sys_prompt), true, None) => {
+                    // 有系统提示词 + 禁止工具
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .system_prompt(SystemPrompt::Text(sys_prompt.clone()))
+                        .disallowed_tools(phase_config.disallowed_tools.clone())
+                        .build()
+                }
+                (Some(sys_prompt), false, Some(budget)) => {
+                    // 有系统提示词 + 预算
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .system_prompt(SystemPrompt::Text(sys_prompt.clone()))
+                        .max_budget_usd(budget)
+                        .build()
+                }
+                (Some(sys_prompt), false, None) => {
+                    // 只有系统提示词
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .system_prompt(SystemPrompt::Text(sys_prompt.clone()))
+                        .build()
+                }
+                (None, true, Some(budget)) => {
+                    // 禁止工具 + 预算
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .disallowed_tools(phase_config.disallowed_tools.clone())
+                        .max_budget_usd(budget)
+                        .build()
+                }
+                (None, true, None) => {
+                    // 只有禁止工具
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .disallowed_tools(phase_config.disallowed_tools.clone())
+                        .build()
+                }
+                (None, false, Some(budget)) => {
+                    // 只有预算
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .max_budget_usd(budget)
+                        .build()
+                }
+                (None, false, None) => {
+                    // 基础配置
+                    ClaudeAgentOptions::builder()
+                        .model(self.model.clone())
+                        .permission_mode(perm_mode)
+                        .max_turns(phase_config.max_turns as u32)
+                        .build()
+                }
+            }
+        } else {
+            // 使用默认选项 (可能带系统提示词)
+            if let Some(ref sys_prompt) = request.system_prompt {
+                ClaudeAgentOptions::builder()
+                    .model(self.model.clone())
+                    .system_prompt(SystemPrompt::Text(sys_prompt.clone()))
+                    .build()
+            } else {
+                ClaudeAgentOptions::builder()
+                    .model(self.model.clone())
+                    .build()
+            }
+        };
+
         // 构建完整的提示词
         let mut full_prompt = String::new();
 
@@ -327,9 +448,44 @@ impl Agent for ClaudeAgent {
         // 添加主提示词
         full_prompt.push_str(&request.prompt);
 
-        // 使用简单查询 API (默认模式)
-        // 可以根据需要切换到流式模式
-        self.execute_simple(&full_prompt).await
+        // 执行请求 (使用配置后的 options)
+        let start = Instant::now();
+
+        let messages = claude_agent_sdk_rs::query(&full_prompt, Some(options))
+            .await
+            .map_err(|e| CoreError::Agent(format!("Claude query failed: {}", e)))?;
+
+        let duration_ms = start.elapsed().as_millis() as u64;
+
+        // 收集响应内容
+        let mut content = String::new();
+        let tokens_used = 0u32;
+
+        for message in &messages {
+            if let Message::Assistant(assistant_msg) = message {
+                for block in &assistant_msg.message.content {
+                    if let ContentBlock::Text(text) = block {
+                        content.push_str(&text.text);
+                        content.push('\n');
+                    }
+                }
+            }
+        }
+
+        // 提取文件修改
+        let file_changes = Self::extract_file_changes_from_messages(&messages)?;
+
+        Ok(AgentResponse {
+            request_id: request.id,
+            content: content.trim().to_string(),
+            tokens_used: Some(tokens_used),
+            file_changes,
+            metadata: ResponseMetadata {
+                duration_ms,
+                model: self.model.clone(),
+                finish_reason: "stop".to_string(),
+            },
+        })
     }
 
     async fn validate(&self) -> Result<bool> {

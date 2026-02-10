@@ -1,0 +1,9 @@
+# Phase 1: Observer Phase Configuration
+# 观察阶段配置 - 分析模式
+
+preset: true
+tools: []
+disallowed_tools: []
+permission_mode: default
+max_turns: 15
+max_budget_usd: 3.0

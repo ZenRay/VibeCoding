@@ -1,465 +1,203 @@
 # Code Agent
 
-一个强大的代码 Agent CLI 工具,封装了多种 AI Agent SDK (Claude Agent, GitHub Copilot Agent, Cursor Agent),让你能够轻松地在代码仓库中添加新功能。
+> 统一的 AI Agent SDK 封装工具，让 AI 帮你写代码
 
-## 特性
+[![Rust Version](https://img.shields.io/badge/rust-2024%20edition-blue)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- 🤖 **多 Agent 支持**: Claude Agent (已实现), GitHub Copilot, Cursor (规划中)
-- 📝 **模板系统**: 基于 MiniJinja 的灵活 Prompt 模板管理
-- 🎯 **智能执行**: 自动处理文件读取、修改和验证
-- 🖥️ **交互式 TUI**: 基于 Ratatui 的终端用户界面
-- ⚡ **异步执行**: 基于 Tokio 的高性能异步运行时
+Code Agent 是一个命令行工具，封装了多种 AI Agent SDK (Claude, Copilot, Cursor)，提供统一的接口来帮助你在代码仓库中添加新功能、重构代码、修复 Bug。
 
-## 架构
+## ✨ 特性
 
-本项目采用 Cargo Workspace 架构:
+- 🤖 **多 Agent 支持**: Claude (✅), Copilot (🚧), Cursor (🚧)
+- 📋 **智能规划**: 自动分析项目结构，生成详细的实施计划
+- 🔄 **7 Phase 执行**: Observer → Planning → Execute → Review → Fix → Verification → PR
+- 🔍 **智能 Review**: 自动代码审查 + Fix 循环 (最多 3 次)
+- 💾 **断点恢复**: 支持中断后继续执行
+- 📊 **状态追踪**: 自动生成 status.md 和 state.yml
+- 🎯 **零配置**: 直接使用环境变量，无需配置文件
 
-```
-Week8/
-├── Cargo.toml              # Workspace 配置
-├── crates/
-│   ├── ca-core/           # 核心执行引擎
-│   │   ├── src/
-│   │   │   ├── agent/     # Agent 抽象和实现
-│   │   │   ├── executor/  # 任务执行器
-│   │   │   ├── repository/# 代码仓库管理
-│   │   │   ├── config.rs  # 配置
-│   │   │   └── error.rs   # 错误处理
-│   │   └── Cargo.toml
-│   └── ca-pm/             # Prompt Manager
-│       ├── src/
-│       │   ├── manager.rs # Prompt 管理器
-│       │   ├── template.rs# 模板渲染
-│       │   └── error.rs   # 错误处理
-│       └── Cargo.toml
-└── apps/
-    └── ca-cli/            # CLI 应用
-        ├── src/
-        │   ├── commands/  # 命令实现
-        │   ├── ui/        # TUI 界面
-        │   ├── config/    # 配置管理
-        │   └── main.rs
-        └── Cargo.toml
-```
+## 🚀 快速开始
 
-## 安装
-
-### 前置要求
-
-- Rust 1.75+ (2021 edition)
-- Cargo
-
-### 从源码构建
+### 安装
 
 ```bash
-cd ~/Documents/VibeCoding/Week8
+# 从源码构建
+git clone https://github.com/your-repo/code-agent.git
+cd code-agent/Week8
 cargo build --release
+
+# 安装到系统
+cargo install --path apps/ca-cli
 ```
 
-生成的二进制文件位于 `target/release/code-agent`
+### 配置
 
-## 快速开始
-
-### 1. 配置环境变量
-
-Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供:
+设置环境变量:
 
 ```bash
-# Claude Agent (官方 Anthropic API)
+# Claude (推荐)
 export ANTHROPIC_API_KEY='sk-ant-xxx'
 
-# 或使用 OpenRouter (支持多种环境变量名)
-export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'  # OpenRouter 标准
-export OPENROUTER_API_KEY='sk-or-v1-xxx'    # OpenRouter 别名
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+# Copilot (实验性)
+export COPILOT_GITHUB_TOKEN='ghp_xxx'
 
-# 可选: 指定模型
-export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
+# Cursor (实验性)
+export CURSOR_API_KEY='cursor_xxx'
 ```
 
-**支持的环境变量 (按优先级)**:
-1. `ANTHROPIC_API_KEY` - Anthropic 官方标准
-2. `CLAUDE_API_KEY` - 常见别名
-3. `ANTHROPIC_AUTH_TOKEN` - OpenRouter 标准 ✨ NEW
-4. `OPENROUTER_API_KEY` - OpenRouter 别名 ✨ NEW
-
-### 2. 规划功能
+### 使用流程
 
 ```bash
-# 创建功能规划
-code-agent plan my-feature --description "添加用户认证功能"
+# 1. 初始化项目
+code-agent init
 
-# 或使用交互模式
-code-agent plan my-feature --interactive
+# 2. 规划新功能
+code-agent plan user-authentication --description "添加 OAuth2 用户认证"
+
+# 3. 执行开发
+code-agent run user-authentication
+
+# 4. 查看状态
+code-agent status user-authentication
+
+# 5. 列出所有功能
+code-agent list
 ```
 
-### 3. 执行功能开发
+## 📖 详细文档
+
+### 命令
+
+#### `init` - 初始化项目
 
 ```bash
-# 执行完整的 7 个阶段
-code-agent run my-feature
+code-agent init [OPTIONS]
 
-# 执行特定阶段
-code-agent run my-feature --phase 3
-
-# 从中断处恢复
-code-agent run my-feature --resume
+选项:
+  --api-key <KEY>    API 密钥 (覆盖环境变量)
+  --agent <TYPE>     Agent 类型 (claude, copilot, cursor)
+  --interactive      交互式配置向导
+  --force            强制重新初始化
 ```
 
-## 项目状态追踪
-
-Code Agent 提供两种状态追踪方式：
-
-### 1. status.md - 人类可读报告（中文）
-
-面向开发人员的进度报告，自动生成和更新：
+#### `plan` - 规划功能
 
 ```bash
-cat specs/001-my-feature/status.md
+code-agent plan <FEATURE_SLUG> [OPTIONS]
+
+参数:
+  <FEATURE_SLUG>    功能名称 (slug 格式, 如: user-auth)
+
+选项:
+  -d, --description <DESC>    功能描述
+  -i, --interactive           交互式规划
+  -r, --repo <PATH>          工作目录
 ```
 
-包含内容：
-- 📊 执行进度和阶段状态
-- 🔧 技术实施摘要
-- 💰 成本追踪
-- ⚠️ 当前问题和风险
-- 📝 变更记录
-- 🎯 下一步计划
-
-### 2. state.yml - 机器可读状态（英文）
-
-用于程序执行和恢复：
+#### `run` - 执行任务
 
 ```bash
-cat specs/001-my-feature/state.yml
+code-agent run <FEATURE_SLUG> [OPTIONS]
+
+参数:
+  <FEATURE_SLUG>    功能名称
+
+选项:
+  --phase <N>           执行特定阶段 (1-7)
+  --resume              从中断处恢复
+  --dry-run             模拟执行
+  --skip-review         跳过代码审查
+  --skip-test           跳过测试验证
+  -r, --repo <PATH>    工作目录
 ```
 
-**自动更新机制**:
-- Phase 开始/完成时自动更新
-- 任务完成时自动更新
-- 发现问题时自动记录
-- 无需手动维护
-
-**示例 status.md 结构**:
-
-```markdown
-# 功能开发状态 - 用户认证
-
-**功能编号**: 001-user-auth  
-**当前阶段**: Phase 3 - 执行实施 1  
-**整体进度**: 45%  
-**状态**: 🟢 进行中
-
----
-
-## 📊 执行进度
-
-### 阶段完成情况
-
-| 阶段 | 名称 | 状态 | 开始时间 | 完成时间 | 耗时 | 成本 |
-|------|------|------|----------|----------|------|------|
-| Phase 1 | 构建 Observer | ✅ 完成 | 2026-02-10 14:00 | 2026-02-10 14:15 | 15分钟 | $0.05 |
-| Phase 2 | 制定计划 | ✅ 完成 | 2026-02-10 14:20 | 2026-02-10 14:35 | 15分钟 | $0.08 |
-| Phase 3 | 执行实施 1 | 🟢 进行中 | 2026-02-10 14:40 | - | - | $0.03 |
-...
-```
-
-### 4. 使用 OpenRouter 等第三方服务
-
-Code Agent 支持使用 OpenRouter、Azure OpenAI、AWS Bedrock 等第三方 API 服务。
-
-#### 方法 1: 环境变量 (推荐) ⭐
+#### `list` - 列出功能
 
 ```bash
-# 设置 OpenRouter 环境变量
-export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'        # OpenRouter API Key
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+code-agent list [OPTIONS]
 
-# 或使用别名
-export OPENROUTER_API_KEY='sk-or-v1-xxx'          # OpenRouter 别名
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-
-# 运行命令
-code-agent plan my-feature
+选项:
+  --all                 显示所有功能 (包括已完成)
+  --status <STATUS>     按状态筛选 (planned, in_progress, completed)
 ```
 
-#### 方法 2: CLI 参数
+#### `status` - 查看状态
 
 ```bash
-# 使用 --api-url 参数
-code-agent plan my-feature \
-  --api-url https://openrouter.ai/api/v1 \
-  --api-key sk-or-v1-xxx
+code-agent status <FEATURE_SLUG>
 ```
 
-#### 支持的第三方服务
-
-| 服务 | Base URL | 说明 |
-|------|----------|------|
-| **OpenRouter** | `https://openrouter.ai/api/v1` | 支持多种模型,按使用付费 |
-| **Azure OpenAI** | `https://{resource}.openai.azure.com` | 企业级 API |
-| **AWS Bedrock** | 需要额外配置 | 通过 AWS SDK |
-
-#### OpenRouter 完整示例
+#### `clean` - 清理 worktree
 
 ```bash
-# 1. 获取 OpenRouter API Key
-# 访问 https://openrouter.ai/ 注册并获取 API Key
+code-agent clean [OPTIONS]
 
-# 2. 设置环境变量 (两种方式任选其一)
-# 方式 A: 使用 ANTHROPIC_AUTH_TOKEN (推荐) ✨
-export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxxxxxxxxxxxx'
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-
-# 方式 B: 使用 OPENROUTER_API_KEY (别名) ✨
-export OPENROUTER_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-
-# 3. (可选) 指定模型
-export CLAUDE_MODEL='anthropic/claude-3.5-sonnet'
-
-# 4. 初始化验证
-code-agent init --interactive
-
-# 5. 使用
-code-agent plan my-feature --description "实现用户登录"
-code-agent run my-feature
+选项:
+  --dry-run    试运行
+  --all        显示所有功能
 ```
 
-### 5. 查看可用模板
+#### `templates` - 列出模板
 
 ```bash
-# 列出所有模板
-code-agent templates
+code-agent templates [OPTIONS]
 
-# 显示详细信息
-code-agent templates --verbose
+选项:
+  -v, --verbose    显示详细信息
 ```
 
-### 6. 启动交互式 TUI (计划中)
+### 执行阶段
 
-```bash
-# 在当前目录启动 TUI
-code-agent tui
+Code Agent 使用 7 个阶段来执行功能开发:
 
-# 指定工作目录
-code-agent tui --repo /path/to/repo
+1. **Observer** - 分析项目结构
+2. **Planning** - 制定实施计划
+3. **Execute (1)** - 执行实施 (前半部分)
+4. **Execute (2)** - 执行实施 (后半部分)
+5. **Review** - 代码审查 (自动 Fix 循环)
+6. **Fix** - 应用修复
+7. **Verification** - 验证测试
+
+### Review/Fix 循环
+
+Phase 5 (Review) 会自动检测以下关键词:
+
+- **APPROVED** → 通过，继续下一阶段
+- **NEEDS_CHANGES** → 需要修复，自动执行 Fix (最多 3 次)
+
+Phase 7 (Verification) 类似:
+
+- **VERIFIED** → 验证通过，生成 PR
+- **FAILED** → 验证失败，再次 Fix
+
+## 🏗️ 架构
+
+```
+code-agent/
+├── crates/
+│   ├── ca-core/       # 核心执行引擎
+│   │   ├── agent/     # Agent SDK 适配器
+│   │   ├── engine/    # 执行引擎
+│   │   ├── state/     # 状态管理
+│   │   ├── event/     # EventHandler (流式输出)
+│   │   └── review/    # KeywordMatcher (Review 循环)
+│   └── ca-pm/         # Prompt 管理器
+│       ├── templates/ # Prompt 模板 (3 文件结构)
+│       └── manager.rs # 模板加载和渲染
+└── apps/
+    └── ca-cli/        # 命令行界面
+        └── commands/  # 命令实现
 ```
 
-## 配置
+## 🤝 贡献
 
-Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供。
+欢迎贡献! 请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
 
-### 必需的环境变量
+## 📄 许可证
 
-Code Agent 支持多种环境变量名，按优先级顺序尝试：
+MIT License - 查看 [LICENSE](LICENSE) 文件
 
-```bash
-# Claude Agent (官方 Anthropic API)
-export ANTHROPIC_API_KEY='sk-ant-xxx'
+## 🙏 致谢
 
-# 或使用 OpenRouter (支持多种变量名) ✨
-export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'  # OpenRouter 标准
-export OPENROUTER_API_KEY='sk-or-v1-xxx'    # OpenRouter 别名
-
-# 其他支持的变量名
-export CLAUDE_API_KEY='sk-ant-xxx'          # 常见别名
-```
-
-**环境变量优先级** (从高到低):
-1. `ANTHROPIC_API_KEY` - Anthropic 官方标准
-2. `CLAUDE_API_KEY` - 常见别名
-3. `ANTHROPIC_AUTH_TOKEN` - OpenRouter 标准 ✨ NEW
-4. `OPENROUTER_API_KEY` - OpenRouter 别名 ✨ NEW
-
-### 可选的环境变量
-
-```bash
-# 指定模型
-export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
-
-# 使用自定义 API endpoint (OpenRouter, Azure, etc.)
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-
-# 其他支持的环境变量
-export CLAUDE_BASE_URL='...'        # 等同于 ANTHROPIC_BASE_URL
-export OPENROUTER_BASE_URL='...'   # 自动检测
-```
-
-### 配置优先级
-
-配置按以下优先级加载:
-
-1. **CLI 参数** (最高优先级)
-   ```bash
-   code-agent plan my-feature --api-url https://custom.api.com --model custom-model
-   ```
-
-2. **环境变量**
-   ```bash
-   export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-   ```
-
-3. **配置文件** (可选,位于 `~/.code-agent/config.toml`)
-   ```toml
-   [agent]
-   agent_type = "claude"
-   api_key = "your-api-key"
-   api_url = "https://openrouter.ai/api/v1"
-   model = "claude-3-5-sonnet-20241022"
-   
-   [prompt]
-   template_dir = "/home/user/.code-agent/templates"
-   default_template = "default"
-   ```
-
-### 环境变量持久化
-
-将环境变量添加到 shell 配置文件:
-
-```bash
-# Bash
-echo 'export ANTHROPIC_API_KEY="sk-ant-xxx"' >> ~/.bashrc
-source ~/.bashrc
-
-# Zsh
-echo 'export ANTHROPIC_API_KEY="sk-ant-xxx"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-## Prompt 模板
-
-模板使用 MiniJinja 语法,位于 `~/.code-agent/templates/`:
-
-```jinja
-# Task: {{ task }}
-
-## Context
-{% if context_files %}
-The following files are relevant:
-{% for file in context_files %}
-- {{ file }}
-{% endfor %}
-{% endif %}
-
-## Instructions
-{{ instructions }}
-
-## Output Format
-Please provide:
-1. A summary of the changes
-2. The implementation details
-3. Any potential issues or considerations
-```
-
-## 开发
-
-### 构建
-
-```bash
-# 构建所有 crates
-cargo build
-
-# 构建特定 crate
-cargo build -p ca-core
-cargo build -p ca-pm
-cargo build -p ca-cli
-```
-
-### 测试
-
-```bash
-# 运行所有测试
-cargo test
-
-# 运行特定 crate 的测试
-cargo test -p ca-pm
-```
-
-### 代码格式化
-
-```bash
-cargo fmt --all
-```
-
-### Lint
-
-```bash
-cargo clippy --all-targets --all-features
-```
-
-## Crates 说明
-
-### ca-core
-
-核心执行引擎,提供:
-
-- `Agent` trait 和实现 (ClaudeAgent, 未来支持 CopilotAgent, CursorAgent)
-- `Repository` - 代码仓库管理,支持 .gitignore
-- `Executor` - 任务执行器,协调 Agent 和 Repository
-
-### ca-pm
-
-Prompt Manager,提供:
-
-- `PromptManager` - 模板管理
-- `TemplateRenderer` - 基于 MiniJinja 的模板渲染
-- `TemplateContext` - 模板上下文数据
-
-### ca-cli
-
-命令行应用,提供:
-
-- `init` - 初始化配置
-- `run` - 执行任务
-- `templates` - 管理模板
-- `tui` - 交互式终端界面
-
-## 依赖
-
-主要依赖包括:
-
-- **tokio** - 异步运行时
-- **claude-agent-sdk-rs 0.6** - Claude Agent SDK
-- **clap** - 命令行参数解析
-- **ratatui** - TUI 界面
-- **minijinja** - 模板引擎
-- **serde/serde_json** - 序列化
-- **anyhow/thiserror** - 错误处理
-
-完整依赖列表见根目录 `Cargo.toml`
-
-## 路线图
-
-### 已完成 ✅
-
-- [x] 核心架构和 Workspace 设置
-- [x] Claude Agent 集成
-- [x] Prompt 模板系统
-- [x] 基础 CLI 命令 (init, plan, run, templates)
-- [x] 零配置文件方案 (环境变量优先)
-- [x] OpenRouter 和第三方 API endpoint 支持
-- [x] 状态管理和恢复功能
-
-### 进行中 🚧
-
-- [ ] TUI 界面完善
-- [ ] 完整的 7 个执行阶段实现
-- [ ] 集成测试套件
-
-### 计划中 📋
-
-- [ ] GitHub Copilot Agent 支持
-- [ ] Cursor Agent 支持
-- [ ] 任务历史记录
-- [ ] 插件系统
-- [ ] 多语言 Prompt 模板
-- [ ] Web 界面 (可选)
-
-## 许可证
-
-MIT License
-
-## 作者
-
-Ray
+感谢 [GBA 项目](https://github.com/tyrchen/gba) 提供的优秀设计参考。

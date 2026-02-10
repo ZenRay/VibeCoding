@@ -372,6 +372,7 @@ mod tests {
         unsafe {
             std::env::remove_var("ANTHROPIC_API_KEY");
             std::env::remove_var("CLAUDE_API_KEY");
+            std::env::remove_var("OPENROUTER_API_KEY");
             std::env::set_var("ANTHROPIC_AUTH_TOKEN", "sk-or-v1-test-token");
         }
 
@@ -409,8 +410,17 @@ mod tests {
     #[test]
     fn test_env_var_priority() {
         // 测试优先级: ANTHROPIC_API_KEY > CLAUDE_API_KEY > ANTHROPIC_AUTH_TOKEN > OPENROUTER_API_KEY
-        // 设置所有变量
+        
+        // 首先清理所有相关变量 (确保测试隔离)
         // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+            std::env::remove_var("CLAUDE_API_KEY");
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+            std::env::remove_var("OPENROUTER_API_KEY");
+        }
+        
+        // 设置所有变量
         unsafe {
             std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-official");
             std::env::set_var("CLAUDE_API_KEY", "sk-ant-claude");

@@ -9,15 +9,21 @@
 
 ## 更新记录
 
+**v1.7** (2026-02-11):
+- ✅ 重构设计文档,移除 GBA 参考章节
+- ✅ 整合核心设计内容到相应章节 (TUI、Task 模板、Review 机制等)
+- ✅ 优化文档结构,提高可读性和准确性
+- ✅ 确保架构描述清晰,便于后续开发参考
+
 **v1.6** (2026-02-10 25:00):
 - ✅ CLAUDE.md 模板更新为 Anthropic 官方最佳实践 (WHAT/WHY/HOW 结构)
-- ✅ 命令结构调整: `list/status/clean` → `feature list/status/clean` (避免歧义)
+- ✅ 命令结构调整: `list/status` → `feature list/status`；`clean` 保持为顶层命令 (非 feature 子命令)
 - ✅ 移除独立 `tui` 命令 (TUI 集成到 `plan` 和 `run` 作为内置交互方式)
-- ✅ 补充 GBA 实现细节:
+- ✅ 核心设计完善:
   - TUI 交互设计: ratatui 3区域布局 (Chat/Input/Stats), 非阻塞事件循环
   - Task 模板结构: config.yml (工具/权限/预算) + system.jinja + user.jinja
   - Review/Verification: 4种关键词匹配模式 (单行/前缀/特殊格式/末尾)
-  - Git Worktree: 隔离开发策略 (Code Agent 可选集成)
+  - Git Worktree: 隔离开发策略 (可选集成)
   - 流式输出: EventHandler trait (TUI/CLI 实现)
   - 断点恢复: state.yml 持久化, 每轮交互后保存
   - 并发模型: Tokio async runtime, mpsc channel 事件通信
@@ -25,7 +31,7 @@
 
 **v1.5** (2026-02-10 24:00):
 - ✅ 重新定义 `init` 命令职责 (环境验证 + 最小化项目初始化)
-- ✅ 整合 GBA 优良设计参考
+- ✅ 核心设计完善:
   - TUI 交互设计
   - Task 模板结构
   - Review/Verification 关键词匹配
@@ -38,7 +44,6 @@
   - 更新 `.gitignore` (添加 Code Agent 规则)
   - 创建 `CLAUDE.md` 项目文档模板
 - ✅ 幂等性保证 (已初始化时不重复创建)
-- ✅ 明确 Code Agent 与 GBA 的设计差异和权衡
 
 **v1.4** (2026-02-10 23:00):
 - ✅ 添加配置管理设计 (零配置文件方案)
@@ -213,6 +218,268 @@ graph TB
 3. **里氏替换原则 (LSP)**: Agent trait 的所有实现可互相替换
 4. **接口隔离原则 (ISP)**: 提供精简的 public interface
 5. **依赖倒置原则 (DIP)**: 依赖抽象(Agent trait)而非具体实现
+
+### 核心机制设计
+
+#### 1. EventHandler 流式处理
+
+用于实时流式输出和 TUI 更新:
+
+```rust
+// ca-core/src/event.rs
+pub trait EventHandler: Send + Sync {
+    fn on_text(&mut self, text: &str);
+    fn on_tool_use(&mut self, tool: &str, input: &serde_json::Value);
+    fn on_tool_result(&mut self, result: &str);
+    fn on_error(&mut self, error: &str);
+    fn on_complete(&mut self);
+}
+
+// TUI 实现
+pub struct TuiEventHandler {
+    tx: mpsc::Sender<TuiEvent>,
+}
+
+impl EventHandler for TuiEventHandler {
+    fn on_text(&mut self, text: &str) {
+        self.tx.send(TuiEvent::StreamText(text.to_string())).ok();
+    }
+    
+    fn on_tool_use(&mut self, tool: &str, input: &Value) {
+        self.tx.send(TuiEvent::ToolUse { 
+            tool: tool.to_string(), 
+            input: input.clone() 
+        }).ok();
+    }
+}
+
+// CLI 实现
+pub struct CliEventHandler;
+
+impl EventHandler for CliEventHandler {
+    fn on_text(&mut self, text: &str) {
+        print!("{}", text);
+        io::stdout().flush().ok();
+    }
+}
+```
+
+**应用场景**:
+- Plan TUI: 流式显示 Agent 响应
+- Run 命令: 实时进度输出
+- 工具调用可视化
+
+#### 2. 状态持久化与恢复
+
+使用 `state.yml` 支持断点续传:
+
+```yaml
+# specs/001-feature-slug/state.yml
+feature:
+  id: "001"
+  slug: add-user-auth
+  
+status: inProgress          # planned | inProgress | completed | failed
+current_phase: 2            # 0-indexed
+
+phases:
+  - name: observer
+    status: completed
+    commit_sha: abc1234
+    stats:
+      turns: 5
+      cost_usd: 0.15
+      start_time: "2026-02-10T10:00:00Z"
+      end_time: "2026-02-10T10:05:00Z"
+  
+  - name: planning
+    status: in_progress
+    stats:
+      turns: 3
+      cost_usd: 0.08
+
+# 中断信息
+interruption:
+  reason: "user_cancelled"  # user_cancelled | error | timeout
+  timestamp: "2026-02-10T10:08:00Z"
+  last_message: "正在生成实施计划..."
+  
+# 累计统计
+total_stats:
+  turns: 8
+  cost_usd: 0.23
+  tokens_used: 12500
+
+# 修改的文件
+modified_files:
+  - path: "src/auth/mod.rs"
+    status: "modified"
+  - path: "src/auth/oauth.rs"
+    status: "created"
+```
+
+**State 管理接口** (`ca-core/src/state.rs`):
+
+```rust
+pub struct FeatureState {
+    pub feature: FeatureInfo,
+    pub status: ExecutionStatus,
+    pub current_phase: usize,
+    pub phases: Vec<PhaseState>,
+    pub interruption: Option<InterruptionInfo>,
+    pub total_stats: Stats,
+    pub modified_files: Vec<FileInfo>,
+}
+
+impl FeatureState {
+    /// 从 state.yml 加载
+    pub fn load(feature_slug: &str) -> Result<Self> {
+        let path = format!("specs/{}/state.yml", feature_slug);
+        let content = fs::read_to_string(path)?;
+        Ok(serde_yaml::from_str(&content)?)
+    }
+    
+    /// 保存到 state.yml (每轮交互后调用)
+    pub fn save(&self, feature_slug: &str) -> Result<()> {
+        let path = format!("specs/{}/state.yml", feature_slug);
+        let content = serde_yaml::to_string(self)?;
+        fs::write(path, content)?;
+        Ok(())
+    }
+    
+    /// 更新阶段状态
+    pub fn update_phase(&mut self, phase_idx: usize, status: PhaseStatus) {
+        self.phases[phase_idx].status = status;
+        self.current_phase = phase_idx;
+    }
+    
+    /// 记录中断
+    pub fn record_interruption(&mut self, reason: &str) {
+        self.interruption = Some(InterruptionInfo {
+            reason: reason.to_string(),
+            timestamp: Utc::now(),
+            last_message: "...".to_string(),
+        });
+    }
+}
+```
+
+**断点恢复机制** (`apps/ca-cli/src/commands/run.rs`):
+
+```rust
+pub async fn execute_run(slug: &str, resume: bool) -> Result<()> {
+    let mut state = if resume {
+        // 从 state.yml 恢复
+        println!("🔄 从上次中断处恢复...");
+        let state = FeatureState::load(slug)?;
+        
+        println!("📊 恢复信息:");
+        println!("  当前阶段: Phase {} ({})", state.current_phase, state.phases[state.current_phase].name);
+        println!("  已完成轮次: {}", state.total_stats.turns);
+        println!("  累计成本: ${:.2}", state.total_stats.cost_usd);
+        
+        state
+    } else {
+        // 新建状态
+        FeatureState::new(slug)
+    };
+    
+    // 执行从 current_phase 开始
+    for phase_idx in state.current_phase..state.phases.len() {
+        println!("🚀 执行 Phase {}: {}", phase_idx, state.phases[phase_idx].name);
+        
+        // 构建恢复上下文 (如果是恢复)
+        let context = if resume && phase_idx == state.current_phase {
+            build_resume_context(&state)?
+        } else {
+            build_normal_context(&state, phase_idx)?
+        };
+        
+        // 执行 Phase
+        let result = engine.run(Task {
+            kind: phase_to_task_kind(phase_idx),
+            context,
+        }).await?;
+        
+        // 更新状态
+        state.update_phase(phase_idx, PhaseStatus::Completed);
+        state.total_stats.turns += result.stats.turns;
+        state.total_stats.cost_usd += result.stats.cost_usd;
+        
+        // 立即保存状态 (支持下次恢复)
+        state.save(slug)?;
+        
+        resume = false; // 后续阶段不再是恢复模式
+    }
+    
+    println!("✅ 所有阶段完成!");
+    Ok(())
+}
+```
+
+**关键特性**:
+- ✅ 每轮交互后立即保存状态
+- ✅ 记录详细的轮次、成本、时间
+- ✅ 支持从任意阶段恢复
+- ✅ 自动构建恢复上下文 (已完成任务、修改文件等)
+
+#### 3. 并发模型
+
+基于 Tokio async runtime:
+
+```
+Main Task
+  │
+  ├─▶ TUI Task (tokio::spawn)
+  │   • 事件循环 (100ms poll)
+  │   • UI 渲染
+  │   • 用户输入处理
+  │   • 接收流式响应
+  │
+  └─▶ Worker Task (tokio::spawn)
+      • Phase 执行
+      • Review 循环
+      • Verification
+      • 发送流式响应
+      
+      通过 mpsc channel 通信:
+      - TUI → Worker: UserMessage
+      - Worker → TUI: StreamText, ToolUse, StatsUpdate
+```
+
+```rust
+// apps/ca-cli/src/commands/plan.rs
+pub async fn execute_plan_tui(slug: &str) -> Result<()> {
+    // 创建通信通道
+    let (ui_tx, ui_rx) = mpsc::channel(100);
+    let (worker_tx, worker_rx) = mpsc::channel(100);
+    
+    // 启动 TUI Task
+    let ui_handle = tokio::spawn(async move {
+        let mut app = PlanApp::new(ui_rx, worker_tx);
+        app.run().await
+    });
+    
+    // 启动 Worker Task
+    let worker_handle = tokio::spawn(async move {
+        let mut worker = PlanWorker::new(worker_rx, ui_tx);
+        worker.run().await
+    });
+    
+    // 等待任一任务完成
+    tokio::select! {
+        _ = ui_handle => println!("TUI 退出"),
+        _ = worker_handle => println!("Worker 完成"),
+    }
+    
+    Ok(())
+}
+```
+
+**设计权衡**:
+- ✅ 使用 Tokio async/await (非阻塞)
+- ✅ mpsc channel 事件通信 (类型安全)
+- ❌ 不使用多线程并行 Agent (串行更可控、成本更低)
 
 ---
 
@@ -397,23 +664,192 @@ ca-pm/src/
 
 #### 默认模板
 
+**模板组织结构**: 参考模块化设计,每个 task 包含 3 个文件
+
 ```
 templates/
 ├── init/
-│   └── project_setup.jinja
+│   ├── config.yml            # 任务配置 (工具/权限/预算)
+│   ├── system.jinja          # 系统提示词 (角色定义)
+│   └── user.jinja            # 用户提示词 (具体任务)
 ├── plan/
+│   ├── config.yml
+│   ├── system.jinja
+│   ├── user.jinja
 │   ├── feature_analysis.jinja
 │   ├── task_breakdown.jinja
 │   └── milestone_planning.jinja
 ├── run/
-│   ├── phase1_observer.jinja
-│   ├── phase2_plan.jinja
-│   ├── codex_review.jinja
-│   └── test_validation.jinja
+│   ├── phase1_observer/
+│   │   ├── config.yml
+│   │   ├── system.jinja
+│   │   └── user.jinja
+│   ├── phase2_planning/
+│   │   ├── config.yml
+│   │   ├── system.jinja
+│   │   └── user.jinja
+│   ├── phase3_execute/
+│   ├── phase4_execute/
+│   ├── phase5_review/
+│   │   ├── config.yml        # Review 特殊配置 (只读工具)
+│   │   ├── system.jinja
+│   │   └── user.jinja
+│   ├── phase6_fix/
+│   ├── phase7_verification/
+│   └── resume/
 └── common/
     ├── code_context.jinja
     └── file_structure.jinja
 ```
+
+**Task 模板结构设计**:
+
+1. **config.yml**: 控制 Agent 行为
+```yaml
+# templates/review/config.yml
+# Review Phase 配置示例
+
+# 是否使用 Agent preset (如 claude_code)
+preset: true
+
+# 允许的工具列表 (空 = 全部)
+tools: []
+
+# 禁止的工具列表 (Review 必须只读)
+disallowedTools:
+  - Write
+  - StrReplace
+  - EditNotebook
+  - Delete
+
+# 权限模式
+permissionMode: Default  # Default | BypassPermissions
+
+# 最大轮次
+maxTurns: 10
+
+# 预算限制 (USD)
+maxBudgetUsd: 2.0
+```
+
+2. **system.jinja**: 角色定义和约束 (追加到 preset 或独立)
+```jinja
+{# templates/review/system.jinja #}
+You are a senior code reviewer focusing on:
+- Code quality and best practices
+- Security vulnerabilities
+- Performance issues
+- Maintainability concerns
+
+Output format: End your review with either "APPROVED" or "NEEDS_CHANGES"
+```
+
+3. **user.jinja**: 具体任务指令 (上下文变量最小化)
+```jinja
+{# templates/review/user.jinja #}
+# Task: Code Review
+
+## Changes Made
+{% for file in modified_files %}
+### {{ file.path }}
+{{ file.diff }}
+{% endfor %}
+
+## Review Criteria
+- Follows project conventions
+- Tests are adequate
+- No security issues
+```
+
+**模板加载和渲染逻辑**:
+
+```rust
+// ca-pm/src/manager.rs
+
+impl PromptManager {
+    /// 从目录加载任务模板
+    pub fn load_task_dir(&mut self, task_dir: &Path) -> Result<TaskTemplate> {
+        // 1. 读取 config.yml
+        let config_path = task_dir.join("config.yml");
+        let config: TaskConfig = serde_yaml::from_str(
+            &fs::read_to_string(config_path)?
+        )?;
+        
+        // 2. 读取 system.jinja (可选)
+        let system_path = task_dir.join("system.jinja");
+        let system_template = if system_path.exists() {
+            Some(fs::read_to_string(system_path)?)
+        } else {
+            None
+        };
+        
+        // 3. 读取 user.jinja (必需)
+        let user_path = task_dir.join("user.jinja");
+        let user_template = fs::read_to_string(user_path)?;
+        
+        Ok(TaskTemplate {
+            config,
+            system_template,
+            user_template,
+        })
+    }
+    
+    /// 渲染任务提示词
+    pub fn render_task(
+        &self,
+        task: &TaskTemplate,
+        context: &Context,
+    ) -> Result<(SystemPrompt, String)> {
+        // 1. 渲染 system prompt
+        let system = if task.config.preset {
+            // 使用 Agent preset (如 claude_code)
+            let append = if let Some(ref tmpl) = task.system_template {
+                self.jinja.render_str(tmpl, context)?
+            } else {
+                String::new()
+            };
+            
+            SystemPrompt::Preset(SystemPromptPreset::with_append(
+                "claude_code",  // 或其他 preset
+                &append,
+            ))
+        } else {
+            // 自定义 system prompt
+            let content = task.system_template
+                .as_ref()
+                .ok_or(PromptError::MissingTemplate("system"))?;
+            SystemPrompt::Text(self.jinja.render_str(content, context)?)
+        };
+        
+        // 2. 渲染 user prompt
+        let user = self.jinja.render_str(&task.user_template, context)?;
+        
+        Ok((system, user))
+    }
+}
+
+pub struct TaskTemplate {
+    pub config: TaskConfig,
+    pub system_template: Option<String>,
+    pub user_template: String,
+}
+
+pub struct TaskConfig {
+    pub preset: bool,
+    pub tools: Vec<String>,
+    pub disallowed_tools: Vec<String>,
+    pub permission_mode: PermissionMode,
+    pub max_turns: usize,
+    pub max_budget_usd: f64,
+}
+```
+
+**关键设计原则**:
+- ✅ **分离关注点**: config 控制行为, system 定义角色, user 描述任务
+- ✅ **约定优于配置**: 统一的目录结构和命名规范
+- ✅ **可复用性**: 通用模板片段放在 common/
+- ✅ **类型安全**: config.yml 结构化验证
+- ✅ **灵活性**: preset 模式 vs 自定义模式
 
 ### 3. ca-cli (命令行界面)
 
@@ -434,7 +870,7 @@ code-agent plan <feature-slug> [--interactive] [--description <text>]
 code-agent run <feature-slug> [--phase <n>] [--dry-run] [--resume]
 code-agent feature list [--all] [--status <filter>]
 code-agent feature status <feature-slug>
-code-agent feature clean [--dry-run] [--force]
+code-agent clean [--dry-run] [--all]
 code-agent templates [list|show <name>|validate]
 ```
 
@@ -598,7 +1034,7 @@ code-agent feature list --all
 ```bash
 $ code-agent feature list
 ┌──────┬───────────────┬────────────┬──────────┬─────────┐
-│  ID  │     SLUG      │   STATUS   │ PROGRESS │  COST   │
+│  ID  │   FEATURE     │   STATUS   │ PROGRESS │  COST   │
 ├──────┼───────────────┼────────────┼──────────┼─────────┤
 │ 001  │ add-user-auth │ completed  │   7/7    │  $1.25  │
 │ 002  │ fix-login-bug │ inProgress │   3/7    │  $0.45  │
@@ -649,19 +1085,19 @@ Result:
 • Status: Merged ✓
 ```
 
-##### 6. `code-agent feature clean`
+##### 6. `code-agent clean`
 
-优雅清理已完成功能的 git worktree 和非必要文件
+优雅清理已完成功能的 git worktree 和非必要文件（**顶层命令**，不属于 feature 子命令）
 
 ```bash
 # 试运行 (显示将删除的内容)
-code-agent feature clean --dry-run
+code-agent clean --dry-run
 
 # 实际清理
-code-agent feature clean
+code-agent clean
 
 # 清理 worktree 和临时文件
-code-agent feature clean --all
+code-agent clean --all
 
 # 选项
 --dry-run           # 试运行,不实际删除
@@ -690,7 +1126,7 @@ code-agent feature clean --all
 
 **输出示例**:
 ```bash
-$ code-agent feature clean --dry-run
+$ code-agent clean --dry-run
 
 将清理以下 worktree:
 
@@ -708,7 +1144,7 @@ $ code-agent feature clean --dry-run
   - .trees/003-new-dashboard/     # 保留
 
 总计: 2 个 worktree 将被清理
-运行 'code-agent feature clean' 执行清理
+运行 'code-agent clean' 执行清理
 
 注意: specs/ 目录作为功能历史存档，永久保留
 ```
@@ -718,7 +1154,7 @@ $ code-agent feature clean --dry-run
 - `.trees/` 是临时工作目录，可以随时删除和重建
 - 清理 worktree 可以释放磁盘空间，但保留完整的功能记录
 
-**参考**: GBA 的 worktree 清理策略 + 功能存档最佳实践
+**策略**: worktree 清理 + 功能存档最佳实践
 
 ##### 7. `code-agent templates`
 
@@ -762,7 +1198,7 @@ ca-cli/src/
 │   │   ├── mod.rs
 │   │   ├── list.rs    # feature list 命令
 │   │   ├── status.rs  # feature status 命令
-│   │   └── clean.rs   # feature clean 命令
+│   ├── clean.rs       # clean 命令 (顶层, 非 feature 子命令)
 │   └── templates.rs   # templates 命令
 ├── tui/
 │   ├── mod.rs
@@ -770,7 +1206,7 @@ ca-cli/src/
 │   ├── run_app.rs     # Run TUI (执行进度显示)
 │   ├── widgets/       # TUI 组件
 │   │   ├── mod.rs
-│   │   ├── chat.rs    # 聊天窗口 (参考 GBA)
+│   │   ├── chat.rs    # 聊天窗口 (主要显示区域)
 │   │   ├── input.rs   # 输入框
 │   │   └── progress.rs # 进度条
 │   └── events.rs      # 事件处理
@@ -954,6 +1390,7 @@ code-agent plan <feature-name>
 code-agent run <feature-name>
 code-agent feature status <feature-name>
 code-agent feature list
+code-agent clean [--dry-run] [--all]
 ```
 
 ## Project-Specific Notes
@@ -1821,7 +2258,203 @@ $ code-agent init
 
 ### Phase 5: Run 命令核心实现 (4-5 天)
 
-**目标**: 实现任务执行核心流程
+**目标**: 实现任务执行核心流程,包括 Review/Verification 机制
+
+#### Review/Verification 关键词匹配设计
+
+**关键词定义**:
+```rust
+// Code Review 关键词
+"APPROVED"        → 审查通过,继续下一阶段
+"NEEDS_CHANGES"   → 需要修复,进入 Fix 循环
+
+// Verification 关键词  
+"VERIFIED"        → 验证通过,可以创建 PR
+"FAILED"          → 验证失败,进入 Fix 循环
+```
+
+**匹配实现** (`crates/ca-core/src/review/matcher.rs`):
+
+```rust
+pub struct KeywordMatcher {
+    success_keywords: Vec<String>,
+    fail_keywords: Vec<String>,
+}
+
+impl KeywordMatcher {
+    pub fn for_review() -> Self {
+        Self {
+            success_keywords: vec!["APPROVED".to_string()],
+            fail_keywords: vec!["NEEDS_CHANGES".to_string()],
+        }
+    }
+    
+    pub fn for_verification() -> Self {
+        Self {
+            success_keywords: vec!["VERIFIED".to_string()],
+            fail_keywords: vec!["FAILED".to_string()],
+        }
+    }
+    
+    /// 检查输出是否包含成功/失败关键词
+    /// 返回: Some(true) = 成功, Some(false) = 失败, None = 不确定
+    pub fn check(&self, output: &str) -> Option<bool> {
+        for success_kw in &self.success_keywords {
+            if self.contains_pattern(output, success_kw) {
+                return Some(true);
+            }
+        }
+        for fail_kw in &self.fail_keywords {
+            if self.contains_pattern(output, fail_kw) {
+                return Some(false);
+            }
+        }
+        None
+    }
+    
+    fn contains_pattern(&self, output: &str, keyword: &str) -> bool {
+        // 4种匹配模式
+        self.match_line(output, keyword)           // 1. 单独一行
+            || self.match_prefix(output, keyword)  // 2. 带前缀
+            || self.match_special(output, keyword) // 3. 特殊格式
+            || self.match_tail(output, keyword)    // 4. 末尾匹配
+    }
+    
+    // 1. 完整单词匹配 (单独一行)
+    fn match_line(&self, output: &str, keyword: &str) -> bool {
+        output.lines()
+            .any(|line| line.trim().eq_ignore_ascii_case(keyword))
+    }
+    
+    // 2. 带前缀格式: "Verdict: APPROVED", "Result: VERIFIED"
+    fn match_prefix(&self, output: &str, keyword: &str) -> bool {
+        let prefixes = ["verdict:", "result:", "status:", "outcome:"];
+        let keyword_lower = keyword.to_lowercase();
+        
+        output.lines().any(|line| {
+            let line_lower = line.to_lowercase();
+            prefixes.iter().any(|prefix| {
+                line_lower.contains(prefix) && line_lower.contains(&keyword_lower)
+            })
+        })
+    }
+    
+    // 3. 特殊格式: "[APPROVED]", "**VERIFIED**", "`FAILED`"
+    fn match_special(&self, output: &str, keyword: &str) -> bool {
+        let patterns = [
+            format!("[{}]", keyword),
+            format!("**{}**", keyword),
+            format!("`{}`", keyword),
+        ];
+        patterns.iter().any(|p| output.contains(p))
+    }
+    
+    // 4. 末尾匹配 (最后 100 字符内)
+    fn match_tail(&self, output: &str, keyword: &str) -> bool {
+        let tail = &output[output.len().saturating_sub(100)..];
+        tail.to_lowercase().contains(&keyword.to_lowercase())
+    }
+}
+```
+
+**Review/Fix 循环流程** (`apps/ca-cli/src/commands/run.rs`):
+
+```rust
+const MAX_FIX_ITERATIONS: usize = 3;
+
+pub async fn execute_review_phase(
+    engine: &Engine,
+    state: &mut FeatureState,
+) -> Result<()> {
+    for iteration in 1..=MAX_FIX_ITERATIONS {
+        println!("🔍 执行代码审查 (迭代 {}/{})", iteration, MAX_FIX_ITERATIONS);
+        
+        // 1. 执行 Review Task
+        let review_result = engine.run(Task {
+            kind: TaskKind::Review,
+            context: build_review_context(state)?,
+        }).await?;
+        
+        // 2. 检查关键词
+        let matcher = KeywordMatcher::for_review();
+        match matcher.check(&review_result.output) {
+            Some(true) => {
+                println!("✅ 代码审查通过!");
+                state.phases[4].status = PhaseStatus::Completed;
+                save_state(state)?;
+                return Ok(());
+            }
+            Some(false) => {
+                println!("⚠️  需要修复问题 (迭代 {})", iteration);
+                
+                if iteration < MAX_FIX_ITERATIONS {
+                    // 3. 执行 Fix Task
+                    let fix_result = engine.run(Task {
+                        kind: TaskKind::Fix,
+                        context: json!({
+                            "review_feedback": review_result.output,
+                            "iteration": iteration,
+                        }),
+                    }).await?;
+                    
+                    // 4. 自动提交修复
+                    git_commit(&format!(
+                        "fix: 处理 review 反馈 (iteration {})", 
+                        iteration
+                    ))?;
+                    
+                    println!("✓ 已提交修复");
+                } else {
+                    println!("❌ 达到最大迭代次数，审查未通过");
+                    return Err(anyhow!("Review failed after {} iterations", iteration));
+                }
+            }
+            None => {
+                println!("⚠️  审查结果不明确，需要人工确认");
+                // 提示用户选择
+                break;
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+pub async fn execute_verification_phase(
+    engine: &Engine,
+    state: &mut FeatureState,
+) -> Result<()> {
+    // 类似逻辑,使用 KeywordMatcher::for_verification()
+    // ...
+}
+```
+
+**匹配模式示例**:
+
+1. **单独一行**:
+```text
+APPROVED
+```
+
+2. **带前缀**:
+```text
+Verdict: APPROVED
+Result: VERIFIED
+Status: NEEDS_CHANGES
+```
+
+3. **特殊格式**:
+```text
+[APPROVED]
+**VERIFIED**
+`FAILED`
+```
+
+4. **末尾匹配**:
+```text
+... 大量审查内容 ...
+Based on the above analysis, this code is APPROVED.
+```
 
 #### 任务列表
 
@@ -1858,7 +2491,121 @@ $ code-agent init
 
 ### Phase 6: TUI 界面 (2-3 天)
 
-**目标**: 实现交互式终端界面
+**目标**: 实现基于 ratatui 的交互式 TUI 界面
+
+#### 设计要点
+
+**TUI 架构**: 3 区域布局 + 非阻塞事件循环
+
+```rust
+// TUI 应用结构
+pub struct PlanApp {
+    messages: Vec<ChatMessage>,    // 对话历史
+    input: String,                  // 用户输入
+    scroll_offset: usize,           // 滚动位置
+    session: Session,               // Agent 会话
+    stats: SessionStats,            // 统计信息 (turns/cost)
+    status: AppStatus,              // 应用状态
+}
+
+// 渲染布局 (3个区域)
+fn render_ui(f: &mut Frame, app: &PlanApp) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(10),      // 聊天区域 (主要)
+            Constraint::Length(3),    // 输入框
+            Constraint::Length(1),    // 状态栏 (Turns/Cost)
+        ])
+        .split(f.size());
+    
+    render_chat(f, chunks[0], app);    // 聊天历史
+    render_input(f, chunks[1], app);   // 输入框
+    render_stats(f, chunks[2], app);   // 统计栏
+}
+
+// 事件处理循环 (非阻塞, 100ms poll)
+async fn run_tui(app: &mut PlanApp) -> Result<()> {
+    let mut terminal = setup_terminal()?;
+    
+    loop {
+        terminal.draw(|f| render_ui(f, app))?;
+        
+        // 非阻塞事件处理
+        if event::poll(Duration::from_millis(100))? {
+            match event::read()? {
+                Event::Key(key) => handle_key_event(key, app).await?,
+                Event::Resize(_, _) => { /* 重绘 */ }
+                _ => {}
+            }
+        }
+        
+        // 检查流式响应
+        if let Some(text) = app.session.poll_stream() {
+            app.messages.push(Message::Assistant(text));
+        }
+    }
+}
+
+// 流式响应处理
+impl EventHandler for TuiEventHandler {
+    fn on_text(&mut self, text: &str) {
+        self.tx.send(TuiEvent::StreamText(text.to_string())).ok();
+    }
+    
+    fn on_tool_use(&mut self, tool: &str, input: &Value) {
+        self.tx.send(TuiEvent::ToolUse { 
+            tool: tool.to_string(), 
+            input: input.clone() 
+        }).ok();
+    }
+}
+```
+
+**TUI 界面示例**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Code Agent Plan: add-user-auth                    [Ctrl+C] │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ Assistant: 能告诉我更多关于你想实现的功能吗?           │  │
+│  │                                                        │  │
+│  │ User: 我想要支持 OAuth2 认证                           │  │
+│  │                                                        │  │
+│  │ Assistant: 明白了。这是我建议的方案:                   │  │
+│  │ 1. 添加 oauth2 crate 依赖                             │  │
+│  │ 2. 创建 auth 模块...                                  │  │
+│  │                                                        │  │
+│  │ [streaming...] █                                       │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  Stats: Turns: 5 | Tokens: 12.5K | Cost: $0.15            │
+│                                                             │
+│  [Enter] 发送  [Ctrl+C] 退出  [↑↓] 历史                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**并发模型**: TUI + Worker 双 Task 模式
+
+```
+Main Task
+  │
+  ├─▶ TUI Task (tokio::spawn)
+  │   • 事件循环 (100ms poll)
+  │   • UI 渲染
+  │   • 用户输入处理
+  │
+  └─▶ Worker Task (tokio::spawn)
+      • Phase 执行
+      • Review 循环
+      • Verification
+      
+      通过 mpsc channel 通信:
+      - TUI → Worker: 用户消息
+      - Worker → TUI: 流式响应, 工具调用, 统计更新
+```
 
 #### 任务列表
 
@@ -2065,773 +2812,6 @@ $ code-agent init
 - [ ] 文档完整度 >90%
 - [ ] 社区贡献者 >10
 - [ ] GitHub Stars >100
-
----
-
-## GBA 优良设计参考
-
-Code Agent 在设计中参考了 [GBA (Geektime Bootcamp Agent)](https://github.com/tyrchen/gba) 的优秀实践，并结合自身的多 Agent SDK 支持和零配置文件策略进行了适配。
-
-### 核心架构相似性 (95% 一致)
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                    3层架构设计                                  │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  CLI层 (用户交互)                                               │
-│    ↓                                                           │
-│  Core层 (执行引擎 + Prompt管理)                                 │
-│    ↓                                                           │
-│  SDK层 (Agent SDK 抽象)                                         │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### 借鉴的 GBA 优秀实践
-
-#### 1. **TUI 交互设计**
-
-**参考**: GBA 的 ratatui 聊天界面实现
-- ✅ 实时流式输出
-- ✅ 多轮对话历史
-- ✅ 工具使用可视化
-- ✅ 进度显示和统计
-
-**应用**: Code Agent 的 `plan` 和 `run` TUI 界面
-
-**GBA 实现要点** (来自 `gba-cli/src/tui/`):
-
-```rust
-// 1. 主 TUI 应用结构
-pub struct PlanApp {
-    chat_history: Vec<Message>,       // 对话历史
-    input_buffer: String,              // 用户输入
-    scroll_offset: usize,              // 滚动位置
-    session: Session,                  // Agent 会话
-    stats: TaskStats,                  // 统计信息
-    status: AppStatus,                 // 应用状态
-}
-
-// 2. 渲染布局 (3个区域)
-fn render_ui(f: &mut Frame, app: &PlanApp) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(10),      // 聊天区域 (主要)
-            Constraint::Length(3),    // 输入框
-            Constraint::Length(1),    // 状态栏 (Turns/Cost)
-        ])
-        .split(f.size());
-    
-    render_chat(f, chunks[0], app);    // 聊天历史
-    render_input(f, chunks[1], app);   // 输入框
-    render_stats(f, chunks[2], app);   // 统计栏
-}
-
-// 3. 事件处理循环
-async fn run_tui(app: &mut PlanApp) -> Result<()> {
-    let mut terminal = setup_terminal()?;
-    
-    loop {
-        terminal.draw(|f| render_ui(f, app))?;
-        
-        // 处理事件
-        if event::poll(Duration::from_millis(100))? {
-            match event::read()? {
-                Event::Key(key) => handle_key_event(key, app).await?,
-                Event::Resize(_, _) => { /* 重绘 */ }
-                _ => {}
-            }
-        }
-        
-        // 检查流式响应
-        if let Some(text) = app.session.poll_stream() {
-            app.chat_history.push(Message::Assistant(text));
-        }
-    }
-}
-
-// 4. 流式响应处理
-impl EventHandler for TuiEventHandler {
-    fn on_text(&mut self, text: &str) {
-        // 发送到 TUI 显示通道
-        self.tx.send(TuiEvent::StreamText(text.to_string())).ok();
-    }
-    
-    fn on_tool_use(&mut self, tool: &str, input: &Value) {
-        self.tx.send(TuiEvent::ToolUse { 
-            tool: tool.to_string(), 
-            input: input.clone() 
-        }).ok();
-    }
-}
-```
-
-**Code Agent 适配** (`apps/ca-cli/src/tui/plan_app.rs`):
-
-```rust
-use ratatui::{
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame, Terminal,
-};
-use crossterm::{
-    event::{self, Event, KeyCode},
-    terminal::{disable_raw_mode, enable_raw_mode},
-};
-
-pub struct PlanApp {
-    messages: Vec<ChatMessage>,
-    input: String,
-    session: Session,
-    stats: SessionStats,
-}
-
-impl PlanApp {
-    pub async fn run(&mut self) -> Result<()> {
-        let mut terminal = setup_terminal()?;
-        
-        loop {
-            terminal.draw(|f| self.render(f))?;
-            
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Enter => self.send_message().await?,
-                    KeyCode::Char(c) => self.input.push(c),
-                    KeyCode::Backspace => { self.input.pop(); }
-                    KeyCode::Esc => break,
-                    _ => {}
-                }
-            }
-        }
-        
-        cleanup_terminal(terminal)?;
-        Ok(())
-    }
-    
-    fn render(&self, f: &mut Frame) {
-        // 参考 GBA 的 3区域布局
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Min(10),    // Chat
-                Constraint::Length(3),  // Input
-                Constraint::Length(1),  // Stats
-            ])
-            .split(f.size());
-        
-        self.render_chat(f, chunks[0]);
-        self.render_input(f, chunks[1]);
-        self.render_stats(f, chunks[2]);
-    }
-}
-```
-
-**关键特性**:
-- 非阻塞事件循环 (100ms poll)
-- 自动滚动到最新消息
-- 实时统计更新
-- 优雅的退出处理
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Code Agent Plan: add-user-auth                    [Ctrl+C] │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ Assistant: 能告诉我更多关于你想实现的功能吗？           │  │
-│  │                                                        │  │
-│  │ User: 我想要支持 OAuth2 认证                           │  │
-│  │                                                        │  │
-│  │ Assistant: 明白了。这是我建议的方案：                   │  │
-│  │ 1. 添加 oauth2 crate 依赖                             │  │
-│  │ 2. 创建 auth 模块...                                  │  │
-│  │                                                        │  │
-│  │ [streaming...] █                                       │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-│  Stats: Turns: 5 | Tokens: 12.5K | Cost: $0.15            │
-│                                                             │
-│  [Enter] 发送  [Ctrl+C] 退出  [↑↓] 历史                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### 2. **Task 模板结构**
-
-**参考**: GBA 的 `tasks/<kind>/` 组织方式
-
-```
-GBA 模板结构:                    Code Agent 适配:
-tasks/                           templates/
-├── init/                        ├── init/
-│   ├── config.yml              │   ├── config.yml
-│   ├── system.j2               │   ├── system.jinja
-│   └── user.j2                 │   └── user.jinja
-├── plan/                        ├── plan/
-├── execute/                     ├── execute/
-├── review/                      ├── review/
-└── verification/                └── verification/
-```
-
-**GBA config.yml 设计**:
-
-```yaml
-# tasks/review/config.yml
-
-# 是否使用 claude_code preset
-preset: true
-
-# 允许的工具列表 (空=全部)
-tools: []
-
-# 禁止的工具列表 (Review 需要只读)
-disallowedTools:
-  - Write
-  - Edit
-  - NotebookEdit
-
-# 权限模式 (可选)
-# bypassPermissions - 自动批准所有操作
-permissionMode: null  # Review 使用默认模式
-```
-
-**Code Agent 适配** (`templates/review/config.yml`):
-
-```yaml
-# Review Phase 配置
-preset: true              # 使用 claude_code preset
-
-# 工具限制: Review 必须只读
-disallowedTools:
-  - Write
-  - StrReplace
-  - EditNotebook
-  - Delete
-
-# 权限模式: 默认 (需要审批)
-permissionMode: Default
-
-# 最大轮次
-maxTurns: 10
-
-# 预算限制
-maxBudgetUsd: 2.0
-```
-
-**模板加载逻辑** (参考 GBA):
-
-```rust
-// ca-pm/src/manager.rs
-
-impl PromptManager {
-    /// 从目录加载任务模板
-    pub fn load_task_dir(&mut self, task_dir: &Path) -> Result<TaskTemplate> {
-        // 1. 读取 config.yml
-        let config_path = task_dir.join("config.yml");
-        let config: TaskConfig = serde_yaml::from_str(
-            &fs::read_to_string(config_path)?
-        )?;
-        
-        // 2. 读取 system.jinja
-        let system_path = task_dir.join("system.jinja");
-        let system_template = if system_path.exists() {
-            Some(fs::read_to_string(system_path)?)
-        } else {
-            None
-        };
-        
-        // 3. 读取 user.jinja
-        let user_path = task_dir.join("user.jinja");
-        let user_template = fs::read_to_string(user_path)?;
-        
-        Ok(TaskTemplate {
-            config,
-            system_template,
-            user_template,
-        })
-    }
-    
-    /// 渲染任务提示词
-    pub fn render_task(
-        &self,
-        task: &TaskTemplate,
-        context: &Context,
-    ) -> Result<(SystemPrompt, String)> {
-        // 1. 渲染 system prompt
-        let system = if task.config.preset {
-            // 使用 claude_code preset
-            let append = if let Some(ref tmpl) = task.system_template {
-                self.jinja.render_str(tmpl, context)?
-            } else {
-                String::new()
-            };
-            
-            SystemPrompt::Preset(SystemPromptPreset::with_append(
-                "claude_code",
-                &append,
-            ))
-        } else {
-            // 自定义 system prompt
-            let content = task.system_template
-                .as_ref()
-                .ok_or(PromptError::MissingTemplate("system"))?;
-            SystemPrompt::Text(self.jinja.render_str(content, context)?)
-        };
-        
-        // 2. 渲染 user prompt
-        let user = self.jinja.render_str(&task.user_template, context)?;
-        
-        Ok((system, user))
-    }
-}
-```
-
-**关键设计**:
-- `config.yml`: 控制 Agent 行为（tools, permissions, budget）
-- `system.jinja`: 角色定义和约束（追加到 preset 或独立）
-- `user.jinja`: 具体任务指令（上下文变量最小化）
-
-**应用**: Code Agent 的 13 个 Prompt 模板
-
-#### 3. **Review/Verification 关键词匹配**
-
-**参考**: GBA 的 keyword matching 机制
-
-```rust
-// Code Review 关键词
-"APPROVED"        → 审查通过,继续下一阶段
-"NEEDS_CHANGES"   → 需要修复,进入 Fix 循环
-
-// Verification 关键词  
-"VERIFIED"        → 验证通过,可以创建 PR
-"FAILED"          → 验证失败,进入 Fix 循环
-```
-
-**GBA 匹配实现要点** (来自 `gba-cli/src/commands/run.rs`):
-
-```rust
-/// 检查 Review/Verification 结果 (GBA 实现)
-fn check_result_keywords(output: &str, success_kw: &str, fail_kw: &str) -> CheckResult {
-    let output_lower = output.to_lowercase();
-    
-    // 1. 完整单词匹配 (单独一行)
-    for line in output.lines() {
-        let trimmed = line.trim();
-        if trimmed.eq_ignore_ascii_case(success_kw) {
-            return CheckResult::Success;
-        }
-        if trimmed.eq_ignore_ascii_case(fail_kw) {
-            return CheckResult::Failed;
-        }
-    }
-    
-    // 2. 带前缀格式: "Verdict: APPROVED"
-    let prefixes = ["verdict:", "result:", "status:", "outcome:"];
-    for line in output.lines() {
-        let line_lower = line.to_lowercase();
-        for prefix in &prefixes {
-            if line_lower.contains(prefix) {
-                if line_lower.contains(&success_kw.to_lowercase()) {
-                    return CheckResult::Success;
-                }
-                if line_lower.contains(&fail_kw.to_lowercase()) {
-                    return CheckResult::Failed;
-                }
-            }
-        }
-    }
-    
-    // 3. 特殊格式: "[APPROVED]", "**VERIFIED**"
-    let patterns = [
-        format!("[{}]", success_kw),
-        format!("**{}**", success_kw),
-        format!("`{}`", success_kw),
-    ];
-    if patterns.iter().any(|p| output.contains(p)) {
-        return CheckResult::Success;
-    }
-    
-    // 4. 末尾匹配 (最后 100 字符内)
-    let tail = &output[output.len().saturating_sub(100)..];
-    if tail.to_lowercase().contains(&success_kw.to_lowercase()) {
-        return CheckResult::Success;
-    }
-    
-    CheckResult::Inconclusive
-}
-```
-
-**Code Agent 适配** (`crates/ca-core/src/review/matcher.rs`):
-
-```rust
-pub struct KeywordMatcher {
-    success_keywords: Vec<String>,
-    fail_keywords: Vec<String>,
-}
-
-impl KeywordMatcher {
-    pub fn for_review() -> Self {
-        Self {
-            success_keywords: vec!["APPROVED".to_string()],
-            fail_keywords: vec!["NEEDS_CHANGES".to_string()],
-        }
-    }
-    
-    pub fn for_verification() -> Self {
-        Self {
-            success_keywords: vec!["VERIFIED".to_string()],
-            fail_keywords: vec!["FAILED".to_string()],
-        }
-    }
-    
-    /// 检查输出是否包含成功/失败关键词
-    /// 返回: Some(true) = 成功, Some(false) = 失败, None = 不确定
-    pub fn check(&self, output: &str) -> Option<bool> {
-        for success_kw in &self.success_keywords {
-            if self.contains_pattern(output, success_kw) {
-                return Some(true);
-            }
-        }
-        for fail_kw in &self.fail_keywords {
-            if self.contains_pattern(output, fail_kw) {
-                return Some(false);
-            }
-        }
-        None
-    }
-    
-    fn contains_pattern(&self, output: &str, keyword: &str) -> bool {
-        // 实现 GBA 的 4种匹配模式
-        self.match_line(output, keyword)
-            || self.match_prefix(output, keyword)
-            || self.match_special(output, keyword)
-            || self.match_tail(output, keyword)
-    }
-}
-```
-
-**Review/Fix 循环** (参考 GBA，集成到 Phase 5):
-
-```rust
-// apps/ca-cli/src/commands/run.rs - Phase 5 实现
-
-const MAX_FIX_ITERATIONS: usize = 3;
-
-pub async fn execute_review_phase(
-    engine: &Engine,
-    state: &mut FeatureState,
-) -> Result<()> {
-    for iteration in 1..=MAX_FIX_ITERATIONS {
-        println!("🔍 执行代码审查 (迭代 {}/{})", iteration, MAX_FIX_ITERATIONS);
-        
-        // 1. 执行 Review Task
-        let review_result = engine.run(Task {
-            kind: TaskKind::Review,
-            context: build_review_context(state)?,
-        }).await?;
-        
-        // 2. 检查关键词
-        let matcher = KeywordMatcher::for_review();
-        match matcher.check(&review_result.output) {
-            Some(true) => {
-                println!("✅ 代码审查通过!");
-                state.phases[4].status = PhaseStatus::Completed;
-                save_state(state)?;
-                return Ok(());
-            }
-            Some(false) => {
-                println!("⚠️  需要修复问题 (迭代 {})", iteration);
-                
-                if iteration < MAX_FIX_ITERATIONS {
-                    // 3. 执行 Fix Task
-                    let fix_result = engine.run(Task {
-                        kind: TaskKind::Fix,
-                        context: json!({
-                            "review_feedback": review_result.output,
-                            "iteration": iteration,
-                        }),
-                    }).await?;
-                    
-                    // 4. 自动提交修复
-                    git_commit(&format!(
-                        "fix: 处理 review 反馈 (iteration {})", 
-                        iteration
-                    ))?;
-                    
-                    println!("✓ 已提交修复");
-                } else {
-                    println!("❌ 达到最大迭代次数，审查未通过");
-                    return Err(anyhow!("Review failed after {} iterations", iteration));
-                }
-            }
-            None => {
-                println!("⚠️  审查结果不明确，需要人工确认");
-                // 提示用户选择
-                break;
-            }
-        }
-    }
-    
-    Ok(())
-}
-```
-
-**匹配模式** (4种方式):
-1. **单独一行**: `"APPROVED"`
-2. **带前缀**: `"Verdict: APPROVED"`, `"Result: VERIFIED"`
-3. **特殊格式**: `"[APPROVED]"`, `"**VERIFIED**"`, `` `FAILED` ``
-4. **末尾匹配**: 最后 100 字符内的单词边界
-
-**应用**: Code Agent 的 Review Phase (Phase 5) 和 Verification Phase (Phase 7)
-
-#### 4. **Git Worktree 管理**
-
-**参考**: GBA 的 worktree 隔离策略
-
-```bash
-# GBA 方式
-.trees/0001_add-user-auth/       # Worktree 目录
-branch: feature/0001-add-user-auth
-
-# Code Agent 适配
-specs/001-add-user-auth/         # 规格和状态
-# Worktree 可选 (由用户管理或集成到 run 命令)
-```
-
-**GBA Worktree 操作** (来自 `gba-cli/src/utils/git.rs`):
-
-```rust
-/// 创建 git worktree
-pub fn create_worktree(
-    slug: &str,
-    branch_name: &str,
-    base_branch: &str,
-) -> Result<PathBuf> {
-    let worktree_path = PathBuf::from(".trees").join(slug);
-    
-    // 1. 确保 .trees 目录存在
-    fs::create_dir_all(".trees")?;
-    
-    // 2. 创建 worktree 和分支
-    Command::new("git")
-        .args(["worktree", "add", "-b", branch_name])
-        .arg(&worktree_path)
-        .arg(base_branch)
-        .output()?;
-    
-    // 3. 更新 .gitignore
-    update_gitignore_for_trees()?;
-    
-    Ok(worktree_path)
-}
-
-/// 检测默认分支 (main/master)
-pub fn detect_default_branch() -> Result<String> {
-    let output = Command::new("git")
-        .args(["symbolic-ref", "refs/remotes/origin/HEAD"])
-        .output()?;
-    
-    let branch = String::from_utf8(output.stdout)?
-        .trim()
-        .strip_prefix("refs/remotes/origin/")
-        .unwrap_or("main")
-        .to_string();
-    
-    Ok(branch)
-}
-
-/// 删除 worktree
-pub fn remove_worktree(path: &Path) -> Result<()> {
-    Command::new("git")
-        .args(["worktree", "remove", "--force"])
-        .arg(path)
-        .output()?;
-    
-    Ok(())
-}
-
-/// 列出所有 worktrees
-pub fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
-    let output = Command::new("git")
-        .args(["worktree", "list", "--porcelain"])
-        .output()?;
-    
-    parse_worktree_list(&output.stdout)
-}
-```
-
-**Code Agent 策略** (可选集成):
-
-阶段1: **用户手动管理** (当前)
-```bash
-# 用户自行创建分支
-git checkout -b feature/001-add-user-auth
-code-agent plan add-user-auth
-code-agent run add-user-auth
-```
-
-阶段2: **自动 Worktree 管理** (后续增强)
-```rust
-// 集成到 plan 命令
-pub async fn execute_plan(slug: &str) -> Result<()> {
-    // 1. 自动创建 worktree
-    let worktree = create_worktree(
-        slug,
-        &format!("feature/{}-{}", next_id(), slug),
-        &detect_default_branch()?,
-    )?;
-    
-    // 2. 在 worktree 中执行 planning
-    std::env::set_current_dir(&worktree)?;
-    
-    // 3. Planning...
-}
-```
-
-**GBA 优势**:
-- ✅ 功能隔离开发
-- ✅ 并行多个功能
-- ✅ 避免主分支污染
-
-**Code Agent 灵活性**:
-- ✅ 初期简单 (用户管理分支)
-- ✅ 后续可选集成 (自动 worktree)
-- ✅ 适应不同团队工作流
-
-#### 5. **状态持久化与恢复**
-
-**参考**: GBA 的 `state.yml` 设计
-
-```yaml
-# 两者结构几乎完全一致
-feature:
-  id: "001"
-  slug: add-user-auth
-  
-status: inProgress          # planned | inProgress | completed | failed
-current_phase: 2            # 0-indexed
-
-phases:
-  - name: setup
-    status: completed
-    commit_sha: abc1234
-    stats:
-      turns: 5
-      cost_usd: 0.15
-```
-
-**应用**: Code Agent 的断点恢复机制 (100% 采纳)
-
-#### 6. **EventHandler 流式处理**
-
-**参考**: GBA 的 `EventHandler` trait 设计
-
-```rust
-pub trait EventHandler: Send + Sync {
-    fn on_text(&mut self, text: &str);
-    fn on_tool_use(&mut self, tool: &str, input: &serde_json::Value);
-    fn on_tool_result(&mut self, result: &str);
-    fn on_error(&mut self, error: &str);
-    fn on_complete(&mut self);
-}
-```
-
-**应用**: Code Agent 的实时进度显示和 TUI 更新
-
-#### 7. **并发模型**
-
-**参考**: GBA 的 TUI + Worker 双 Task 模式
-
-```
-Main Task
-  │
-  ├─▶ TUI Task (tokio::spawn)
-  │   • 事件循环
-  │   • UI 渲染
-  │   • 用户输入
-  │
-  └─▶ Worker Task (tokio::spawn)
-      • Phase 执行
-      • Review 循环
-      • Verification
-      
-      通过 mpsc channel 通信
-```
-
-**应用**: Code Agent 的 `run` 命令 TUI 界面
-
-### Code Agent 的独特增强
-
-虽然参考了 GBA，但 Code Agent 在以下方面有独特优势：
-
-| 特性 | GBA | Code Agent |
-|------|-----|------------|
-| **配置策略** | 配置文件 (.gba/config.yml) | 零配置文件 (环境变量) |
-| **Multi-Agent** | 单一 Claude | 支持 Claude + Copilot + Cursor |
-| **Init 行为** | 创建项目结构 | 验证 + 最小化初始化 |
-| **状态管理** | 集中在 `.gba/` | 分散在 `specs/` |
-| **目标定位** | Bootcamp 专用 | 通用开源工具 |
-| **安全性** | 配置文件可能泄露 | 不存储密钥到磁盘 |
-
-#### 5. **流式输出处理** ✨
-
-**参考**: GBA 的 `EventHandler` trait
-
-**应用**: Code Agent 的 Plan TUI 和 Run 进度显示
-
-**关键特性**:
-- 实时流式文本输出
-- 工具调用可视化
-- 非阻塞事件循环
-
-#### 6. **断点恢复机制** ✨
-
-**参考**: GBA 的 `state.yml` 持久化
-
-**应用**: Code Agent 的 `--resume` 选项
-
-**关键特性**:
-- 每轮交互后立即保存状态
-- 记录详细的轮次和代价
-- 支持从任意阶段恢复
-
-#### 7. **并发模型** ✨
-
-**参考**: GBA 使用 Tokio async runtime
-
-**应用**: Code Agent 的异步执行引擎
-
-**策略**:
-- ✅ Tokio 1.x async/await
-- ✅ mpsc channel 事件通信
-- ❌ 不使用多线程并行 Agent (串行更可控)
-
-### 设计权衡说明
-
-**为什么采用零配置而非 GBA 的配置文件？**
-
-1. **安全性**: 避免 API Key 意外提交到 git
-2. **标准化**: 符合 12-Factor App 最佳实践
-3. **CI/CD**: 直接使用 GitHub Secrets
-4. **简洁性**: 不增加项目文件和目录
-5. **灵活性**: 支持 direnv, dotenv 等工具
-
-**GBA 配置文件的优势场景**:
-- ✅ 企业内部工具 (配置统一管理)
-- ✅ 复杂项目级设置 (git hooks, 自动提交规则)
-- ✅ 团队协作 (共享配置约定)
-
-**Code Agent 零配置的优势场景**:
-- ✅ 开源项目 (避免敏感信息)
-- ✅ 个人开发 (快速启动)
-- ✅ 多项目切换 (环境变量隔离)
-- ✅ 云环境部署 (Secrets 管理)
-
-### 致谢
-
-特别感谢 [GBA 项目](https://github.com/tyrchen/gba) 提供的优秀设计参考，其清晰的架构和完善的流程为 Code Agent 的开发提供了宝贵的经验。
 
 ---
 
@@ -3191,12 +3171,35 @@ project/
 
 ### 设计优势
 
-vs 配置文件方案:
+**零配置文件方案 vs 配置文件方案对比**:
+
+| 特性 | 配置文件方案 | 零配置文件方案 (Code Agent) |
+|------|-------------|--------------------------|
+| **配置位置** | `.gba/config.yml`, `.code-agent/config.toml` | 环境变量 |
+| **安全性** | ⚠️ API Key 可能泄露到 git | ✅ 不存储密钥到磁盘 |
+| **CI/CD 集成** | ⚠️ 需要配置文件模板 | ✅ 直接使用 Secrets |
+| **多项目切换** | ⚠️ 每个项目独立配置 | ✅ 环境变量自动生效 |
+| **团队协作** | ✅ 配置共享 (模板化) | ⚠️ 需文档说明环境变量 |
+| **项目结构** | ❌ 增加 `.gba/`, `.code-agent/` | ✅ 只有 `specs/` |
+| **初始化复杂度** | ⚠️ 需创建配置文件 | ✅ 只验证环境变量 |
+
+**核心优势**:
 - 🚀 **更简单** - 零配置文件,零目录
 - 🔒 **更安全** - 不在文件系统存储密钥
-- 🎯 **更标准** - 直接使用 SDK 官方环境变量
+- 🎯 **更标准** - 直接使用 SDK 官方环境变量,符合 12-Factor App
 - 🧹 **更清爽** - 不增加项目文件和目录
 - ⚡ **更快速** - 无需读取和解析配置文件
+
+**配置文件方案适用场景**:
+- ✅ 企业内部工具 (统一配置管理)
+- ✅ 复杂项目级设置 (git hooks, 自动提交规则)
+- ✅ 团队协作 (共享配置约定)
+
+**零配置方案适用场景 (Code Agent 选择)**:
+- ✅ 开源项目 (避免敏感信息泄露)
+- ✅ 个人开发 (快速启动)
+- ✅ 多项目切换 (配置隔离)
+- ✅ 云环境部署 (Secrets 管理)
 
 ---
 

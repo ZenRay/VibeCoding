@@ -18,9 +18,6 @@ pub async fn execute_plan(
     repo: Option<PathBuf>,
     config: &AppConfig,
 ) -> anyhow::Result<()> {
-    println!("📋 规划功能: {}", feature_slug);
-    println!();
-
     // 确定工作目录
     let repo_path = if let Some(path) = repo {
         path
@@ -30,6 +27,13 @@ pub async fn execute_plan(
         std::env::current_dir()?
     };
 
+    // 交互模式且未提供 description → 启动 TUI
+    if interactive && description.is_none() {
+        return crate::ui::execute_plan_tui(feature_slug, repo_path, config.clone()).await;
+    }
+
+    println!("📋 规划功能: {}", feature_slug);
+    println!();
     println!("📂 工作目录: {}", repo_path.display());
 
     // 创建 Repository
@@ -71,7 +75,7 @@ pub async fn execute_plan(
     let agent = create_agent(config)?;
 
     // 创建 ExecutionEngine
-    let engine = ExecutionEngine::new(agent, repository.clone());
+    let mut engine = ExecutionEngine::new(agent, repository.clone());
 
     // 验证连接
     println!("🔌 验证 Agent 连接...");
@@ -91,17 +95,28 @@ pub async fn execute_plan(
         .add_variable("feature_description", feature_description.clone())?
         .build()?;
 
-    // 渲染 Prompt
+    // 渲染 Prompt (使用新的 3 文件结构)
     let prompt_config = PromptConfig {
         template_dir: config.prompt.template_dir.clone(),
         default_template: None,
     };
-    let prompt_manager = PromptManager::new(prompt_config)?;
-    let user_prompt = prompt_manager.render("plan/feature_analysis", &context)?;
+    let mut prompt_manager = PromptManager::new(prompt_config)?;
+    
+    // 加载 plan 模板 (使用 3 文件结构)
+    let template_dir = config.prompt.template_dir.join("plan/feature_analysis");
+    let task_template = prompt_manager.load_task_dir(&template_dir)?;
+    
+    // 渲染提示词
+    let (system_prompt, user_prompt) = prompt_manager.render_task(&task_template, &context)?;
 
     // 执行 Plan 阶段
     println!("⚙️  开始分析功能...");
-    let result = engine.execute_phase(Phase::Plan, user_prompt).await?;
+    let result = engine.execute_phase_with_config(
+        Phase::Plan,
+        &task_template.config,
+        system_prompt,
+        user_prompt,
+    ).await?;
 
     if result.success {
         println!("✅ 功能分析完成!");

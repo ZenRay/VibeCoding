@@ -409,32 +409,31 @@ fn detect_project_name() -> anyhow::Result<String> {
     // 优先级 1: 从 Cargo.toml 读取
     if let Ok(cargo_content) = fs::read_to_string("Cargo.toml") {
         for line in cargo_content.lines() {
-            if line.trim().starts_with("name") {
-                if let Some(name) = line.split('=').nth(1) {
-                    let name = name.trim().trim_matches('"').trim_matches('\'');
-                    if !name.is_empty() {
-                        return Ok(name.to_string());
-                    }
+            if line.trim().starts_with("name")
+                && let Some(name) = line.split('=').nth(1)
+            {
+                let name = name.trim().trim_matches('"').trim_matches('\'');
+                if !name.is_empty() {
+                    return Ok(name.to_string());
                 }
             }
         }
     }
     
     // 优先级 2: 从 package.json 读取
-    if let Ok(package_content) = fs::read_to_string("package.json") {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&package_content) {
-            if let Some(name) = json.get("name").and_then(|n| n.as_str()) {
-                return Ok(name.to_string());
-            }
-        }
+    if let Ok(package_content) = fs::read_to_string("package.json")
+        && let Ok(json) = serde_json::from_str::<serde_json::Value>(&package_content)
+        && let Some(name) = json.get("name").and_then(|n| n.as_str())
+    {
+        return Ok(name.to_string());
     }
     
     // 优先级 3: 使用当前目录名
     let current_dir = std::env::current_dir()?;
-    if let Some(dir_name) = current_dir.file_name() {
-        if let Some(name) = dir_name.to_str() {
-            return Ok(name.to_string());
-        }
+    if let Some(dir_name) = current_dir.file_name()
+        && let Some(name) = dir_name.to_str()
+    {
+        return Ok(name.to_string());
     }
     
     // 默认值
