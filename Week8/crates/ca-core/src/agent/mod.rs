@@ -17,10 +17,15 @@ pub enum AgentType {
 }
 
 impl AgentType {
-    /// 获取官方环境变量名列表
+    /// 获取官方环境变量名列表 (按优先级顺序)
     pub fn env_var_names(&self) -> Vec<&'static str> {
         match self {
-            Self::Claude => vec!["ANTHROPIC_API_KEY", "CLAUDE_API_KEY"],
+            Self::Claude => vec![
+                "ANTHROPIC_API_KEY",       // 官方标准
+                "CLAUDE_API_KEY",          // 常见别名
+                "ANTHROPIC_AUTH_TOKEN",    // OpenRouter
+                "OPENROUTER_API_KEY",      // OpenRouter 别名
+            ],
             Self::Copilot => vec!["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
             Self::Cursor => vec!["CURSOR_API_KEY"],
         }

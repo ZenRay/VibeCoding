@@ -9,6 +9,8 @@ use ca_core::{Agent, AgentRequest, ClaudeAgent};
 fn get_api_key() -> Option<String> {
     std::env::var("ANTHROPIC_API_KEY")
         .or_else(|_| std::env::var("CLAUDE_API_KEY"))
+        .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
+        .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
         .ok()
 }
 
@@ -26,7 +28,7 @@ async fn test_claude_agent_simple_query() {
     }
 
     let api_key = get_api_key().unwrap();
-    let agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string())
+    let agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string(), None)
         .expect("创建 Agent 失败");
 
     let request = AgentRequest::new(
@@ -56,7 +58,7 @@ async fn test_claude_agent_with_system_prompt() {
     }
 
     let api_key = get_api_key().unwrap();
-    let mut agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string())
+    let mut agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string(), None)
         .expect("创建 Agent 失败");
 
     // 配置系统提示词
@@ -96,7 +98,7 @@ async fn test_claude_agent_validation() {
     }
 
     let api_key = get_api_key().unwrap();
-    let agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string())
+    let agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string(), None)
         .expect("创建 Agent 失败");
 
     let result = agent.validate().await;
@@ -106,7 +108,7 @@ async fn test_claude_agent_validation() {
 
 #[tokio::test]
 async fn test_claude_agent_invalid_key() {
-    let agent = ClaudeAgent::new("invalid-key".to_string(), "claude-3-5-sonnet-20241022".to_string())
+    let agent = ClaudeAgent::new("invalid-key".to_string(), "claude-3-5-sonnet-20241022".to_string(), None)
         .expect("创建 Agent 不应失败 (只有在执行时才验证 key)");
 
     // validate 应该返回 true (因为只检查 key 不为空)
@@ -124,6 +126,7 @@ fn test_agent_metadata() {
     let agent = ClaudeAgent::new(
         "test-key".to_string(),
         "claude-3-5-sonnet-20241022".to_string(),
+        None,
     )
     .unwrap();
 
@@ -139,6 +142,7 @@ fn test_agent_capabilities() {
     let agent = ClaudeAgent::new(
         "test-key".to_string(),
         "claude-3-5-sonnet-20241022".to_string(),
+        None,
     )
     .unwrap();
 
@@ -160,7 +164,7 @@ async fn test_claude_agent_with_budget() {
     }
 
     let api_key = get_api_key().unwrap();
-    let mut agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string())
+    let mut agent = ClaudeAgent::new(api_key, "claude-3-5-sonnet-20241022".to_string(), None)
         .expect("创建 Agent 失败");
 
     // 配置预算限制

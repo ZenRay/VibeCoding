@@ -68,9 +68,20 @@ Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供:
 # Claude Agent (官方 Anthropic API)
 export ANTHROPIC_API_KEY='sk-ant-xxx'
 
+# 或使用 OpenRouter (支持多种环境变量名)
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'  # OpenRouter 标准
+export OPENROUTER_API_KEY='sk-or-v1-xxx'    # OpenRouter 别名
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
 # 可选: 指定模型
 export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
 ```
+
+**支持的环境变量 (按优先级)**:
+1. `ANTHROPIC_API_KEY` - Anthropic 官方标准
+2. `CLAUDE_API_KEY` - 常见别名
+3. `ANTHROPIC_AUTH_TOKEN` - OpenRouter 标准 ✨ NEW
+4. `OPENROUTER_API_KEY` - OpenRouter 别名 ✨ NEW
 
 ### 2. 规划功能
 
@@ -157,11 +168,15 @@ cat specs/001-my-feature/state.yml
 
 Code Agent 支持使用 OpenRouter、Azure OpenAI、AWS Bedrock 等第三方 API 服务。
 
-#### 方法 1: 环境变量
+#### 方法 1: 环境变量 (推荐) ⭐
 
 ```bash
-# 设置 OpenRouter API Key
-export ANTHROPIC_API_KEY='sk-or-v1-xxx'
+# 设置 OpenRouter 环境变量
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'        # OpenRouter API Key
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 或使用别名
+export OPENROUTER_API_KEY='sk-or-v1-xxx'          # OpenRouter 别名
 export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
 
 # 运行命令
@@ -191,8 +206,13 @@ code-agent plan my-feature \
 # 1. 获取 OpenRouter API Key
 # 访问 https://openrouter.ai/ 注册并获取 API Key
 
-# 2. 设置环境变量
-export ANTHROPIC_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
+# 2. 设置环境变量 (两种方式任选其一)
+# 方式 A: 使用 ANTHROPIC_AUTH_TOKEN (推荐) ✨
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxxxxxxxxxxxx'
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 方式 B: 使用 OPENROUTER_API_KEY (别名) ✨
+export OPENROUTER_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
 export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
 
 # 3. (可选) 指定模型
@@ -232,10 +252,25 @@ Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供�
 
 ### 必需的环境变量
 
+Code Agent 支持多种环境变量名，按优先级顺序尝试：
+
 ```bash
-# Claude Agent (默认)
+# Claude Agent (官方 Anthropic API)
 export ANTHROPIC_API_KEY='sk-ant-xxx'
+
+# 或使用 OpenRouter (支持多种变量名) ✨
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'  # OpenRouter 标准
+export OPENROUTER_API_KEY='sk-or-v1-xxx'    # OpenRouter 别名
+
+# 其他支持的变量名
+export CLAUDE_API_KEY='sk-ant-xxx'          # 常见别名
 ```
+
+**环境变量优先级** (从高到低):
+1. `ANTHROPIC_API_KEY` - Anthropic 官方标准
+2. `CLAUDE_API_KEY` - 常见别名
+3. `ANTHROPIC_AUTH_TOKEN` - OpenRouter 标准 ✨ NEW
+4. `OPENROUTER_API_KEY` - OpenRouter 别名 ✨ NEW
 
 ### 可选的环境变量
 

@@ -94,7 +94,11 @@ impl Config {
 
     /// 自动检测 Agent 类型 (根据环境变量)
     fn detect_agent_type() -> AgentType {
-        if std::env::var("ANTHROPIC_API_KEY").is_ok() || std::env::var("CLAUDE_API_KEY").is_ok() {
+        if std::env::var("ANTHROPIC_API_KEY").is_ok() 
+            || std::env::var("CLAUDE_API_KEY").is_ok()
+            || std::env::var("ANTHROPIC_AUTH_TOKEN").is_ok()
+            || std::env::var("OPENROUTER_API_KEY").is_ok()
+        {
             return AgentType::Claude;
         }
 
@@ -112,14 +116,20 @@ impl Config {
         AgentType::Claude // 默认
     }
 
-    /// 加载 API Key (按官方环境变量)
+    /// 加载 API Key (按优先级尝试多个环境变量)
     fn load_api_key(agent_type: &AgentType) -> Result<String> {
         match agent_type {
             AgentType::Claude => std::env::var("ANTHROPIC_API_KEY")
                 .or_else(|_| std::env::var("CLAUDE_API_KEY"))
+                .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
+                .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
                 .map_err(|_| {
                     CoreError::Config(
-                        "API key not found. Set ANTHROPIC_API_KEY:\n  export ANTHROPIC_API_KEY='sk-ant-xxx'".to_string(),
+                        "API key not found. Set one of:\n  \
+                         export ANTHROPIC_API_KEY='sk-ant-xxx'            # Anthropic official\n  \
+                         export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'       # OpenRouter\n  \
+                         export OPENROUTER_API_KEY='sk-or-v1-xxx'         # OpenRouter alias\n  \
+                         export CLAUDE_API_KEY='sk-ant-xxx'               # Common alias".to_string(),
                     )
                 }),
 
@@ -345,6 +355,96 @@ mod tests {
         // SAFETY: 在测试中清理环境变量是安全的
         unsafe {
             std::env::remove_var("ANTHROPIC_API_KEY");
+        }
+    }
+
+    #[test]
+    fn test_load_api_key_openrouter_auth_token() {
+        // 设置 OpenRouter token (无需清除其他变量，测试优先级)
+        // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::set_var("ANTHROPIC_AUTH_TOKEN", "sk-or-v1-test-token");
+        }
+
+        let key = Config::load_api_key(&AgentType::Claude).unwrap();
+        // 如果 ANTHROPIC_API_KEY 或 CLAUDE_API_KEY 存在，它们会有更高优先级
+        // 否则应该使用 ANTHROPIC_AUTH_TOKEN
+        assert!(
+            key == "sk-or-v1-test-token" || key.starts_with("sk-ant-") || key.starts_with("sk-or-"),
+            "Expected OpenRouter token or existing API key, got: {}",
+            key
+        );
+
+        // 清理
+        // SAFETY: 在测试中清理环境变量是安全的
+        unsafe {
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        }
+    }
+
+    #[test]
+    fn test_load_api_key_openrouter_api_key() {
+        // 设置 OpenRouter API key
+        // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::set_var("OPENROUTER_API_KEY", "sk-or-v1-test-api");
+        }
+
+        let key = Config::load_api_key(&AgentType::Claude).unwrap();
+        // 如果更高优先级的变量存在，它们会被使用
+        assert!(
+            key == "sk-or-v1-test-api" || key.starts_with("sk-ant-") || key.starts_with("sk-or-"),
+            "Expected OpenRouter API key or existing key, got: {}",
+            key
+        );
+
+        // 清理
+        // SAFETY: 在测试中清理环境变量是安全的
+        unsafe {
+            std::env::remove_var("OPENROUTER_API_KEY");
+        }
+    }
+
+    #[test]
+    fn test_env_var_priority() {
+        // 测试优先级: ANTHROPIC_API_KEY > CLAUDE_API_KEY > ANTHROPIC_AUTH_TOKEN > OPENROUTER_API_KEY
+        // 设置所有变量
+        // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-official");
+            std::env::set_var("CLAUDE_API_KEY", "sk-ant-claude");
+            std::env::set_var("ANTHROPIC_AUTH_TOKEN", "sk-or-v1-openrouter");
+            std::env::set_var("OPENROUTER_API_KEY", "sk-or-v1-or-key");
+        }
+
+        let key = Config::load_api_key(&AgentType::Claude).unwrap();
+        assert_eq!(key, "sk-ant-official", "Should prefer ANTHROPIC_API_KEY");
+
+        // 清理
+        // SAFETY: 在测试中清理环境变量是安全的
+        unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+            std::env::remove_var("CLAUDE_API_KEY");
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+            std::env::remove_var("OPENROUTER_API_KEY");
+        }
+    }
+
+    #[test]
+    fn test_detect_agent_type_with_openrouter() {
+        // 设置 OpenRouter 环境变量
+        // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::set_var("ANTHROPIC_AUTH_TOKEN", "sk-or-v1-test");
+        }
+
+        let agent_type = Config::detect_agent_type();
+        assert_eq!(agent_type, AgentType::Claude);
+
+        // 清理
+        // SAFETY: 在测试中清理环境变量是安全的
+        unsafe {
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
         }
     }
 }

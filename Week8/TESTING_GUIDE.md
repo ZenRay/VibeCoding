@@ -91,16 +91,23 @@ cargo run --release -- plan my-feature
 ⚠️ **必须配置** - Code Agent 使用零配置文件方案：
 
 ```bash
-# Claude Agent (必需)
+# Claude Agent (官方 Anthropic API)
 export ANTHROPIC_API_KEY='sk-ant-xxxxxxxxxxxxx'
+
+# 或使用 OpenRouter (支持多种环境变量名) ✨
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxxxxxxxxxxxx'  # OpenRouter 标准
+export OPENROUTER_API_KEY='sk-or-v1-xxxxxxxxxxxxx'    # OpenRouter 别名
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
 
 # 可选: 指定模型
 export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
-
-# 可选: 使用 OpenRouter (第三方 API)
-export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
-export OPENROUTER_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
 ```
+
+**支持的环境变量 (按优先级)**:
+1. `ANTHROPIC_API_KEY` - Anthropic 官方标准
+2. `CLAUDE_API_KEY` - 常见别名
+3. `ANTHROPIC_AUTH_TOKEN` - OpenRouter 标准 ✨ NEW
+4. `OPENROUTER_API_KEY` - OpenRouter 别名 ✨ NEW
 
 **永久设置** (推荐):
 
@@ -431,8 +438,13 @@ cat specs/001-user-auth/status.md
 #### 步骤
 
 ```bash
-# 1. 设置 OpenRouter 环境变量
-export ANTHROPIC_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
+# 1. 设置 OpenRouter 环境变量 (两种方式任选其一)
+# 方式 A: 使用 ANTHROPIC_AUTH_TOKEN (推荐) ✨
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxxxxxxxxxxxx'
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 方式 B: 使用 OPENROUTER_API_KEY (别名) ✨
+export OPENROUTER_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
 export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
 
 # 2. 验证配置
@@ -479,11 +491,16 @@ code-agent plan my-feature
 
 ```
 错误输出:
-❌ API key not found. Set ANTHROPIC_API_KEY:
-  export ANTHROPIC_API_KEY='sk-ant-xxx'
+❌ API key not found. Set one of:
+  export ANTHROPIC_API_KEY='sk-ant-xxx'            # Anthropic official
+  export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'       # OpenRouter
+  export OPENROUTER_API_KEY='sk-or-v1-xxx'         # OpenRouter alias
+  export CLAUDE_API_KEY='sk-ant-xxx'               # Common alias
 
 解决:
 export ANTHROPIC_API_KEY='your-key-here'
+# 或
+export ANTHROPIC_AUTH_TOKEN='sk-or-v1-xxx'  # 使用 OpenRouter
 ```
 
 #### 问题 2: 找不到 code-agent 命令
