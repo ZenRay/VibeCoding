@@ -57,6 +57,15 @@ pub async fn execute_plan(
 
     // 初始化状态管理
     let mut state_manager = StateManager::new(&feature_slug, &repo_path)?;
+    
+    // 添加 Status Document Hook
+    let specs_dir = repo_path.join("specs");
+    let spec_content = String::new(); // 初始为空，plan 完成后会更新
+    let status_hook = std::sync::Arc::new(ca_core::StatusDocumentHook::new(
+        specs_dir,
+        spec_content,
+    ));
+    state_manager.add_hook(status_hook);
 
     // 创建 Agent
     let agent = create_agent(config)?;
@@ -101,10 +110,27 @@ pub async fn execute_plan(
         // 更新状态
         state_manager.update_phase_status(0, ca_core::Status::Completed)?;
         state_manager.save()?;
+        
+        // 创建初始 status.md
+        let status_path = feature_dir.join("status.md");
+        let spec_file_path = feature_dir.join("spec.md");
+        let spec_content = if spec_file_path.exists() {
+            std::fs::read_to_string(&spec_file_path).unwrap_or_default()
+        } else {
+            String::new()
+        };
+        
+        let status_doc = ca_core::StatusDocument::from_feature_state(
+            state_manager.state(),
+            &spec_content,
+        );
+        status_doc.save(&status_path)?;
+        
+        println!("📊 状态文件: {}", status_path.display());
 
         // 显示生成的文件
         println!("📄 生成的文档:");
-        for file in &["spec.md", "design.md", "plan.md", "tasks.md"] {
+        for file in &["spec.md", "design.md", "plan.md", "tasks.md", "status.md"] {
             let file_path = feature_dir.join(file);
             if file_path.exists() {
                 println!("  ✓ {}", file);

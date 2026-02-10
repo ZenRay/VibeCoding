@@ -100,6 +100,10 @@ pub async fn execute_init(
     println!("🎉 初始化完成! 现在可以运行:");
     println!("   code-agent plan <feature-name>");
     println!("   code-agent run <feature-name>");
+    println!();
+    println!("💡 状态追踪:");
+    println!("   • status.md - 人类可读的进度报告 (中文)");
+    println!("   • state.yml - 机器可读的状态文件 (用于恢复执行)");
 
     Ok(())
 }

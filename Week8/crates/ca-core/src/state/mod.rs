@@ -1,15 +1,18 @@
 pub mod types;
+pub mod hooks;
 
 use chrono::Utc;
 use std::path::{Path, PathBuf};
 
 use crate::error::Result;
 pub use types::*;
+pub use hooks::{HookRegistry, StateHook, StatusDocumentHook};
 
 /// State Manager - 管理功能执行状态
 pub struct StateManager {
     state_file: PathBuf,
     state: FeatureState,
+    hooks: HookRegistry,
 }
 
 impl StateManager {
@@ -29,7 +32,11 @@ impl StateManager {
             )
         };
 
-        Ok(Self { state_file, state })
+        Ok(Self {
+            state_file,
+            state,
+            hooks: HookRegistry::new(),
+        })
     }
 
     /// 获取状态文件路径
@@ -67,6 +74,11 @@ impl StateManager {
     /// 获取可变状态
     pub fn state_mut(&mut self) -> &mut FeatureState {
         &mut self.state
+    }
+    
+    /// 添加 Hook
+    pub fn add_hook(&mut self, hook: std::sync::Arc<dyn StateHook>) {
+        self.hooks.add(hook);
     }
 
     /// 更新 phase 状态
@@ -108,7 +120,12 @@ impl StateManager {
         };
 
         self.state.phases.push(phase_state);
-        self.save()
+        self.save()?;
+        
+        // 触发 hooks
+        self.hooks.trigger_phase_start(&self.state, phase_number);
+        
+        Ok(())
     }
 
     /// 开始新的 phase (使用默认名称)
@@ -145,7 +162,12 @@ impl StateManager {
             }
         }
 
-        self.save()
+        self.save()?;
+        
+        // 触发 hooks
+        self.hooks.trigger_phase_complete(&self.state, phase_number);
+        
+        Ok(())
     }
 
     /// 添加任务
@@ -158,12 +180,20 @@ impl StateManager {
     /// 更新任务状态
     pub fn update_task_status(&mut self, task_id: &str, status: Status) -> Result<()> {
         self.state.feature.updated_at = Utc::now();
+        let was_completed = status == Status::Completed;
 
         if let Some(task) = self.state.tasks.iter_mut().find(|t| t.id == task_id) {
             task.status = status;
         }
 
-        self.save()
+        self.save()?;
+        
+        // 如果任务完成，触发 hook
+        if was_completed {
+            self.hooks.trigger_task_complete(&self.state, task_id);
+        }
+        
+        Ok(())
     }
 
     /// 创建检查点
@@ -208,7 +238,12 @@ impl StateManager {
     pub fn record_error(&mut self, error: ExecutionError) -> Result<()> {
         self.state.feature.updated_at = Utc::now();
         self.state.errors.push(error);
-        self.save()
+        self.save()?;
+        
+        // 触发 hooks
+        self.hooks.trigger_error_recorded(&self.state);
+        
+        Ok(())
     }
 
     /// 检查是否可以恢复

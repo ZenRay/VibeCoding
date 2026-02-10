@@ -36,6 +36,21 @@ pub async fn execute_run(
 
     // 加载状态管理
     let mut state_manager = StateManager::new(&feature_slug, &repo_path)?;
+    
+    // 添加 Status Document Hook
+    let specs_dir = repo_path.join("specs");
+    let spec_file = feature_dir.join("spec.md");
+    let spec_content = if spec_file.exists() {
+        std::fs::read_to_string(&spec_file).unwrap_or_default()
+    } else {
+        String::new()
+    };
+    
+    let status_hook = std::sync::Arc::new(ca_core::StatusDocumentHook::new(
+        specs_dir,
+        spec_content,
+    ));
+    state_manager.add_hook(status_hook);
 
     // 检查是否需要恢复
     if resume || state_manager.can_resume() {

@@ -29,3 +29,6 @@ ca-pm = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
 tempfile = "3.14"
+
+[[example]]
+name = "generate_status"
