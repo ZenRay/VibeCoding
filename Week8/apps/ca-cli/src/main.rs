@@ -61,16 +61,32 @@ enum Commands {
 
     /// 执行任务
     Run {
-        /// 任务描述
-        task: String,
+        /// 功能名称 (slug)
+        feature_slug: String,
+
+        /// 执行特定阶段 (1-7)
+        #[arg(long)]
+        phase: Option<u8>,
+
+        /// 从中断处恢复
+        #[arg(long)]
+        resume: bool,
+
+        /// 模拟执行,不修改文件
+        #[arg(long)]
+        dry_run: bool,
+
+        /// 跳过代码审查
+        #[arg(long)]
+        skip_review: bool,
+
+        /// 跳过测试验证
+        #[arg(long)]
+        skip_test: bool,
 
         /// 工作目录
         #[arg(short, long)]
-        repo: Option<String>,
-
-        /// 相关文件(可以指定多个)
-        #[arg(short, long)]
-        files: Vec<String>,
+        repo: Option<std::path::PathBuf>,
     },
 
     /// 列出可用模板
@@ -110,8 +126,8 @@ async fn main() -> anyhow::Result<()> {
         Commands::Plan { feature_slug, description, interactive, repo } => {
             execute_command(Command::Plan { feature_slug, description, interactive, repo }, &config).await?;
         }
-        Commands::Run { task, repo, files } => {
-            execute_command(Command::Run { task, repo, files }, &config).await?;
+        Commands::Run { feature_slug, phase, resume, dry_run, skip_review, skip_test, repo } => {
+            execute_command(Command::Run { feature_slug, phase, resume, dry_run, skip_review, skip_test, repo }, &config).await?;
         }
         Commands::Templates { verbose } => {
             execute_command(Command::Templates { verbose }, &config).await?;

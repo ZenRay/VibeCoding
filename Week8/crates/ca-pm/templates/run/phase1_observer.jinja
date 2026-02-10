@@ -1,56 +1,41 @@
-# Task: Build Observer (Phase 1)
+# Task: Build Observer for Project Analysis
 
 ## Context
-Analyze the codebase to understand the current structure and identify areas that need modification for implementing the feature.
+You are analyzing the codebase to understand the current structure and identify areas that need modification for implementing the following feature.
 
-{% if project %}
-## Project Information
-- Repository: {{ project.repo_path }}
-{% if project.primary_language %}
-- Language: {{ project.primary_language }}
-{% endif %}
-{% endif %}
-
-{% if feature_spec %}
 ## Feature Specification
-{{ feature_spec }}
-{% endif %}
-
-{% if files %}
-## Project Files
-{% for file in files %}
-- {{ file.path }}{% if file.language %} ({{ file.language }}){% endif %}
-{% endfor %}
-{% endif %}
+{{ spec }}
 
 ## Your Task
-Provide a comprehensive observer report to guide the implementation.
+Analyze the codebase and provide a comprehensive observer report.
 
 ### Analysis Requirements
-1. **File Analysis**
-   - Files to modify
-   - New files to create
-   - Indirectly affected files
-
-2. **Dependency Analysis**
-   - Component dependencies
-   - External dependencies needed
-   - Potential conflicts
-
-3. **Risk Assessment**
-   - Technical risks
-   - High complexity areas
-   - Compatibility concerns
-
-4. **Architecture Impact**
-   - Existing architecture changes
-   - Patterns to follow
-   - Refactoring opportunities
+1. **File Analysis** - Identify files to modify/create
+2. **Dependency Analysis** - Map dependencies and conflicts
+3. **Risk Assessment** - Identify technical risks
+4. **Architecture Impact** - Assess architectural changes needed
 
 ## Output Format
-Provide structured analysis with:
-- Files to modify (with reasons and complexity)
-- Files to create (with purpose and dependencies)
-- Dependency changes
-- Risk assessment with mitigations
-- Implementation recommendations
+
+### Files to Modify
+For each file:
+- Path: `path/to/file`
+- Reason: Why modification needed
+- Complexity: Low/Medium/High
+- Risk: Low/Medium/High
+
+### Files to Create
+For each new file:
+- Path: `path/to/new/file`
+- Purpose: What it contains
+- Dependencies: What it depends on
+
+### Implementation Recommendations
+- Suggested approach
+- Key design decisions
+- Testing strategy
+
+## Guidelines
+- Be thorough but concise
+- Focus on actionable insights
+- Highlight uncertainties

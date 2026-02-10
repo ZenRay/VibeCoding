@@ -1,99 +1,67 @@
-# Task: Final Verification
+# Task: Final Verification and Testing
+
+## Context
+Perform final verification to ensure implementation is complete and correct.
 
 ## Implementation Summary
 {{ implementation_summary }}
 
 ## All Changes
-{% for change in all_changes %}
-- {{ change.file }}: {{ change.type }}
-{% endfor %}
+{{ all_changes }}
 
-## Tests
-{% for test in tests %}
-- {{ test.file }}: {{ test.description }}
-{% endfor %}
+## Verification Checklist
+### Functional Verification
+- [ ] All planned features implemented
+- [ ] Edge cases handled
+- [ ] Error handling in place
+
+### Code Quality Verification
+- [ ] Follows project standards
+- [ ] Clean and maintainable
+
+### Testing Verification
+- [ ] All tests pass
+- [ ] Coverage adequate (>80%)
+
+### Documentation Verification
+- [ ] Code documented
+- [ ] API docs updated
 
 ## Your Task
-Perform comprehensive verification before creating the Pull Request.
+Perform comprehensive verification and provide final report.
 
-### Verify
-1. **Functionality**
-   - All features implemented
-   - Acceptance criteria met
-   - Edge cases handled
+### Verification Tasks
+1. **Run All Tests** - Execute and report results
+2. **Manual Verification** - Test key flows
+3. **Code Analysis** - Review final quality
+4. **Documentation Review** - Verify completeness
 
-2. **Quality**
-   - Code follows conventions
-   - No code smells
-   - Well-documented
+## Output Format
 
-3. **Testing**
-   - All tests pass
-   - Coverage adequate (>80%)
-   - No flaky tests
-
-4. **Security**
-   - No vulnerabilities
-   - Input validation present
-   - Best practices followed
-
-### Report
-
-#### Verification Results
-- Overall Status: Pass/Fail
+### Verification Results
+- Overall Status: Pass/Fail/Conditional
 - Tests: X passed, Y failed
 - Coverage: X%
+- Issues: Count by severity
 
-#### Issues Found
-For each issue:
-- Severity (Critical/High/Medium/Low)
-- Description
-- Recommendation
+### Test Results
+For each suite:
+- Suite name
+- Pass/fail counts
+- Coverage %
 
-#### Final Assessment
-- Ready for PR: Yes/No
-- Conditions (if any)
+### Final Assessment
+- Ready for merge: Yes/No
 - Known limitations
+- Future improvements
 
-### Pull Request
+### Deployment Checklist
+- [ ] Tests pass
+- [ ] Docs complete
+- [ ] No critical issues
+- [ ] Performance acceptable
 
-#### PR Title
-`feat: {{ feature_name }} - Complete implementation`
-
-#### PR Description
-```markdown
-## Summary
-<What was implemented>
-
-## Changes
-- <Key change 1>
-- <Key change 2>
-
-## Testing
-- [ ] Unit tests added and passing
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-
-## Files Changed
-{% for change in all_changes %}
-- {{ change.file }} - <purpose>
-{% endfor %}
-
-## Checklist
-- [ ] Code follows project style
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] No breaking changes
-```
-
-#### GitHub CLI Command
-```bash
-cd {{ repo_path }}
-gh pr create \
-  --title "feat: {{ feature_name }} - Complete implementation" \
-  --body-file .ca-state/pr-description.md \
-  --base main \
-  --head {{ branch_name }}
-```
-
-**Note**: Save PR description to `.ca-state/pr-description.md` first.
+## Guidelines
+- Be thorough
+- Test both happy and error paths
+- Verify against requirements

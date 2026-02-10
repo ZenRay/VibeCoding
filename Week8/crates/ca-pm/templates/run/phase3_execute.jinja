@@ -1,150 +1,55 @@
-# Task: Execute Implementation - Phase {{ phase_number }}
+# Task: Execute Implementation - Phase 3
 
 ## Context
-{% if is_resume %}
+{% if is_resume -%}
 ⚠️ **RESUMING FROM INTERRUPTION**
 
-Interrupted at: {{ resume.checkpoint }}
+{{ resume_context }}
 
-### Previous Progress
-{{ resume.context }}
-
-### Completed Tasks
-{% for task in completed_tasks %}
-- ✅ {{ task.id }}: {{ task.description }}
-{% endfor %}
-
-### Modified Files
-{% for file in modified_files %}
-- {{ file.path }} ({{ file.status }})
-{% endfor %}
-
-**Continue from: {{ current_task.id }}**
-{% else %}
-Starting Phase {{ phase_number }} implementation.
+**Continue from where we left off.**
+{% else -%}
+Starting Phase 3 implementation.
 {% endif %}
 
 ## Implementation Plan
 {{ plan }}
 
-## Current Task
-**ID**: {{ current_task.id }}
-**Kind**: {{ current_task.kind }}
-**Description**: {{ current_task.description }}
-**Files**: {{ current_task.files }}
-
-## Codebase Context
-{% for file in context_files %}
-### {{ file.path }}
-```{{ file.language }}
-{{ file.content }}
-```
-{% endfor %}
+## Tasks for Phase 3
+{{ tasks }}
 
 ## Your Task
-Implement the current task following the plan.
+Implement the Phase 3 tasks according to the plan.
 
-### Requirements
-1. **Code Quality**
-   - Follow project conventions
-   - Handle errors properly
-   - Consider edge cases
-   - Add appropriate comments
-
-2. **Testing**
-   - Add unit tests
-   - Update existing tests
-   - Ensure tests pass
-
-3. **Documentation**
-   - Update inline docs
-   - Add docstrings
-   - Update README if needed
+### Implementation Requirements
+1. **Code Quality** - Follow project standards, add comments
+2. **Testing** - Add unit tests for new functionality
+3. **Documentation** - Update inline docs
+4. **Compatibility** - Maintain backward compatibility
 
 ## Output Format
 
 ### Implementation Summary
-Brief description of what was implemented and key decisions.
+- What was implemented
+- Key decisions made
+- Deviations from plan (if any)
 
 ### Code Changes
 For each file:
-```
-File: path/to/file
-Action: create|modify|delete
-Language: rust|python|etc
-
-<file content>
-
-Explanation: Why this change was made
-```
+- File path
+- Change type: create/modify/delete
+- Complete content
+- Explanation
 
 ### Tests Added
-List test files and what they cover.
-
-### State Update
-Current progress for state.yml:
-- Tasks completed in this phase
-- Files modified
-- Estimated tokens used
-
-{% if is_last_task_in_phase %}
-## Pull Request Preparation
-Since this is the last task in Phase {{ phase_number }}, prepare for PR creation:
-
-### PR Title
-`feat: [feature-name] - Phase {{ phase_number }} implementation`
-
-### PR Description
-Provide detailed PR description following this template:
-
-```markdown
-## Summary
-What was implemented in this phase.
-
-## Changes
-- Key change 1
-- Key change 2
-- ...
-
-## Testing
-- [ ] Unit tests added
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-
-## Files Changed
-- path/to/file1 - Purpose
-- path/to/file2 - Purpose
-
-## Related Issues
-Closes #XXX
-
-## Checklist
-- [ ] Code follows project style
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] No breaking changes (or documented)
-```
-
-### GitHub CLI Command
-Provide the exact `gh pr create` command:
-```bash
-gh pr create \
-  --title "feat: [feature-name] - Phase {{ phase_number }}" \
-  --body "$(cat <<'EOF'
-<PR description here>
-EOF
-)" \
-  --base main \
-  --head feature/[feature-name]
-```
-{% endif %}
+- Test file path
+- What is tested
+- Coverage
 
 ## Guidelines
 - Implement exactly as planned
 - Write production-quality code
-- Include comprehensive error handling
-- Add tests for all new functionality
-{% if is_resume %}
+- Include error handling
+- Add tests for all functionality
+{% if is_resume -%}
 - Continue seamlessly from previous state
-- Maintain consistency with completed work
 {% endif %}

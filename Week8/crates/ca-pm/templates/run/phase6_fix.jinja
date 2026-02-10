@@ -4,79 +4,37 @@
 Address the issues identified in the code review.
 
 ## Code Review Results
-{{ review.results }}
-
-## Issues to Fix
-{% for issue in issues %}
-### Issue {{ loop.index }}: {{ issue.title }}
-- **Severity**: {{ issue.severity }}
-- **Category**: {{ issue.category }}
-- **Location**: {{ issue.location }}
-- **Description**: {{ issue.description }}
-- **Recommendation**: {{ issue.recommendation }}
-{% if issue.example %}
-**Example**:
-```{{ issue.language }}
-{{ issue.example }}
-```
-{% endif %}
-{% endfor %}
-
-## Current Code
-{% for file in affected_files %}
-### {{ file.path }}
-```{{ file.language }}
-{{ file.content }}
-```
-{% endfor %}
+{{ review_output }}
 
 ## Your Task
-Fix all the issues identified in the code review.
+Fix all issues identified in the code review.
 
 ### Fix Requirements
-1. **Address All Critical Issues**
-   - Must fix all critical and high severity issues
-   - Provide clear explanation for each fix
-
-2. **Code Quality**
-   - Maintain or improve code quality
-   - Follow review recommendations
-   - Preserve existing functionality
-
-3. **Testing**
-   - Update tests to reflect fixes
-   - Add tests for newly covered cases
-   - Ensure all tests pass
+1. **Address Critical Issues** - Must fix all critical/high severity
+2. **Code Quality** - Maintain or improve quality
+3. **Testing** - Update tests to reflect fixes
 
 ## Output Format
-Provide your fixes with:
 
 ### Fixes Applied
-For each issue fixed:
+For each issue:
 - Issue ID: Reference to review issue
 - Fix Summary: What was changed
 - File: File path
-- Changes: Description of changes
+- Changes: Description
 
 ### Updated Code
 For each modified file:
 - File path
 - Complete updated content
-- Explanation of changes
+- Explanation
 
 ### Tests Updated
 - Test files modified
 - New test cases added
-- Test results
-
-### Verification
-- How to verify the fixes
-- What to check
-- Expected behavior
 
 ## Guidelines
 - Fix all critical issues
-- Maintain code consistency
+- Maintain consistency
 - Preserve functionality
 - Add tests for fixes
-- Explain each fix clearly

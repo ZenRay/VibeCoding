@@ -4,58 +4,18 @@
 Review the implemented code changes for quality, correctness, and best practices.
 
 ## Implementation Summary
-{{ implementation.summary }}
+{{ implementation_summary }}
 
 ## Changes Made
-{% for change in changes %}
-### {{ change.file_path }}
-**Change Type**: {{ change.type }}
-**Phase**: {{ change.phase }}
-
-```{{ change.language }}
-{{ change.content }}
-```
-
-**Explanation**: {{ change.explanation }}
-{% endfor %}
-
-## Tests Added
-{% for test in tests %}
-- {{ test.file }}: {{ test.description }}
-{% endfor %}
+{{ changes }}
 
 ## Review Criteria
-1. **Code Quality**
-   - Clean code principles
-   - SOLID principles
-   - DRY principle
-   - Appropriate abstractions
-
-2. **Correctness**
-   - Logic correctness
-   - Edge case handling
-   - Error handling
-   - Type safety
-
-3. **Performance**
-   - Algorithm efficiency
-   - Resource usage
-   - Scalability concerns
-
-4. **Security**
-   - Input validation
-   - Security best practices
-   - Potential vulnerabilities
-
-5. **Testing**
-   - Test coverage
-   - Test quality
-   - Missing test cases
-
-6. **Documentation**
-   - Code comments
-   - API documentation
-   - README updates
+1. **Code Quality** - Clean code, SOLID principles
+2. **Correctness** - Logic, edge cases, error handling
+3. **Performance** - Efficiency, scalability
+4. **Security** - Input validation, vulnerabilities
+5. **Testing** - Test coverage and quality
+6. **Documentation** - Comments and docs
 
 ## Your Task
 Provide a comprehensive code review.
@@ -70,30 +30,23 @@ Provide a comprehensive code review.
 #### Issues Found
 For each issue:
 - Severity: Critical/High/Medium/Low
-- Category: Quality/Correctness/Performance/Security/Testing/Documentation
+- Category: Quality/Correctness/Performance/Security
 - Location: File and line
-- Description: What is the issue
-- Recommendation: How to fix it
-- Example: Code example if helpful
+- Description: What is wrong
+- Recommendation: How to fix
+- Example: Code example
 
 #### Positive Aspects
 - What was done well
 - Good practices followed
-- Improvements made
-
-#### Suggestions
-- Optional improvements
-- Alternative approaches
-- Refactoring opportunities
 
 #### Action Items
-- Must-fix items (blocking)
-- Should-fix items (important)
-- Could-fix items (nice-to-have)
+- Must-fix (blocking)
+- Should-fix (important)
+- Could-fix (nice-to-have)
 
 ## Guidelines
 - Be constructive and specific
-- Provide code examples for fixes
-- Prioritize issues by severity
-- Acknowledge good practices
+- Provide code examples
+- Prioritize by severity
 - Focus on actionable feedback

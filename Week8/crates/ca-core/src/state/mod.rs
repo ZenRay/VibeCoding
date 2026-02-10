@@ -111,6 +111,21 @@ impl StateManager {
         self.save()
     }
 
+    /// 开始新的 phase (使用默认名称)
+    pub fn start_phase_with_default_name(&mut self, phase_number: u8) -> Result<()> {
+        let phase_name = match phase_number {
+            1 => "Build Observer",
+            2 => "Build Plan",
+            3 => "Execute Phase 1",
+            4 => "Execute Phase 2",
+            5 => "Code Review",
+            6 => "Apply Fixes",
+            7 => "Verification",
+            _ => "Unknown Phase",
+        };
+        self.start_phase(phase_number, phase_name.to_string())
+    }
+
     /// 完成 phase
     pub fn complete_phase(&mut self, phase_number: u8, result: PhaseResult) -> Result<()> {
         self.state.feature.updated_at = Utc::now();
@@ -199,6 +214,14 @@ impl StateManager {
     /// 检查是否可以恢复
     pub fn can_resume(&self) -> bool {
         self.state.status.can_resume
+    }
+
+    /// 设置 PR 信息
+    pub fn set_pr_info(&mut self, pr_url: String, pr_number: u32) -> Result<()> {
+        self.state.feature.updated_at = Utc::now();
+        self.state.delivery.pr_url = Some(pr_url);
+        self.state.delivery.pr_number = Some(pr_number);
+        self.save()
     }
 
     /// 生成恢复上下文

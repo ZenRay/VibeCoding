@@ -1,129 +1,42 @@
 # Task: Resume Interrupted Execution
 
 ## Interruption Information
-- **Feature**: {{ feature.name }}
-- **Interrupted At**: {{ interruption.timestamp }}
-- **Last Checkpoint**: {{ interruption.checkpoint }}
-- **Phase**: {{ interruption.phase }}
-- **Task**: {{ interruption.task }}
-
-## Execution State Before Interruption
-### Completed Phases
-{% for phase in completed_phases %}
-- ✅ Phase {{ phase.number }}: {{ phase.name }}
-  Duration: {{ phase.duration }}
-  Cost: ${{ phase.cost }}
-  Tasks: {{ phase.tasks_completed }}/{{ phase.tasks_total }}
-{% endfor %}
-
-### Completed Tasks
-{% for task in completed_tasks %}
-- ✅ {{ task.id }}: {{ task.description }}
-  Kind: {{ task.kind }}
-  Phase: {{ task.phase }}
-  Files: {{ task.files | join(', ') }}
-  Status: {{ task.status }}
-{% endfor %}
-
-### Files Modified So Far
-{% for file in modified_files %}
-- {{ file.path }}
-  Status: {{ file.status }}
-  Phase: {{ file.phase }}
-  Size: {{ file.size }} bytes
-{% endfor %}
-
-### Current Progress
-- Total Phases: {{ total_phases }}
-- Completed Phases: {{ completed_phases_count }}
-- Current Phase: {{ current_phase }}
-- Phase Progress: {{ phase_progress }}% ({{ completed_tasks }}/{{ total_tasks }} tasks)
-- Overall Progress: {{ overall_progress }}%
+- **Feature**: {{ feature_name }}
+- **Last Checkpoint**: {{ last_checkpoint }}
+- **Phase**: {{ current_phase }}
 
 ## Resume Context
-{{ resume.context }}
+{{ resume_context }}
 
-## What Was Being Done
-{{ resume.last_action }}
-
-## Current State of the Codebase
-{% for file in relevant_files %}
-### {{ file.path }}
-**Status**: {{ file.status }}
-**Last Modified**: {{ file.last_modified }}
-
-```{{ file.language }}
-{{ file.content }}
-```
+## Completed Phases
+{% for phase in completed_phases -%}
+- ✅ Phase {{ phase.number }}: {{ phase.name }}
 {% endfor %}
+
+## Completed Tasks
+{% for task in completed_tasks -%}
+- ✅ {{ task.id }}: {{ task.description }}
+{% endfor %}
+
+## Current Progress
+- Phase: {{ current_phase }}/7
+- Overall: {{ progress_percentage }}%
 
 ## Next Steps
-Based on the interruption point, here's what needs to be done:
-
-### Immediate Next Task
-- **Task ID**: {{ next_task.id }}
-- **Kind**: {{ next_task.kind }}
-- **Description**: {{ next_task.description }}
-- **Files**: {{ next_task.files | join(', ') }}
-- **Dependencies**: {{ next_task.dependencies | join(', ') }}
-- **Priority**: {{ next_task.priority }}
-
-### Remaining Tasks in Current Phase
-{% for task in remaining_phase_tasks %}
-- {{ task.id }}: {{ task.description }} ({{ task.kind }})
-{% endfor %}
-
-### Remaining Phases
-{% for phase in remaining_phases %}
-- Phase {{ phase.number }}: {{ phase.name }} ({{ phase.tasks_count }} tasks)
-{% endfor %}
+{{ next_steps }}
 
 ## Your Task
-**Resume the execution seamlessly from where it was interrupted.**
+**Resume execution seamlessly from where it was interrupted.**
 
 ### Resume Requirements
-1. **Context Awareness**
-   - Understand what was completed
-   - Know what remains to be done
-   - Maintain consistency with previous work
-
-2. **Continuity**
-   - Continue with the same coding style
-   - Follow the same patterns
-   - Maintain same quality standards
-
-3. **State Management**
-   - Update state.yml as you progress
-   - Create checkpoints regularly
-   - Track costs and progress
-
-4. **Quality**
-   - Maintain same or better code quality
-   - Ensure compatibility with completed work
-   - Follow the original plan
-
-## Output Format
-Start by acknowledging the resume:
-
-### Resume Acknowledgment
-- Confirmed interruption point
-- Confirmed current state
-- Confirmed next actions
-
-Then proceed with the implementation following the same format as the original phase execution.
-
-### Progress Updates
-Provide regular updates:
-- Task started: {{ task.id }}
-- Task completed: {{ task.id }}
-- Checkpoint created
-- Moving to next task
+1. **Context Awareness** - Understand completed work
+2. **Continuity** - Same style and patterns
+3. **State Management** - Update state as you progress
+4. **Quality** - Maintain same standards
 
 ## Guidelines
-- Seamlessly continue from interruption point
-- Maintain consistency with previous work
+- Continue from interruption point
+- Maintain consistency
 - Don't repeat completed work
 - Update state regularly
-- Provide clear progress indicators
-- Handle any state inconsistencies gracefully
-- If uncertain about state, ask for clarification
+- Provide progress indicators
