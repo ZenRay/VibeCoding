@@ -93,12 +93,8 @@ async fn execute_run(
     // 创建 Agent
     let agent: Arc<dyn ca_core::Agent> = match config.agent.agent_type.as_str() {
         "claude" => {
-            let mut claude =
+            let claude =
                 ClaudeAgent::new(config.agent.api_key.clone(), config.agent.model.clone())?;
-
-            if let Some(url) = &config.agent.api_url {
-                claude = claude.with_api_url(url.clone());
-            }
 
             Arc::new(claude)
         }

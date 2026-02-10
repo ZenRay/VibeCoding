@@ -198,6 +198,12 @@ pub struct AgentConfig {
     pub api_url: Option<String>,
 }
 
+// Agent 实现模块
+mod claude;
+
+// 重新导出
+pub use claude::ClaudeAgent;
+
 /// Agent 工厂
 pub struct AgentFactory;
 
@@ -219,98 +225,5 @@ impl AgentFactory {
                 "Copilot Agent not yet implemented".to_string(),
             )),
         }
-    }
-}
-
-/// Claude Agent 实现
-pub struct ClaudeAgent {
-    api_key: String,
-    api_base_url: String,
-    model: String,
-    #[allow(dead_code)]
-    client: reqwest::Client,
-}
-
-impl ClaudeAgent {
-    /// 创建新的 Claude Agent
-    pub fn new(api_key: String, model: String) -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(300))
-            .build()?;
-
-        Ok(Self {
-            api_key,
-            api_base_url: "https://api.anthropic.com/v1".to_string(),
-            model,
-            client,
-        })
-    }
-
-    /// 设置自定义 API URL
-    #[allow(dead_code)]
-    pub fn with_api_url(mut self, url: String) -> Self {
-        self.api_base_url = url;
-        self
-    }
-}
-
-#[async_trait]
-impl Agent for ClaudeAgent {
-    fn agent_type(&self) -> AgentType {
-        AgentType::Claude
-    }
-
-    fn capabilities(&self) -> AgentCapabilities {
-        AgentCapabilities {
-            supports_system_prompt: true,
-            supports_tool_control: true,
-            supports_permission_mode: true,
-            supports_cost_control: true,
-            supports_streaming: true,
-            supports_multimodal: true,
-        }
-    }
-
-    fn metadata(&self) -> AgentMetadata {
-        AgentMetadata {
-            name: "Claude Agent".to_string(),
-            version: "0.1.0".to_string(),
-            model: self.model.clone(),
-            limits: AgentLimits {
-                max_context_length: 200_000,
-                max_response_length: 8_192,
-            },
-        }
-    }
-
-    async fn execute(&self, request: AgentRequest) -> Result<AgentResponse> {
-        // TODO: 实现实际的 Claude API 调用
-        // 这里需要使用 claude-agent-sdk-rs
-        tracing::info!(
-            request_id = %request.id,
-            prompt_len = request.prompt.len(),
-            "Sending request to Claude"
-        );
-
-        let start = std::time::Instant::now();
-
-        // 临时返回示例响应
-        Ok(AgentResponse {
-            request_id: request.id,
-            content: "Response from Claude".to_string(),
-            tokens_used: Some(100),
-            file_changes: vec![],
-            metadata: ResponseMetadata {
-                duration_ms: start.elapsed().as_millis() as u64,
-                model: self.model.clone(),
-                finish_reason: "stop".to_string(),
-            },
-        })
-    }
-
-    async fn validate(&self) -> Result<bool> {
-        // TODO: 实现连接验证
-        tracing::info!("Validating Claude Agent connection");
-        Ok(!self.api_key.is_empty())
     }
 }
