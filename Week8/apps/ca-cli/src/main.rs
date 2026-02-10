@@ -41,6 +41,24 @@ enum Commands {
         interactive: bool,
     },
 
+    /// 规划功能并生成 specs
+    Plan {
+        /// 功能名称 (slug)
+        feature_slug: String,
+
+        /// 功能描述
+        #[arg(short, long)]
+        description: Option<String>,
+
+        /// 交互式模式
+        #[arg(short, long)]
+        interactive: bool,
+
+        /// 工作目录
+        #[arg(short, long)]
+        repo: Option<std::path::PathBuf>,
+    },
+
     /// 执行任务
     Run {
         /// 任务描述
@@ -88,6 +106,9 @@ async fn main() -> anyhow::Result<()> {
     match cli.command {
         Commands::Init { api_key, agent, interactive } => {
             execute_command(Command::Init { api_key, agent, interactive }, &config).await?;
+        }
+        Commands::Plan { feature_slug, description, interactive, repo } => {
+            execute_command(Command::Plan { feature_slug, description, interactive, repo }, &config).await?;
         }
         Commands::Run { task, repo, files } => {
             execute_command(Command::Run { task, repo, files }, &config).await?;

@@ -7,14 +7,22 @@ use ca_pm::{ContextBuilder, ProjectInfo, PromptConfig, PromptManager};
 use crate::config::AppConfig;
 
 mod init;
+mod plan;
 
 pub use init::execute_init;
+pub use plan::execute_plan;
 
 pub enum Command {
     Init {
         api_key: Option<String>,
         agent: Option<String>,
         interactive: bool,
+    },
+    Plan {
+        feature_slug: String,
+        description: Option<String>,
+        interactive: bool,
+        repo: Option<PathBuf>,
     },
     Run {
         task: String,
@@ -33,6 +41,9 @@ pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Re
     match command {
         Command::Init { api_key, agent, interactive } => {
             execute_init(api_key, agent, interactive, config).await
+        }
+        Command::Plan { feature_slug, description, interactive, repo } => {
+            execute_plan(feature_slug, description, interactive, repo, config).await
         }
         Command::Run { task, repo, files } => execute_run(task, repo, files, config).await,
         Command::Templates { verbose } => execute_templates(verbose, config).await,
