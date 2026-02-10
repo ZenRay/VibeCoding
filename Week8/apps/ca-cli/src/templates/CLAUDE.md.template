@@ -1,0 +1,67 @@
+# {PROJECT_NAME} - AI 开发文档
+
+> **由 Code Agent 管理** | 最后更新: {DATE}
+
+## 项目概述
+
+[待完善] 简要描述项目的目标、技术栈和核心功能
+
+## 项目结构
+
+[待完善] 关键目录和文件的说明
+
+```
+project-root/
+├── src/           # 源代码
+├── specs/         # Code Agent 功能规格 (自动生成)
+├── tests/         # 测试代码
+└── CLAUDE.md      # 本文档
+```
+
+## 开发规范
+
+### 编码规范
+
+[待完善] 编码风格、命名约定、注释规范
+
+### Git 工作流
+
+[待完善] 分支策略、提交信息规范
+
+### 测试要求
+
+[待完善] 测试覆盖率、测试类型要求
+
+## 当前功能开发
+
+### 进行中的 Features
+
+_使用 `code-agent plan <feature-name>` 规划新功能后，此处会自动更新_
+
+### 已完成的 Features
+
+_功能完成后会自动记录到此处_
+
+## 技术债务与待办
+
+[待完善] 需要改进的技术点、性能优化项
+
+## 常见问题
+
+### 如何添加新功能？
+
+```bash
+# 1. 规划功能
+code-agent plan <feature-name>
+
+# 2. 执行开发
+code-agent run <feature-name>
+
+# 3. 查看状态
+code-agent status <feature-name>
+```
+
+---
+
+**Code Agent 版本**: v0.1.0
+**最后更新**: {DATE}

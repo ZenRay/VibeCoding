@@ -1,6 +1,6 @@
 # Code Agent 设计文档
 
-**版本**: v1.4  
+**版本**: v1.5  
 **日期**: 2026-02-10  
 **项目**: Code Agent - 多 Agent SDK 统一封装工具  
 **状态**: Design Complete, Ready for Implementation
@@ -8,6 +8,23 @@
 ---
 
 ## 更新记录
+
+**v1.5** (2026-02-10 24:00):
+- ✅ 重新定义 `init` 命令职责 (环境验证 + 最小化项目初始化)
+- ✅ 整合 GBA 优良设计参考
+  - TUI 交互设计
+  - Task 模板结构
+  - Review/Verification 关键词匹配
+  - Git Worktree 管理策略
+  - 状态持久化与恢复
+  - EventHandler 流式处理
+  - 并发模型 (TUI + Worker)
+- ✅ 项目初始化包含:
+  - 创建 `specs/` 目录
+  - 更新 `.gitignore` (添加 Code Agent 规则)
+  - 创建 `CLAUDE.md` 项目文档模板
+- ✅ 幂等性保证 (已初始化时不重复创建)
+- ✅ 明确 Code Agent 与 GBA 的设计差异和权衡
 
 **v1.4** (2026-02-10 23:00):
 - ✅ 添加配置管理设计 (零配置文件方案)
@@ -81,18 +98,23 @@ Code Agent 是一个统一的代码助手 CLI 工具,旨在封装多种 AI Agent
 ### 使用场景
 
 1. **初始化项目** (`code-agent init`)
-   - 配置 Agent SDK (API Key, 模型等)
-   - 初始化项目结构
-   - 生成默认模板
+   - 验证环境变量配置 (API Key, 模型等)
+   - 测试 Agent 连接
+   - 初始化项目管理结构:
+     - 创建 `specs/` 目录
+     - 创建 `.gitignore` (如不存在)
+     - 创建/更新 `CLAUDE.md` 项目文档
+   - 检测是否已初始化,避免重复操作
 
 2. **规划功能** (`code-agent plan`)
    - 与用户交互,明确功能需求
    - 分析代码库结构和现有模式
    - 生成功能规格文档 (specs/001-feature-slug/)
-     - 0001_feature.md - 功能规格
      - design.md - 设计文档
-     - plan.md - 实施计划
+     - plan.md - 实施计划  
      - tasks.md - 任务分解
+     - status.md - 项目进度状态
+     - state.yml - 执行状态
    - 使用 Agent tools: Read, ListFiles, Write
    - 为后续 `code-agent run` 做准备
 
@@ -100,6 +122,7 @@ Code Agent 是一个统一的代码助手 CLI 工具,旨在封装多种 AI Agent
    - 读取功能规格
    - 调用 Agent SDK 执行任务
    - 多阶段执行,代码审查,测试验证
+   - 自动更新 status.md 和 state.yml
 
 ---
 
@@ -392,32 +415,82 @@ templates/
 
 ```bash
 # 命令行接口
-code-agent init [--agent <type>] [--api-key <key>]
-code-agent plan <feature-slug> [--interactive]
-code-agent run <feature-slug> [--phase <n>] [--dry-run]
+code-agent init [--agent <type>] [--api-key <key>] [--force]
+code-agent plan <feature-slug> [--interactive] [--description <text>]
+code-agent run <feature-slug> [--phase <n>] [--dry-run] [--resume]
+code-agent list [--all] [--status <filter>]
+code-agent status <feature-slug>
+code-agent clean [--dry-run] [--force]
 code-agent templates [list|show <name>|validate]
-code-agent config [show|set <key> <value>]
-code-agent tui
+code-agent tui [<feature-slug>]
 ```
 
 #### 命令详解
 
 ##### 1. `code-agent init`
 
-初始化项目配置
+初始化项目配置和管理结构
 
 ```bash
-# 交互式初始化
+# 环境变量方式 (推荐)
+export ANTHROPIC_API_KEY='sk-ant-xxx'
 code-agent init
 
-# 快速初始化
-code-agent init --agent claude --api-key sk-xxx
+# CLI 参数覆盖
+code-agent init --api-key sk-xxx --agent claude
 
 # 选项
---agent <type>      # Agent 类型: claude, copilot, cursor
---api-key <key>     # API 密钥
---model <name>      # 模型名称
---repo <path>       # 仓库路径 (默认当前目录)
+--agent <type>      # Agent 类型: claude, copilot, cursor (可选,自动检测)
+--api-key <key>     # API 密钥 (可选,优先使用环境变量)
+--model <name>      # 模型名称 (可选)
+--api-url <url>     # 自定义 API endpoint (如 OpenRouter)
+```
+
+**执行内容**:
+
+1. **环境检查**
+   - 检测 Agent 类型 (根据环境变量或参数)
+   - 验证 API Key 可用性
+   - 测试 Agent 连接
+
+2. **项目初始化** (仅首次)
+   - 创建 `specs/` 目录
+   - 创建/更新 `.gitignore` (添加必要忽略规则)
+   - 创建/更新 `CLAUDE.md` (项目 AI 文档模板)
+
+3. **幂等性保证**
+   - 检测是否已初始化 (存在 `specs/` 目录)
+   - 已初始化时仅验证连接,不重复创建文件
+   - 支持 `--force` 强制重新初始化
+
+**输出示例**:
+```bash
+$ code-agent init
+🚀 欢迎使用 Code Agent!
+
+🔧 Code Agent 使用零配置文件方案 - 所有配置通过环境变量提供
+
+📋 检测到的配置:
+  Agent 类型: Claude
+  模型: claude-3-5-sonnet-20241022
+  API Key: sk-o***
+  API URL: https://openrouter.ai/api
+
+🔌 测试 Agent 连接...
+✅ 连接成功!
+
+📁 初始化项目结构...
+✓ 已创建 specs/ 目录
+✓ 已更新 .gitignore
+✓ 已创建 CLAUDE.md
+
+🎉 初始化完成! 现在可以运行:
+   code-agent plan <feature-name>
+   code-agent run <feature-name>
+
+💡 状态追踪:
+   • status.md - 人类可读的进度报告 (中文)
+   • state.yml - 机器可读的状态文件 (用于恢复执行)
 ```
 
 ##### 2. `code-agent plan`
@@ -478,7 +551,127 @@ code-agent run feature-slug --phase 1
 6. Phase 6: 处理 review 结果
 7. Phase 7: 验证和测试
 
-##### 4. `code-agent templates`
+##### 4. `code-agent list`
+
+列出所有功能
+
+```bash
+# 列出所有功能
+code-agent list
+
+# 筛选特定状态
+code-agent list --status inProgress
+code-agent list --status completed
+
+# 显示所有 (包括历史)
+code-agent list --all
+
+# 选项
+--all               # 显示所有功能 (包括已删除的)
+--status <filter>   # 按状态筛选: planned | inProgress | completed | failed
+```
+
+**输出示例**:
+```bash
+$ code-agent list
+┌──────┬───────────────┬────────────┬──────────┬─────────┐
+│  ID  │     SLUG      │   STATUS   │ PROGRESS │  COST   │
+├──────┼───────────────┼────────────┼──────────┼─────────┤
+│ 001  │ add-user-auth │ completed  │   7/7    │  $1.25  │
+│ 002  │ fix-login-bug │ inProgress │   3/7    │  $0.45  │
+│ 003  │ new-dashboard │ planned    │   0/7    │  $0.00  │
+└──────┴───────────────┴────────────┴──────────┴─────────┘
+
+Total: 3 features | In Progress: 1 | Completed: 1
+```
+
+##### 5. `code-agent status`
+
+查看功能详细状态
+
+```bash
+code-agent status <feature-slug>
+```
+
+**输出示例**:
+```bash
+$ code-agent status add-user-auth
+
+Feature: add-user-auth (001)
+Status: completed
+Created: 2024-01-15 10:30:00
+Updated: 2024-01-15 14:20:00
+
+Phases:
+┌─────┬────────────────┬───────────┬──────────┬─────────┐
+│  #  │     Name       │  Status   │  Commit  │  Cost   │
+├─────┼────────────────┼───────────┼──────────┼─────────┤
+│  1  │ setup          │ completed │ abc1234  │  $0.15  │
+│  2  │ implementation │ completed │ def5678  │  $0.58  │
+│  3  │ testing        │ completed │ ghi9012  │  $0.12  │
+│  4  │ review         │ completed │ jkl3456  │  $0.08  │
+│  5  │ fix            │ completed │ mno7890  │  $0.15  │
+│  6  │ verification   │ completed │ pqr1234  │  $0.10  │
+│  7  │ pr-creation    │ completed │ stu5678  │  $0.07  │
+└─────┴────────────────┴───────────┴──────────┴─────────┘
+
+Total Stats:
+• Turns: 45
+• Input tokens: 125,000
+• Output tokens: 85,000
+• Total cost: $1.25
+
+Result:
+• PR: https://github.com/owner/repo/pull/123
+• Status: Merged ✓
+```
+
+##### 6. `code-agent clean`
+
+清理已完成的功能
+
+```bash
+# 试运行 (显示将删除的内容)
+code-agent clean --dry-run
+
+# 实际清理
+code-agent clean
+
+# 强制清理所有 (包括进行中的)
+code-agent clean --force
+
+# 选项
+--dry-run           # 试运行,不实际删除
+--force             # 强制清理所有功能 (危险操作)
+```
+
+**清理规则**:
+- ✅ 已完成且已合并的 PR
+- ✅ 已关闭的 PR
+- ❌ 进行中的功能 (需要 --force)
+- ❌ 无 PR 的功能 (需要 --force 并确认)
+
+**输出示例**:
+```bash
+$ code-agent clean --dry-run
+
+将清理以下功能:
+
+✓ 001-add-user-auth (PR #123 已合并)
+  - specs/001-add-user-auth/
+  
+✓ 002-fix-login-bug (PR #124 已关闭)
+  - specs/002-fix-login-bug/
+
+跳过以下功能:
+
+⚠ 003-new-dashboard (进行中)
+
+总计: 2 个功能将被清理
+运行 'code-agent clean' 执行清理
+```
+
+##### 7. `code-agent templates`
 
 模板管理
 
@@ -493,12 +686,16 @@ code-agent templates show plan/feature_analysis
 code-agent templates validate
 ```
 
-##### 5. `code-agent tui`
+##### 8. `code-agent tui`
 
 启动交互式 TUI
 
 ```bash
-code-agent tui [--repo <path>]
+# 启动 TUI
+code-agent tui
+
+# 从特定功能开始
+code-agent tui <feature-slug>
 ```
 
 #### 内部模块
@@ -512,8 +709,11 @@ ca-cli/src/
 │   ├── init.rs        # init 命令
 │   ├── plan.rs        # plan 命令
 │   ├── run.rs         # run 命令
+│   ├── list.rs        # list 命令
+│   ├── status.rs      # status 命令
+│   ├── clean.rs       # clean 命令
 │   ├── templates.rs   # templates 命令
-│   └── config.rs      # config 命令
+│   └── tui.rs         # tui 命令
 ├── tui/
 │   ├── mod.rs
 │   ├── app.rs         # TUI 应用状态
@@ -522,7 +722,12 @@ ca-cli/src/
 ├── display/
 │   ├── mod.rs
 │   ├── formatter.rs   # 结果格式化
+│   ├── table.rs       # 表格显示
 │   └── progress.rs    # 进度显示
+├── utils/
+│   ├── mod.rs
+│   ├── git.rs         # Git 操作辅助
+│   └── pr.rs          # PR 状态查询 (gh cli)
 └── error.rs           # 错误处理
 ```
 
@@ -537,25 +742,113 @@ sequenceDiagram
     participant User
     participant CLI
     participant Config
-    participant PM as Prompt Manager
-    participant Core as Execution Engine
+    participant Agent
+    participant FileSystem
 
     User->>CLI: code-agent init
-    CLI->>User: 询问 Agent 类型
-    User->>CLI: 选择 Claude
-    CLI->>User: 询问 API Key
-    User->>CLI: 输入 API Key
     
-    CLI->>Config: 生成配置文件
-    Config-->>CLI: 配置已保存
+    Note over CLI,Config: 环境变量检测
+    CLI->>Config: 从环境变量加载配置
+    Config-->>CLI: AgentConfig
     
-    CLI->>PM: 初始化默认模板
-    PM-->>CLI: 模板已创建
+    Note over CLI,Agent: 连接测试
+    CLI->>Agent: 创建 Agent 实例
+    CLI->>Agent: validate() - 测试连接
+    Agent-->>CLI: ✅ 连接成功
     
-    CLI->>Core: 验证连接
-    Core-->>CLI: 连接成功
+    Note over CLI,FileSystem: 项目初始化检查
+    CLI->>FileSystem: 检查 specs/ 是否存在
     
-    CLI->>User: ✅ 初始化完成
+    alt 未初始化
+        CLI->>FileSystem: 创建 specs/ 目录
+        CLI->>FileSystem: 创建/更新 .gitignore
+        Note over FileSystem: 添加 .ca-state/, logs/ 等
+        
+        CLI->>FileSystem: 创建 CLAUDE.md 模板
+        Note over FileSystem: 包含项目结构、规范、开发指南
+        
+        FileSystem-->>CLI: ✅ 文件已创建
+        CLI->>User: 🎉 项目初始化完成
+    else 已初始化
+        CLI->>User: ℹ️  项目已初始化
+        CLI->>User: ✅ 环境配置验证通过
+    end
+    
+    CLI->>User: 显示后续命令提示
+```
+
+**关键步骤**:
+
+1. **环境配置加载**
+   - 优先级: CLI 参数 > 环境变量 > 错误提示
+   - 自动检测 Agent 类型
+   - 验证必需的环境变量
+
+2. **Agent 连接测试**
+   - 创建临时 Agent 实例
+   - 调用 `validate()` 方法
+   - 友好的错误提示和设置指导
+
+3. **项目结构初始化** (幂等)
+   - 检查 `specs/` 是否存在
+   - 仅首次创建项目管理文件
+   - 已初始化时跳过文件创建
+
+4. **文件创建清单**
+   ```
+   .
+   ├── specs/              # Feature 规格目录 (初始为空)
+   ├── .gitignore          # 添加 Code Agent 忽略规则
+   └── CLAUDE.md           # 项目 AI 文档模板
+   ```
+
+**CLAUDE.md 模板结构**:
+```markdown
+# {Project Name} - AI 开发文档
+
+> **由 Code Agent 管理** | 最后更新: {date}
+
+## 项目概述
+
+[待完善] 项目简介、技术栈、架构说明
+
+## 项目结构
+
+[待完善] 关键目录和文件说明
+
+## 开发规范
+
+[待完善] 编码规范、命名约定、最佳实践
+
+## 当前功能开发
+
+### 进行中的 Features
+
+- [待添加] 使用 `code-agent plan` 规划新功能
+
+### 已完成的 Features
+
+- [待添加] 功能完成后自动记录
+
+## 技术债务与待办
+
+[待完善] 技术改进项、性能优化点
+
+---
+
+**Code Agent 使用提示**:
+- 规划新功能: `code-agent plan <feature-name>`
+- 执行功能开发: `code-agent run <feature-name>`
+- 查看功能状态: `code-agent status <feature-name>`
+```
+
+**.gitignore 添加规则**:
+```gitignore
+# Code Agent
+.ca-state/          # 执行状态目录
+specs/*/state.yml   # 功能执行状态 (包含敏感信息)
+logs/               # 执行日志
+*.ca.tmp            # 临时文件
 ```
 
 ### 2. 规划流程 (plan)
@@ -1118,40 +1411,227 @@ pub struct ResponseMetadata {
 
 ### Phase 3: Init 命令实现 (1-2 天)
 
-**目标**: 实现项目初始化功能
+**目标**: 实现项目初始化和环境验证
 
 #### 任务列表
 
-- [ ] 交互式配置向导
-- [ ] 配置文件生成和验证
-- [ ] 默认模板安装
+- [ ] 环境变量检测和加载
 - [ ] Agent 连接测试
-- [ ] 错误处理和用户提示
-- [ ] 配置更新功能
+- [ ] 项目结构初始化 (幂等)
+  - [ ] 创建 `specs/` 目录
+  - [ ] 创建/更新 `.gitignore`
+  - [ ] 创建 `CLAUDE.md` 模板
+- [ ] 已初始化检测逻辑
+- [ ] 友好的错误提示和设置指导
+- [ ] `--force` 选项支持
+
+**关键实现**:
+
+```rust
+// apps/ca-cli/src/commands/init.rs
+
+pub async fn execute_init(
+    api_key: Option<String>,
+    agent_type_str: Option<String>,
+    force: bool,
+    config: &AppConfig,
+) -> Result<()> {
+    // 1. 环境变量检测
+    let config = if let Some(key) = api_key {
+        Config::from_cli_args(agent_type_str, key)
+    } else {
+        Config::from_env()?
+    };
+    
+    // 2. 连接测试
+    println!("🔌 测试 Agent 连接...");
+    let agent = AgentFactory::create(config.agent)?;
+    agent.validate().await?;
+    println!("✅ 连接成功!");
+    
+    // 3. 项目初始化检查
+    let specs_dir = Path::new("specs");
+    let is_initialized = specs_dir.exists();
+    
+    if is_initialized && !force {
+        println!("ℹ️  项目已初始化");
+        return Ok(());
+    }
+    
+    // 4. 创建项目结构
+    println!("📁 初始化项目结构...");
+    
+    fs::create_dir_all(specs_dir)?;
+    println!("✓ 已创建 specs/ 目录");
+    
+    update_gitignore()?;
+    println!("✓ 已更新 .gitignore");
+    
+    create_claude_md()?;
+    println!("✓ 已创建 CLAUDE.md");
+    
+    println!("🎉 初始化完成!");
+    print_next_steps();
+    
+    Ok(())
+}
+
+fn update_gitignore() -> Result<()> {
+    let gitignore_path = Path::new(".gitignore");
+    let rules = "\n# Code Agent\n.ca-state/\nspecs/*/state.yml\nlogs/\n*.ca.tmp\n";
+    
+    if gitignore_path.exists() {
+        let content = fs::read_to_string(gitignore_path)?;
+        if !content.contains("# Code Agent") {
+            fs::write(gitignore_path, format!("{}{}", content, rules))?;
+        }
+    } else {
+        fs::write(gitignore_path, rules)?;
+    }
+    
+    Ok(())
+}
+
+fn create_claude_md() -> Result<()> {
+    let path = Path::new("CLAUDE.md");
+    if path.exists() {
+        // 已存在,不覆盖
+        return Ok(());
+    }
+    
+    let template = include_str!("../templates/CLAUDE.md.template");
+    let content = template
+        .replace("{PROJECT_NAME}", &detect_project_name()?)
+        .replace("{DATE}", &chrono::Utc::now().format("%Y-%m-%d").to_string());
+    
+    fs::write(path, content)?;
+    Ok(())
+}
+```
+
+**CLAUDE.md 模板** (`apps/ca-cli/src/templates/CLAUDE.md.template`):
+
+```markdown
+# {PROJECT_NAME} - AI 开发文档
+
+> **由 Code Agent 管理** | 最后更新: {DATE}
+
+## 项目概述
+
+[待完善] 简要描述项目的目标、技术栈和核心功能
+
+## 项目结构
+
+[待完善] 关键目录和文件的说明
+
+\`\`\`
+project-root/
+├── src/           # 源代码
+├── specs/         # Code Agent 功能规格 (自动生成)
+├── tests/         # 测试代码
+└── CLAUDE.md      # 本文档
+\`\`\`
+
+## 开发规范
+
+### 编码规范
+
+[待完善] 编码风格、命名约定、注释规范
+
+### Git 工作流
+
+[待完善] 分支策略、提交信息规范
+
+### 测试要求
+
+[待完善] 测试覆盖率、测试类型要求
+
+## 当前功能开发
+
+### 进行中的 Features
+
+_使用 `code-agent plan <feature-name>` 规划新功能后，此处会自动更新_
+
+### 已完成的 Features
+
+_功能完成后会自动记录到此处_
+
+## 技术债务与待办
+
+[待完善] 需要改进的技术点、性能优化项
+
+## 常见问题
+
+### 如何添加新功能？
+
+\`\`\`bash
+# 1. 规划功能
+code-agent plan <feature-name>
+
+# 2. 执行开发
+code-agent run <feature-name>
+
+# 3. 查看状态
+code-agent status <feature-name>
+\`\`\`
+
+---
+
+**Code Agent 版本**: v0.1.0
+**最后更新**: {DATE}
+```
 
 **用户体验**:
 ```bash
 $ code-agent init
-🚀 Welcome to Code Agent!
+🚀 欢迎使用 Code Agent!
 
-? Select your Agent: 
-  > Claude Agent
-    GitHub Copilot Agent
-    Cursor Agent
+🔧 Code Agent 使用零配置文件方案 - 所有配置通过环境变量提供
 
-? Enter your API key: sk-***
+📋 检测到的配置:
+  Agent 类型: Claude
+  模型: claude-3-5-sonnet-20241022
+  API Key: sk-o***
 
-? Default model: claude-3-5-sonnet-20241022
+🔌 测试 Agent 连接...
+✅ 连接成功!
 
-? Repository path: /path/to/repo
+📁 初始化项目结构...
+✓ 已创建 specs/ 目录
+✓ 已更新 .gitignore
+✓ 已创建 CLAUDE.md
 
-🔌 Testing connection...
-✅ Connection successful!
+🎉 初始化完成! 现在可以运行:
+   code-agent plan <feature-name>
+   code-agent run <feature-name>
 
-📝 Configuration saved to ~/.code-agent/config.toml
-📋 Default templates installed to ~/.code-agent/templates/
+💡 状态追踪:
+   • status.md - 人类可读的进度报告 (中文)
+   • state.yml - 机器可读的状态文件 (用于恢复执行)
+```
 
-🎉 Setup complete! Try: code-agent plan my-feature
+**再次运行** (幂等性):
+```bash
+$ code-agent init
+🚀 欢迎使用 Code Agent!
+
+📋 检测到的配置:
+  Agent 类型: Claude
+  模型: claude-3-5-sonnet-20241022
+  API Key: sk-o***
+
+🔌 测试 Agent 连接...
+✅ 连接成功!
+
+ℹ️  项目已初始化
+✅ 环境配置验证通过
+```
+
+**交付物**:
+- 可用的 `init` 命令
+- 项目结构初始化
+- 幂等性保证
+- 友好的用户体验
 ```
 
 **交付物**:
@@ -1444,6 +1924,232 @@ $ code-agent init
 - [ ] 文档完整度 >90%
 - [ ] 社区贡献者 >10
 - [ ] GitHub Stars >100
+
+---
+
+## GBA 优良设计参考
+
+Code Agent 在设计中参考了 [GBA (Geektime Bootcamp Agent)](https://github.com/tyrchen/gba) 的优秀实践，并结合自身的多 Agent SDK 支持和零配置文件策略进行了适配。
+
+### 核心架构相似性 (95% 一致)
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    3层架构设计                                  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  CLI层 (用户交互)                                               │
+│    ↓                                                           │
+│  Core层 (执行引擎 + Prompt管理)                                 │
+│    ↓                                                           │
+│  SDK层 (Agent SDK 抽象)                                         │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 借鉴的 GBA 优秀实践
+
+#### 1. **TUI 交互设计**
+
+**参考**: GBA 的 ratatui 聊天界面实现
+- ✅ 实时流式输出
+- ✅ 多轮对话历史
+- ✅ 工具使用可视化
+- ✅ 进度显示和统计
+
+**应用**: Code Agent 的 `plan` 和 `run` TUI 界面
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Code Agent Plan: add-user-auth                    [Ctrl+C] │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ Assistant: 能告诉我更多关于你想实现的功能吗？           │  │
+│  │                                                        │  │
+│  │ User: 我想要支持 OAuth2 认证                           │  │
+│  │                                                        │  │
+│  │ Assistant: 明白了。这是我建议的方案：                   │  │
+│  │ 1. 添加 oauth2 crate 依赖                             │  │
+│  │ 2. 创建 auth 模块...                                  │  │
+│  │                                                        │  │
+│  │ [streaming...] █                                       │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  Stats: Turns: 5 | Tokens: 12.5K | Cost: $0.15            │
+│                                                             │
+│  [Enter] 发送  [Ctrl+C] 退出  [↑↓] 历史                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 2. **Task 模板结构**
+
+**参考**: GBA 的 `tasks/<kind>/` 组织方式
+
+```
+GBA 模板结构:                    Code Agent 适配:
+tasks/                           templates/
+├── init/                        ├── init/
+│   ├── config.yml              │   ├── config.yml
+│   ├── system.j2               │   ├── system.jinja
+│   └── user.j2                 │   └── user.jinja
+├── plan/                        ├── plan/
+├── execute/                     ├── execute/
+├── review/                      ├── review/
+└── verification/                └── verification/
+```
+
+**关键设计**:
+- `config.yml`: 任务配置 (preset, tools, disallowedTools)
+- `system.jinja`: 系统提示词模板
+- `user.jinja`: 用户提示词模板
+
+**应用**: Code Agent 的 13 个 Prompt 模板
+
+#### 3. **Review/Verification 关键词匹配**
+
+**参考**: GBA 的 keyword matching 机制
+
+```rust
+// Code Review 关键词
+"APPROVED"        → 审查通过,继续下一阶段
+"NEEDS_CHANGES"   → 需要修复,进入 Fix 循环
+
+// Verification 关键词  
+"VERIFIED"        → 验证通过,可以创建 PR
+"FAILED"          → 验证失败,进入 Fix 循环
+```
+
+**匹配模式** (4种方式):
+1. 单独一行: `"APPROVED"`
+2. 带前缀: `"Verdict: APPROVED"`
+3. 特殊格式: `"[APPROVED]"`, `"**VERIFIED**"`
+4. 末尾匹配: 最后 100 字符内的单词边界
+
+**应用**: Code Agent 的 Review Phase (Phase 5) 和 Verification Phase (Phase 7)
+
+#### 4. **Git Worktree 管理**
+
+**参考**: GBA 的 worktree 隔离策略
+
+```bash
+# GBA 方式
+.trees/0001_add-user-auth/       # Worktree 目录
+branch: feature/0001-add-user-auth
+
+# Code Agent 适配
+specs/001-add-user-auth/         # 规格和状态
+# Worktree 可选 (由用户管理或集成到 run 命令)
+```
+
+**GBA 优势**:
+- ✅ 功能隔离开发
+- ✅ 并行多个功能
+- ✅ 避免主分支污染
+
+**Code Agent 策略**: 
+- 初期版本: 由用户手动管理分支
+- 后续增强: 可选的自动 worktree 管理
+
+#### 5. **状态持久化与恢复**
+
+**参考**: GBA 的 `state.yml` 设计
+
+```yaml
+# 两者结构几乎完全一致
+feature:
+  id: "001"
+  slug: add-user-auth
+  
+status: inProgress          # planned | inProgress | completed | failed
+current_phase: 2            # 0-indexed
+
+phases:
+  - name: setup
+    status: completed
+    commit_sha: abc1234
+    stats:
+      turns: 5
+      cost_usd: 0.15
+```
+
+**应用**: Code Agent 的断点恢复机制 (100% 采纳)
+
+#### 6. **EventHandler 流式处理**
+
+**参考**: GBA 的 `EventHandler` trait 设计
+
+```rust
+pub trait EventHandler: Send + Sync {
+    fn on_text(&mut self, text: &str);
+    fn on_tool_use(&mut self, tool: &str, input: &serde_json::Value);
+    fn on_tool_result(&mut self, result: &str);
+    fn on_error(&mut self, error: &str);
+    fn on_complete(&mut self);
+}
+```
+
+**应用**: Code Agent 的实时进度显示和 TUI 更新
+
+#### 7. **并发模型**
+
+**参考**: GBA 的 TUI + Worker 双 Task 模式
+
+```
+Main Task
+  │
+  ├─▶ TUI Task (tokio::spawn)
+  │   • 事件循环
+  │   • UI 渲染
+  │   • 用户输入
+  │
+  └─▶ Worker Task (tokio::spawn)
+      • Phase 执行
+      • Review 循环
+      • Verification
+      
+      通过 mpsc channel 通信
+```
+
+**应用**: Code Agent 的 `run` 命令 TUI 界面
+
+### Code Agent 的独特增强
+
+虽然参考了 GBA，但 Code Agent 在以下方面有独特优势：
+
+| 特性 | GBA | Code Agent |
+|------|-----|------------|
+| **配置策略** | 配置文件 (.gba/config.yml) | 零配置文件 (环境变量) |
+| **Multi-Agent** | 单一 Claude | 支持 Claude + Copilot + Cursor |
+| **Init 行为** | 创建项目结构 | 验证 + 最小化初始化 |
+| **状态管理** | 集中在 `.gba/` | 分散在 `specs/` |
+| **目标定位** | Bootcamp 专用 | 通用开源工具 |
+| **安全性** | 配置文件可能泄露 | 不存储密钥到磁盘 |
+
+### 设计权衡说明
+
+**为什么采用零配置而非 GBA 的配置文件？**
+
+1. **安全性**: 避免 API Key 意外提交到 git
+2. **标准化**: 符合 12-Factor App 最佳实践
+3. **CI/CD**: 直接使用 GitHub Secrets
+4. **简洁性**: 不增加项目文件和目录
+5. **灵活性**: 支持 direnv, dotenv 等工具
+
+**GBA 配置文件的优势场景**:
+- ✅ 企业内部工具 (配置统一管理)
+- ✅ 复杂项目级设置 (git hooks, 自动提交规则)
+- ✅ 团队协作 (共享配置约定)
+
+**Code Agent 零配置的优势场景**:
+- ✅ 开源项目 (避免敏感信息)
+- ✅ 个人开发 (快速启动)
+- ✅ 多项目切换 (环境变量隔离)
+- ✅ 云环境部署 (Secrets 管理)
+
+### 致谢
+
+特别感谢 [GBA 项目](https://github.com/tyrchen/gba) 提供的优秀设计参考，其清晰的架构和完善的流程为 Code Agent 的开发提供了宝贵的经验。
 
 ---
 

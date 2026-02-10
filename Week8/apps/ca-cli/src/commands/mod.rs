@@ -7,16 +7,23 @@ use crate::config::AppConfig;
 mod init;
 mod plan;
 mod run;
+mod list;
+mod status;
+mod clean;
 
 pub use init::execute_init;
 pub use plan::execute_plan;
 pub use run::execute_run;
+pub use list::execute_list;
+pub use status::execute_status;
+pub use clean::execute_clean;
 
 pub enum Command {
     Init {
         api_key: Option<String>,
         agent: Option<String>,
         interactive: bool,
+        force: bool,
     },
     Plan {
         feature_slug: String,
@@ -39,12 +46,23 @@ pub enum Command {
     Tui {
         repo: Option<String>,
     },
+    List {
+        all: bool,
+        status: Option<String>,
+    },
+    Status {
+        feature_slug: String,
+    },
+    Clean {
+        dry_run: bool,
+        force: bool,
+    },
 }
 
 pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Result<()> {
     match command {
-        Command::Init { api_key, agent, interactive } => {
-            execute_init(api_key, agent, interactive, config).await
+        Command::Init { api_key, agent, interactive, force } => {
+            execute_init(api_key, agent, interactive, force, config).await
         }
         Command::Plan { feature_slug, description, interactive, repo } => {
             execute_plan(feature_slug, description, interactive, repo, config).await
@@ -54,6 +72,15 @@ pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Re
         }
         Command::Templates { verbose } => execute_templates(verbose, config).await,
         Command::Tui { repo } => execute_tui(repo, config).await,
+        Command::List { all, status } => {
+            execute_list(all, status, config).await
+        }
+        Command::Status { feature_slug } => {
+            execute_status(feature_slug, config).await
+        }
+        Command::Clean { dry_run, force } => {
+            execute_clean(dry_run, force, config).await
+        }
     }
 }
 

@@ -52,6 +52,10 @@ enum Commands {
         /// 交互式配置向导
         #[arg(short, long)]
         interactive: bool,
+
+        /// 强制重新初始化 (覆盖已有文件)
+        #[arg(short, long)]
+        force: bool,
     },
 
     /// 规划功能并生成 specs
@@ -115,6 +119,34 @@ enum Commands {
         #[arg(short, long)]
         repo: Option<String>,
     },
+
+    /// 列出所有功能及状态
+    List {
+        /// 显示所有功能 (包括已完成的)
+        #[arg(long)]
+        all: bool,
+
+        /// 按状态筛选
+        #[arg(long, value_name = "STATUS")]
+        status: Option<String>,
+    },
+
+    /// 查看功能详细状态
+    Status {
+        /// 功能名称 (slug)
+        feature_slug: String,
+    },
+
+    /// 清理已完成的功能
+    Clean {
+        /// 试运行,不实际删除
+        #[arg(long)]
+        dry_run: bool,
+
+        /// 强制清理所有功能 (危险操作)
+        #[arg(short, long)]
+        force: bool,
+    },
 }
 
 #[tokio::main]
@@ -145,8 +177,8 @@ async fn main() -> anyhow::Result<()> {
 
     // 执行命令
     match cli.command {
-        Commands::Init { api_key, agent, interactive } => {
-            execute_command(Command::Init { api_key, agent, interactive }, &config).await?;
+        Commands::Init { api_key, agent, interactive, force } => {
+            execute_command(Command::Init { api_key, agent, interactive, force }, &config).await?;
         }
         Commands::Plan { feature_slug, description, interactive, repo } => {
             execute_command(Command::Plan { feature_slug, description, interactive, repo }, &config).await?;
@@ -159,6 +191,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Tui { repo } => {
             execute_command(Command::Tui { repo }, &config).await?;
+        }
+        Commands::List { all, status } => {
+            execute_command(Command::List { all, status }, &config).await?;
+        }
+        Commands::Status { feature_slug } => {
+            execute_command(Command::Status { feature_slug }, &config).await?;
+        }
+        Commands::Clean { dry_run, force } => {
+            execute_command(Command::Clean { dry_run, force }, &config).await?;
         }
     }
 

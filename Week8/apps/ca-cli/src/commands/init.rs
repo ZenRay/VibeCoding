@@ -3,13 +3,16 @@
 //! 验证环境变量配置和 Agent 连接测试 (零配置文件方案)
 
 use ca_core::{AgentConfig, AgentFactory, AgentType, Config};
+use std::fs;
 use std::io::{self, Write};
+use std::path::Path;
 
 /// 执行 init 命令 (零配置文件方案 - 仅验证环境变量)
 pub async fn execute_init(
     api_key: Option<String>,
     agent_type_str: Option<String>,
     interactive: bool,
+    force: bool,
     _config: &crate::config::AppConfig,
 ) -> anyhow::Result<()> {
     println!("🚀 欢迎使用 Code Agent!");
@@ -73,7 +76,51 @@ pub async fn execute_init(
     }
 
     println!();
-    println!("📝 如何设置环境变量:");
+    
+    // 检查是否已初始化
+    let already_initialized = is_initialized();
+    
+    if already_initialized && !force {
+        println!("ℹ️  项目已初始化");
+        println!("✅ 环境配置验证通过");
+        println!();
+        println!("💡 提示: 使用 --force 强制重新初始化");
+    } else {
+        // 执行项目初始化
+        if already_initialized {
+            println!("🔄 强制重新初始化项目结构...");
+            // 在 force 模式下，删除 CLAUDE.md 以便重新创建
+            let claude_md_path = Path::new("CLAUDE.md");
+            if claude_md_path.exists() {
+                fs::remove_file(claude_md_path)?;
+            }
+        } else {
+            println!("📁 初始化项目结构...");
+        }
+        
+        create_project_structure()?;
+        println!("✓ 已创建 specs/ 目录");
+        
+        update_gitignore()?;
+        println!("✓ 已更新 .gitignore");
+        
+        create_claude_md()?;
+        println!("✓ 已创建 CLAUDE.md");
+        
+        println!();
+        println!("🎉 初始化完成! 现在可以运行:");
+        println!("   code-agent plan <feature-name>");
+        println!("   code-agent run <feature-name>");
+        println!();
+        println!("💡 状态追踪:");
+        println!("   • status.md - 人类可读的进度报告 (中文)");
+        println!("   • state.yml - 机器可读的状态文件 (用于恢复执行)");
+    }
+
+    println!();
+    
+    if !already_initialized || force {
+        println!("📝 如何设置环境变量:");
     println!();
     
     match agent_type {
@@ -102,14 +149,7 @@ pub async fn execute_init(
 
     println!();
     println!("💡 提示: 将上述命令添加到 ~/.bashrc 或 ~/.zshrc 以永久保存");
-    println!();
-    println!("🎉 初始化完成! 现在可以运行:");
-    println!("   code-agent plan <feature-name>");
-    println!("   code-agent run <feature-name>");
-    println!();
-    println!("💡 状态追踪:");
-    println!("   • status.md - 人类可读的进度报告 (中文)");
-    println!("   • state.yml - 机器可读的状态文件 (用于恢复执行)");
+    }
 
     Ok(())
 }
@@ -288,6 +328,117 @@ fn parse_agent_type(s: &str) -> anyhow::Result<AgentType> {
         "copilot" => Ok(AgentType::Copilot),
         _ => anyhow::bail!("不支持的 Agent 类型: {}", s),
     }
+}
+
+/// 检查项目是否已初始化
+fn is_initialized() -> bool {
+    Path::new("specs").exists()
+}
+
+/// 创建项目结构
+fn create_project_structure() -> anyhow::Result<()> {
+    let specs_dir = Path::new("specs");
+    if !specs_dir.exists() {
+        fs::create_dir(specs_dir)?;
+    }
+    Ok(())
+}
+
+/// 更新 .gitignore 文件
+fn update_gitignore() -> anyhow::Result<()> {
+    let gitignore_path = Path::new(".gitignore");
+    
+    let rules = r#"
+# Code Agent
+.ca-state/          # 执行状态目录
+specs/*/state.yml   # 功能执行状态 (包含敏感信息)
+logs/               # 执行日志
+*.ca.tmp            # 临时文件
+"#;
+    
+    if gitignore_path.exists() {
+        let content = fs::read_to_string(gitignore_path)?;
+        if !content.contains("# Code Agent") {
+            let mut new_content = content;
+            if !new_content.ends_with('\n') {
+                new_content.push('\n');
+            }
+            new_content.push_str(rules);
+            fs::write(gitignore_path, new_content)?;
+        }
+    } else {
+        fs::write(gitignore_path, rules.trim_start())?;
+    }
+    
+    Ok(())
+}
+
+/// 创建 CLAUDE.md 文档
+fn create_claude_md() -> anyhow::Result<()> {
+    let claude_md_path = Path::new("CLAUDE.md");
+    
+    // 注意: 如果文件已存在，函数仍会被调用（通过 force 标志控制）
+    // 但我们检查文件存在性，避免覆盖用户的自定义内容
+    // force 模式下，调用者需要在外部处理删除逻辑
+    if claude_md_path.exists() {
+        return Ok(());
+    }
+    
+    // 加载模板
+    let template = include_str!("../templates/CLAUDE.md.template");
+    
+    // 检测项目名称
+    let project_name = detect_project_name()?;
+    
+    // 获取当前日期
+    let date = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    
+    // 渲染模板
+    let content = template
+        .replace("{PROJECT_NAME}", &project_name)
+        .replace("{DATE}", &date);
+    
+    // 写入文件
+    fs::write(claude_md_path, content)?;
+    
+    Ok(())
+}
+
+/// 自动检测项目名称
+fn detect_project_name() -> anyhow::Result<String> {
+    // 优先级 1: 从 Cargo.toml 读取
+    if let Ok(cargo_content) = fs::read_to_string("Cargo.toml") {
+        for line in cargo_content.lines() {
+            if line.trim().starts_with("name") {
+                if let Some(name) = line.split('=').nth(1) {
+                    let name = name.trim().trim_matches('"').trim_matches('\'');
+                    if !name.is_empty() {
+                        return Ok(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+    
+    // 优先级 2: 从 package.json 读取
+    if let Ok(package_content) = fs::read_to_string("package.json") {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&package_content) {
+            if let Some(name) = json.get("name").and_then(|n| n.as_str()) {
+                return Ok(name.to_string());
+            }
+        }
+    }
+    
+    // 优先级 3: 使用当前目录名
+    let current_dir = std::env::current_dir()?;
+    if let Some(dir_name) = current_dir.file_name() {
+        if let Some(name) = dir_name.to_str() {
+            return Ok(name.to_string());
+        }
+    }
+    
+    // 默认值
+    Ok("MyProject".to_string())
 }
 
 #[cfg(test)]
