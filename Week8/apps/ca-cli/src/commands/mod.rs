@@ -6,10 +6,15 @@ use ca_pm::{ContextBuilder, ProjectInfo, PromptConfig, PromptManager};
 
 use crate::config::AppConfig;
 
+mod init;
+
+pub use init::execute_init;
+
 pub enum Command {
     Init {
         api_key: Option<String>,
-        agent: String,
+        agent: Option<String>,
+        interactive: bool,
     },
     Run {
         task: String,
@@ -26,41 +31,13 @@ pub enum Command {
 
 pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Result<()> {
     match command {
-        Command::Init { api_key, agent } => execute_init(api_key, agent, config).await,
+        Command::Init { api_key, agent, interactive } => {
+            execute_init(api_key, agent, interactive, config).await
+        }
         Command::Run { task, repo, files } => execute_run(task, repo, files, config).await,
         Command::Templates { verbose } => execute_templates(verbose, config).await,
         Command::Tui { repo } => execute_tui(repo, config).await,
     }
-}
-
-async fn execute_init(
-    api_key: Option<String>,
-    agent: String,
-    config: &AppConfig,
-) -> anyhow::Result<()> {
-    println!("🚀 初始化 Code Agent 配置...");
-
-    let mut new_config = config.clone();
-
-    // 更新 API 密钥
-    if let Some(key) = api_key {
-        new_config.agent.api_key = key;
-    } else if new_config.agent.api_key.is_empty() {
-        println!("⚠️  警告: 未设置 API 密钥");
-        println!("   请使用 --api-key 参数或手动编辑配置文件");
-    }
-
-    // 更新 Agent 类型
-    new_config.agent.agent_type = agent;
-
-    // 保存配置
-    new_config.save_default()?;
-
-    println!("✅ 配置已保存到 ~/.code-agent/config.toml");
-    println!("📝 Agent 类型: {}", new_config.agent.agent_type);
-    println!("📝 模型: {}", new_config.agent.model);
-
-    Ok(())
 }
 
 async fn execute_run(

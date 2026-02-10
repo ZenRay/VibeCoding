@@ -33,8 +33,12 @@ enum Commands {
         api_key: Option<String>,
 
         /// Agent 类型 (claude, copilot, cursor)
-        #[arg(long, default_value = "claude")]
-        agent: String,
+        #[arg(long)]
+        agent: Option<String>,
+
+        /// 交互式配置向导
+        #[arg(short, long)]
+        interactive: bool,
     },
 
     /// 执行任务
@@ -82,8 +86,8 @@ async fn main() -> anyhow::Result<()> {
 
     // 执行命令
     match cli.command {
-        Commands::Init { api_key, agent } => {
-            execute_command(Command::Init { api_key, agent }, &config).await?;
+        Commands::Init { api_key, agent, interactive } => {
+            execute_command(Command::Init { api_key, agent, interactive }, &config).await?;
         }
         Commands::Run { task, repo, files } => {
             execute_command(Command::Run { task, repo, files }, &config).await?;
