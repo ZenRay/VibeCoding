@@ -78,23 +78,6 @@ impl AppConfig {
         }
     }
 
-    /// 保存配置文件
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
-        let content = toml::to_string_pretty(self)?;
-
-        // 确保目录存在
-        if let Some(parent) = path.as_ref().parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        std::fs::write(path, content)?;
-        Ok(())
-    }
-
-    /// 保存到默认位置
-    pub fn save_default(&self) -> anyhow::Result<()> {
-        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-        let config_path = home.join(".code-agent").join("config.toml");
-        self.save(config_path)
-    }
+    // 不再支持保存配置文件 (零配置文件方案)
+    // 所有配置通过环境变量提供
 }

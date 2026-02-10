@@ -533,17 +533,21 @@ fn extract_pr_number(pr_url: &str) -> anyhow::Result<u32> {
 }
 
 fn create_agent(config: &AppConfig) -> anyhow::Result<Arc<dyn ca_core::Agent>> {
-    use ca_core::{AgentType, ClaudeAgent};
+    use ca_core::{AgentConfig, AgentFactory, AgentType};
 
     let agent_type = match config.agent.agent_type.as_str() {
         "claude" => AgentType::Claude,
-        _ => anyhow::bail!("当前仅支持 Claude Agent"),
+        "cursor" => AgentType::Cursor,
+        "copilot" => AgentType::Copilot,
+        _ => anyhow::bail!("不支持的 Agent 类型: {}", config.agent.agent_type),
     };
 
-    if agent_type == AgentType::Claude {
-        let agent = ClaudeAgent::new(config.agent.api_key.clone(), config.agent.model.clone())?;
-        return Ok(Arc::new(agent));
-    }
+    let agent_config = AgentConfig {
+        agent_type,
+        api_key: config.agent.api_key.clone(),
+        model: Some(config.agent.model.clone()),
+        api_url: config.agent.api_url.clone(),
+    };
 
-    anyhow::bail!("不支持的 Agent 类型")
+    AgentFactory::create(agent_config).map_err(Into::into)
 }

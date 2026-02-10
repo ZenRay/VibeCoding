@@ -1,0 +1,39 @@
+# File Structure Template
+
+## Directory Structure
+{% if root_path -%}
+**Root**: `{{ root_path }}`
+{% endif %}
+
+```
+{% for item in structure -%}
+{{ item.indent }}{{ item.name }}{% if item.is_dir %}/{% endif %}{% if item.description %} # {{ item.description }}{% endif %}
+{% endfor %}
+```
+
+## Key Directories
+{% if key_dirs -%}
+{% for dir in key_dirs %}
+### `{{ dir.path }}`
+{{ dir.description }}
+{% if dir.files -%}
+**Important files:**
+{% for file in dir.files %}
+- `{{ file.name }}` - {{ file.purpose }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## File Conventions
+{% if conventions -%}
+{% for convention in conventions %}
+- **{{ convention.pattern }}**: {{ convention.description }}
+{% endfor %}
+{% endif %}
+
+## Guidelines
+- Follow existing structure patterns
+- Maintain consistent naming
+- Place files in appropriate directories
+- Update this structure when adding new directories

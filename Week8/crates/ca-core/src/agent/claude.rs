@@ -78,17 +78,33 @@ impl ClaudeAgent {
     /// * `allowed_tools` - 允许的工具列表
     /// * `max_turns` - 最大轮次
     /// * `max_budget_usd` - 最大预算 (美元)
+    /// * `permission_mode` - 权限模式 ("Default", "AcceptEdits", "Plan", "BypassPermissions")
     pub fn configure(
         &mut self,
         system_prompt: Option<String>,
         allowed_tools: Option<Vec<String>>,
         max_turns: Option<usize>,
         max_budget_usd: Option<f64>,
+        permission_mode: Option<&str>,
     ) -> Result<()> {
+        // 解析 permission_mode
+        let perm_mode = match permission_mode {
+            Some("Default") => PermissionMode::Default,
+            Some("Plan") => PermissionMode::Plan,
+            Some("BypassPermissions") => PermissionMode::BypassPermissions,
+            Some("AcceptEdits") | None => PermissionMode::AcceptEdits, // 默认
+            Some(other) => {
+                return Err(CoreError::Config(format!(
+                    "Invalid permission mode: {}. Valid values: Default, AcceptEdits, Plan, BypassPermissions",
+                    other
+                )))
+            }
+        };
+
         // 基础 builder
         let base = ClaudeAgentOptions::builder()
             .model(self.model.clone())
-            .permission_mode(PermissionMode::AcceptEdits);
+            .permission_mode(perm_mode);
 
         // 根据参数组合构建选项
         // 由于 builder 使用类型状态,需要按照特定顺序设置
@@ -394,6 +410,7 @@ mod tests {
             Some(vec!["Read".to_string(), "Write".to_string()]),
             Some(10),
             Some(5.0),
+            Some("AcceptEdits"),
         );
 
         assert!(result.is_ok());

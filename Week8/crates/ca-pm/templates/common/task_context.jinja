@@ -1,0 +1,56 @@
+# Task Context Template
+
+## Current Task
+{% if task_id -%}
+**ID**: {{ task_id }}
+{% endif %}
+**Name**: {{ task_name | default("Unnamed Task") }}
+{% if task_phase -%}
+**Phase**: {{ task_phase }}
+{% endif %}
+
+## Description
+{{ task_description | default("No description provided") }}
+
+## Context
+{% if feature_slug -%}
+**Feature**: {{ feature_slug }}
+{% endif %}
+{% if related_tasks -%}
+### Related Tasks
+{% for task in related_tasks %}
+- {{ task.id }}: {{ task.name }} ({{ task.status }})
+{% endfor %}
+{% endif %}
+
+## Acceptance Criteria
+{% if acceptance_criteria -%}
+{% for criterion in acceptance_criteria %}
+- [ ] {{ criterion }}
+{% endfor %}
+{% else -%}
+- No specific criteria defined
+{% endif %}
+
+## Implementation Notes
+{% if notes -%}
+{{ notes }}
+{% else -%}
+No additional notes.
+{% endif %}
+
+## Dependencies
+{% if dependencies -%}
+{% for dep in dependencies %}
+- {{ dep.type }}: {{ dep.description }}
+{% endfor %}
+{% else -%}
+No dependencies identified.
+{% endif %}
+
+## Resources
+{% if resources -%}
+{% for resource in resources %}
+- [{{ resource.name }}]({{ resource.url }}){% if resource.description %} - {{ resource.description }}{% endif %}
+{% endfor %}
+{% endif %}

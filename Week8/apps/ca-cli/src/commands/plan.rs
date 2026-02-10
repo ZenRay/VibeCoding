@@ -243,7 +243,7 @@ fn detect_framework(repo_path: &Path) -> Option<String> {
 
 /// 创建 Agent
 fn create_agent(config: &AppConfig) -> anyhow::Result<Arc<dyn Agent>> {
-    use ca_core::{AgentConfig, AgentFactory, AgentType, ClaudeAgent};
+    use ca_core::{AgentConfig, AgentFactory, AgentType};
 
     let agent_type = match config.agent.agent_type.as_str() {
         "claude" => AgentType::Claude,
@@ -252,13 +252,6 @@ fn create_agent(config: &AppConfig) -> anyhow::Result<Arc<dyn Agent>> {
         _ => anyhow::bail!("不支持的 Agent 类型: {}", config.agent.agent_type),
     };
 
-    // 对于 Claude,直接创建实例
-    if agent_type == AgentType::Claude {
-        let agent = ClaudeAgent::new(config.agent.api_key.clone(), config.agent.model.clone())?;
-        return Ok(Arc::new(agent));
-    }
-
-    // 其他类型使用工厂
     let agent_config = AgentConfig {
         agent_type,
         api_key: config.agent.api_key.clone(),
@@ -266,11 +259,7 @@ fn create_agent(config: &AppConfig) -> anyhow::Result<Arc<dyn Agent>> {
         api_url: config.agent.api_url.clone(),
     };
 
-    let _boxed_agent = AgentFactory::create(agent_config)?;
-    
-    // 需要从 Box转换为 Arc - 这里需要特殊处理
-    // 由于 AgentFactory 返回 Box,我们需要重新实现
-    anyhow::bail!("当前仅支持 Claude Agent")
+    AgentFactory::create(agent_config).map_err(Into::into)
 }
 
 #[cfg(test)]

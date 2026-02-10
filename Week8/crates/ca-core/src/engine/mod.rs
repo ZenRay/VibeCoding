@@ -43,6 +43,13 @@ impl ExecutionEngine {
         // 获取 phase 配置
         let config = PhaseConfig::for_phase(phase)?;
 
+        // 配置 Agent 的 Permission Mode 和其他选项
+        // 注意: 这里需要确保 agent 是可变的,但我们使用 Arc<dyn Agent>
+        // 解决方案: 通过 ClaudeAgent 的 configure 方法在执行前配置
+        
+        // TODO: 目前无法直接修改 Arc<dyn Agent>,需要重构为支持运行时配置
+        // 临时方案: 在创建 Agent 时就配置好所有选项
+        
         // 构建 Agent 请求
         let request = AgentRequest {
             id: uuid::Uuid::new_v4().to_string(),

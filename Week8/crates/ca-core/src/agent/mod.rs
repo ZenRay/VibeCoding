@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::error::Result;
 
@@ -208,15 +209,15 @@ pub use claude::ClaudeAgent;
 pub struct AgentFactory;
 
 impl AgentFactory {
-    /// 创建 Agent 实例
-    pub fn create(config: AgentConfig) -> Result<Box<dyn Agent>> {
+    /// 创建 Agent 实例 (返回 Arc<dyn Agent> 用于共享所有权)
+    pub fn create(config: AgentConfig) -> Result<Arc<dyn Agent>> {
         match config.agent_type {
             AgentType::Claude => {
                 let model = config
                     .model
                     .unwrap_or_else(|| "claude-3-5-sonnet-20241022".to_string());
                 let agent = ClaudeAgent::new(config.api_key, model)?;
-                Ok(Box::new(agent))
+                Ok(Arc::new(agent))
             }
             AgentType::Cursor => Err(crate::error::CoreError::Agent(
                 "Cursor Agent not yet implemented".to_string(),

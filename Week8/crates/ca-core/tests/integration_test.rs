@@ -66,6 +66,7 @@ async fn test_claude_agent_with_system_prompt() {
             None,
             None,
             None,
+            None, // permission_mode
         )
         .expect("配置失败");
 
@@ -169,6 +170,7 @@ async fn test_claude_agent_with_budget() {
             None,
             Some(3), // 最多 3 轮
             Some(0.10), // 最多 $0.10
+            None, // permission_mode
         )
         .expect("配置失败");
 

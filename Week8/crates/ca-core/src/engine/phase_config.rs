@@ -55,6 +55,20 @@ impl Phase {
         }
     }
 
+    /// 获取 Permission Mode
+    pub fn permission_mode(&self) -> &'static str {
+        match self {
+            // 只读阶段: Plan (相当于 ReadOnly)
+            Self::Observer | Self::Planning | Self::Review | Self::Verification => "Plan",
+            
+            // 执行阶段: AcceptEdits (自动接受编辑)
+            Self::ExecutePhase3 | Self::ExecutePhase4 | Self::Fix => "AcceptEdits",
+            
+            // 初始化和规划阶段: AcceptEdits
+            Self::Init | Self::Plan => "AcceptEdits",
+        }
+    }
+
     /// 获取允许的工具列表
     pub fn allowed_tools(&self) -> Vec<&'static str> {
         match self {
@@ -110,7 +124,8 @@ impl Phase {
         let mut prompt = String::new();
 
         for component in components {
-            prompt.push_str(component.content());
+            let content = component.load()?;
+            prompt.push_str(&content);
             prompt.push_str("\n\n");
         }
 
@@ -164,26 +179,69 @@ pub enum SystemPromptComponent {
 }
 
 impl SystemPromptComponent {
-    /// 获取组件内容
-    pub fn content(&self) -> &'static str {
+    /// 获取组件文件路径
+    fn file_path(&self) -> &'static str {
         match self {
-            Self::AgentRole => {
-                "You are an expert software engineer with deep knowledge of software architecture, \
-                 design patterns, and best practices. You write clean, maintainable, and well-tested code."
-            }
-            Self::OutputFormat => {
-                "Provide clear, structured responses. Use markdown formatting for readability. \
-                 Include code examples when relevant."
-            }
-            Self::QualityStandards => {
-                "Follow these quality standards:\n\
-                 - Write clean, readable code with proper naming\n\
-                 - Add appropriate comments and documentation\n\
-                 - Handle errors gracefully\n\
-                 - Consider edge cases and validation\n\
-                 - Write tests for new functionality"
+            Self::AgentRole => "system/agent_role.txt",
+            Self::OutputFormat => "system/output_format.txt",
+            Self::QualityStandards => "system/quality_standards.txt",
+        }
+    }
+
+    /// 从文件加载组件内容
+    pub fn load(&self) -> Result<String> {
+        // 获取模板目录的基础路径
+        // 在运行时从 ca-pm crate 的 templates 目录加载
+        let template_dir = Self::get_template_dir()?;
+        let file_path = template_dir.join(self.file_path());
+
+        std::fs::read_to_string(&file_path).map_err(|e| {
+            crate::error::CoreError::Config(format!(
+                "Failed to load system prompt component from {}: {}",
+                file_path.display(),
+                e
+            ))
+        })
+    }
+
+    /// 获取模板目录路径
+    fn get_template_dir() -> Result<std::path::PathBuf> {
+        // 尝试多种方式查找模板目录
+        
+        // 1. 环境变量 CA_TEMPLATE_DIR
+        if let Ok(template_dir) = std::env::var("CA_TEMPLATE_DIR") {
+            let path = std::path::PathBuf::from(template_dir);
+            if path.exists() {
+                return Ok(path);
             }
         }
+
+        // 2. 相对于当前工作目录: crates/ca-pm/templates/
+        let relative_path = std::path::PathBuf::from("crates/ca-pm/templates");
+        if relative_path.exists() {
+            return Ok(relative_path);
+        }
+
+        // 3. 相对于可执行文件: ../share/code-agent/templates/
+        if let Ok(exe_path) = std::env::current_exe()
+            && let Some(parent) = exe_path.parent()
+        {
+            let template_path = parent.join("../share/code-agent/templates");
+            if template_path.exists() {
+                return Ok(template_path);
+            }
+        }
+
+        // 4. 使用编译时的路径 (仅用于开发)
+        let compile_time_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../ca-pm/templates");
+        if compile_time_path.exists() {
+            return Ok(compile_time_path);
+        }
+
+        Err(crate::error::CoreError::Config(
+            "Template directory not found. Set CA_TEMPLATE_DIR environment variable.".to_string(),
+        ))
     }
 }
 
