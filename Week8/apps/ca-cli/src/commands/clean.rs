@@ -1,6 +1,7 @@
 //! `code-agent clean` 命令实现
 //!
-//! 清理已完成的功能
+//! 清理已完成功能的 worktree，仅针对 `.trees/` 目录。
+//! **specs/ 目录作为功能历史存档，永久保留，绝不清理。**
 
 use std::fs;
 use std::io::{self, Write};
@@ -12,15 +13,15 @@ use tracing::debug;
 
 use crate::config::AppConfig;
 
-/// 清理候选项
-#[derive(Debug)]
+/// 清理候选项 (仅 worktree)
+#[derive(Debug, Clone)]
 struct CleanCandidate {
-    /// Feature 目录名
+    /// Feature 目录名 (如 001-add-user-auth)
     dir_name: String,
-    /// Feature 目录路径
-    path: PathBuf,
-    /// Feature slug
-    slug: String,
+    /// specs 目录路径 (保留存档)
+    specs_path: PathBuf,
+    /// worktree 路径 (.trees/<dir_name>/)
+    worktree_path: PathBuf,
     /// 清理原因
     reason: CleanReason,
 }
@@ -32,17 +33,31 @@ enum CleanReason {
     PrMerged(u32),
     /// PR 已关闭
     PrClosed(u32),
-    /// 功能已完成但无 PR (需要确认)
-    CompletedNoPr,
-    /// 功能失败 (需要 force)
-    Failed,
-    /// 功能进行中 (需要 force)
+}
+
+/// 跳过的 worktree (安全保护)
+#[derive(Debug, Clone)]
+struct SkippedCandidate {
+    dir_name: String,
+    reason: SkipReason,
+}
+
+/// 跳过原因
+#[derive(Debug, Clone)]
+enum SkipReason {
+    /// 进行中
     InProgress,
+    /// PR 仍开放
+    PrOpen(u32),
+    /// 无 PR 信息
+    NoPr,
 }
 
 /// 执行 clean 命令
-pub async fn execute_clean(dry_run: bool, force: bool, config: &AppConfig) -> Result<()> {
-    debug!(dry_run = dry_run, force = force, "执行 clean 命令");
+///
+/// 仅清理 `.trees/` 中的 worktree，绝不清理 `specs/` 目录。
+pub async fn execute_clean(dry_run: bool, _all: bool, config: &AppConfig) -> Result<()> {
+    debug!(dry_run = dry_run, "执行 clean 命令");
 
     // 确定工作目录
     let current_dir = std::env::current_dir()?;
@@ -56,76 +71,86 @@ pub async fn execute_clean(dry_run: bool, force: bool, config: &AppConfig) -> Re
         anyhow::bail!("❌ specs/ 目录不存在: {}", specs_dir.display());
     }
 
-    // 收集清理候选项
-    let candidates = collect_clean_candidates(&specs_dir, force).await?;
-
-    if candidates.is_empty() {
-        println!("✨ 没有需要清理的功能");
+    let trees_dir = repo_path.join(".trees");
+    if !trees_dir.exists() {
+        println!("✨ .trees/ 目录不存在，无需清理");
         return Ok(());
     }
 
-    // 分类候选项
-    let (can_clean, need_force) = categorize_candidates(&candidates, force);
+    // 扫描 specs/ 获取所有功能，检查 PR 状态，分类可清理与需跳过
+    let (to_clean, skipped) =
+        collect_and_classify(&specs_dir, &trees_dir, repo_path).await?;
 
-    // 显示将要清理的项目
-    if !can_clean.is_empty() {
-        println!("将清理以下功能:");
-        println!();
-        for candidate in &can_clean {
-            print_candidate(candidate);
+    // 输出：将清理的 worktree
+    if !to_clean.is_empty() {
+        println!("将清理以下 worktree:\n");
+        for c in &to_clean {
+            let reason_text = match &c.reason {
+                CleanReason::PrMerged(pr) => format!("PR #{} 已合并", pr),
+                CleanReason::PrClosed(pr) => format!("PR #{} 已关闭", pr),
+            };
+            println!("✓ {} ({})", c.dir_name, reason_text);
+            println!("  - {}     # 删除 worktree", c.worktree_path.display());
+            println!("  - {}      # 保留存档 ✓", c.specs_path.display());
+            println!();
         }
     }
 
-    // 显示跳过的项目
-    if !need_force.is_empty() {
-        println!();
-        println!("跳过以下功能:");
-        println!();
-        for candidate in &need_force {
-            print_skipped_candidate(candidate);
+    // 输出：跳过的 worktree (安全保护)
+    if !skipped.is_empty() {
+        println!("跳过以下 worktree (安全保护):\n");
+        for s in &skipped {
+            let reason_text = match &s.reason {
+                SkipReason::InProgress => "进行中".to_string(),
+                SkipReason::PrOpen(pr) => format!("PR #{} 仍开放", pr),
+                SkipReason::NoPr => "无 PR 信息".to_string(),
+            };
+            println!("⚠ {} ({})", s.dir_name, reason_text);
         }
+        println!();
+    }
+
+    let total = to_clean.len();
+    println!("总计: {} 个 worktree 将被清理", total);
+    println!("注意: specs/ 目录作为功能历史存档，永久保留");
+
+    if total == 0 {
+        return Ok(());
+    }
+
+    // dry-run 模式
+    if dry_run {
+        println!();
+        println!("(dry-run) 运行 'code-agent clean' 执行实际清理");
+        return Ok(());
+    }
+
+    // 请求确认
+    if !confirm_clean(total)? {
+        println!("❌ 已取消清理");
+        return Ok(());
     }
 
     println!();
-    println!("总计: {} 个功能将被清理", can_clean.len());
-
-    // 如果是 dry-run，提示如何执行
-    if dry_run {
-        println!();
-        println!("运行 'code-agent clean' 执行清理");
-        if !need_force.is_empty() {
-            println!("运行 'code-agent clean --force' 强制清理所有功能 (危险操作)");
-        }
-        return Ok(());
-    }
-
-    // 执行清理
-    if !can_clean.is_empty() {
-        // 请求确认
-        if !confirm_clean(can_clean.len())? {
-            println!("❌ 已取消清理");
-            return Ok(());
-        }
-
-        println!();
-        println!("🧹 开始清理...");
-        let cleaned = perform_clean(&can_clean)?;
-        println!();
-        println!("✅ 已清理 {} 个功能", cleaned);
-    }
+    println!("🧹 开始清理...");
+    let cleaned = perform_clean(&to_clean)?;
+    println!();
+    println!("✅ 已清理 {} 个 worktree", cleaned);
 
     Ok(())
 }
 
-/// 收集清理候选项
-async fn collect_clean_candidates(
+/// 扫描 specs/，检查 PR 状态，分类可清理与需跳过的 worktree
+async fn collect_and_classify(
     specs_dir: &Path,
-    force: bool,
-) -> Result<Vec<CleanCandidate>> {
+    trees_dir: &Path,
+    repo_path: &Path,
+) -> Result<(Vec<CleanCandidate>, Vec<SkippedCandidate>)> {
     let entries = fs::read_dir(specs_dir)
         .with_context(|| format!("无法读取目录: {}", specs_dir.display()))?;
 
-    let mut candidates = Vec::new();
+    let mut to_clean = Vec::new();
+    let mut skipped = Vec::new();
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -138,80 +163,118 @@ async fn collect_clean_candidates(
             _ => continue,
         };
 
-        // 检查是否有 state.yml
+        let worktree_path = trees_dir.join(&dir_name);
+        if !worktree_path.exists() {
+            debug!(dir = %dir_name, "无对应 worktree，跳过");
+            continue;
+        }
+
         let state_file = path.join("state.yml");
         if !state_file.exists() {
             debug!(dir = %dir_name, "跳过无 state.yml 的目录");
             continue;
         }
 
-        // 加载状态
-        match load_feature_state(&state_file) {
-            Ok(state) => {
-                if let Some(candidate) = analyze_feature(&dir_name, &path, &state, force).await {
-                    candidates.push(candidate);
-                }
-            }
+        let state = match load_feature_state(&state_file) {
+            Ok(s) => s,
             Err(e) => {
                 debug!(error = %e, dir = %dir_name, "加载 state.yml 失败");
+                continue;
             }
+        };
+
+        match classify_feature(&dir_name, &path, &worktree_path, &state, repo_path).await {
+            Some(Ok(candidate)) => to_clean.push(candidate),
+            Some(Err(skip)) => skipped.push(skip),
+            None => {}
         }
     }
 
-    Ok(candidates)
+    Ok((to_clean, skipped))
 }
 
-/// 分析 feature 是否可以清理
-async fn analyze_feature(
+/// 分析 feature 状态，返回 CleanCandidate 或 SkippedCandidate
+async fn classify_feature(
     dir_name: &str,
-    path: &Path,
+    specs_path: &Path,
+    worktree_path: &Path,
     state: &FeatureState,
-    _force: bool,
-) -> Option<CleanCandidate> {
-    let reason = match state.status.overall_status {
-        Status::Completed => {
-            // 检查 PR 状态
-            if let Some(pr_number) = state.delivery.pr_number {
-                match get_pr_status(pr_number).await {
-                    Ok(status) => {
-                        if status == "MERGED" {
-                            CleanReason::PrMerged(pr_number)
-                        } else if status == "CLOSED" {
-                            CleanReason::PrClosed(pr_number)
-                        } else {
-                            // PR 仍然 open，不清理
-                            return None;
-                        }
-                    }
-                    Err(e) => {
-                        debug!(error = %e, pr_number = pr_number, "获取 PR 状态失败");
-                        // 如果无法获取 PR 状态，检查 delivery 中的 merged 标记
-                        if state.delivery.merged {
-                            CleanReason::PrMerged(pr_number)
-                        } else {
-                            return None;
-                        }
-                    }
-                }
-            } else {
-                // 已完成但无 PR
-                CleanReason::CompletedNoPr
-            }
-        }
-        Status::Failed => CleanReason::Failed,
-        Status::InProgress => CleanReason::InProgress,
-        Status::Pending | Status::Paused => {
-            // 不清理 pending 或 paused 的功能
-            return None;
+    repo_path: &Path,
+) -> Option<Result<CleanCandidate, SkippedCandidate>> {
+    // 功能进行中 → 跳过
+    if state.status.overall_status == Status::InProgress {
+        return Some(Err(SkippedCandidate {
+            dir_name: dir_name.to_string(),
+            reason: SkipReason::InProgress,
+        }));
+    }
+
+    // Pending / Paused → 跳过
+    if matches!(
+        state.status.overall_status,
+        Status::Pending | Status::Paused
+    ) {
+        return Some(Err(SkippedCandidate {
+            dir_name: dir_name.to_string(),
+            reason: SkipReason::InProgress,
+        }));
+    }
+
+    // Failed → 跳过 (安全保护)
+    if state.status.overall_status == Status::Failed {
+        return Some(Err(SkippedCandidate {
+            dir_name: dir_name.to_string(),
+            reason: SkipReason::InProgress,
+        }));
+    }
+
+    // Completed：检查 PR 状态
+    let pr_number = match state.delivery.pr_number {
+        Some(n) => n,
+        None => {
+            return Some(Err(SkippedCandidate {
+                dir_name: dir_name.to_string(),
+                reason: SkipReason::NoPr,
+            }));
         }
     };
 
-    Some(CleanCandidate {
+    let pr_status = match get_pr_status(pr_number, repo_path).await {
+        Ok(s) => s,
+        Err(e) => {
+            debug!(error = %e, pr_number = pr_number, "获取 PR 状态失败");
+            if state.delivery.merged {
+                return Some(Ok(CleanCandidate {
+                    dir_name: dir_name.to_string(),
+                    specs_path: specs_path.to_path_buf(),
+                    worktree_path: worktree_path.to_path_buf(),
+                    reason: CleanReason::PrMerged(pr_number),
+                }));
+            }
+            return Some(Err(SkippedCandidate {
+                dir_name: dir_name.to_string(),
+                reason: SkipReason::NoPr,
+            }));
+        }
+    };
+
+    let reason = match pr_status.as_str() {
+        "MERGED" => CleanReason::PrMerged(pr_number),
+        "CLOSED" => CleanReason::PrClosed(pr_number),
+        _ => {
+            return Some(Err(SkippedCandidate {
+                dir_name: dir_name.to_string(),
+                reason: SkipReason::PrOpen(pr_number),
+            }));
+        }
+    };
+
+    Some(Ok(CleanCandidate {
         dir_name: dir_name.to_string(),
-        path: path.to_path_buf(),
-        slug: state.feature.slug.clone(),
+        specs_path: specs_path.to_path_buf(),
+        worktree_path: worktree_path.to_path_buf(),
         reason,
-    })
+    }))
 }
 
 /// 加载 feature state
@@ -224,7 +287,7 @@ fn load_feature_state(state_file: &Path) -> Result<FeatureState> {
 }
 
 /// 获取 PR 状态 (使用 gh CLI)
-async fn get_pr_status(pr_number: u32) -> Result<String> {
+async fn get_pr_status(pr_number: u32, repo_path: &Path) -> Result<String> {
     let output = tokio::process::Command::new("gh")
         .args([
             "pr",
@@ -235,6 +298,7 @@ async fn get_pr_status(pr_number: u32) -> Result<String> {
             "-q",
             ".state",
         ])
+        .current_dir(repo_path)
         .output()
         .await
         .context("执行 gh 命令失败")?;
@@ -251,68 +315,9 @@ async fn get_pr_status(pr_number: u32) -> Result<String> {
     Ok(status)
 }
 
-/// 分类候选项
-fn categorize_candidates(
-    candidates: &[CleanCandidate],
-    force: bool,
-) -> (Vec<CleanCandidate>, Vec<CleanCandidate>) {
-    let mut can_clean = Vec::new();
-    let mut need_force = Vec::new();
-
-    for candidate in candidates {
-        match &candidate.reason {
-            CleanReason::PrMerged(_) | CleanReason::PrClosed(_) => {
-                can_clean.push(candidate.clone());
-            }
-            CleanReason::CompletedNoPr => {
-                if force {
-                    can_clean.push(candidate.clone());
-                } else {
-                    need_force.push(candidate.clone());
-                }
-            }
-            CleanReason::Failed | CleanReason::InProgress => {
-                if force {
-                    can_clean.push(candidate.clone());
-                } else {
-                    need_force.push(candidate.clone());
-                }
-            }
-        }
-    }
-
-    (can_clean, need_force)
-}
-
-/// 打印候选项
-fn print_candidate(candidate: &CleanCandidate) {
-    let reason_text = match &candidate.reason {
-        CleanReason::PrMerged(pr) => format!("PR #{} 已合并", pr),
-        CleanReason::PrClosed(pr) => format!("PR #{} 已关闭", pr),
-        CleanReason::CompletedNoPr => "已完成但无 PR".to_string(),
-        CleanReason::Failed => "执行失败".to_string(),
-        CleanReason::InProgress => "执行中".to_string(),
-    };
-
-    println!("  ✓ {} ({})", candidate.dir_name, reason_text);
-    println!("    - {}", candidate.path.display());
-}
-
-/// 打印跳过的候选项
-fn print_skipped_candidate(candidate: &CleanCandidate) {
-    let reason_text = match &candidate.reason {
-        CleanReason::CompletedNoPr => "已完成但无 PR (需要 --force)",
-        CleanReason::Failed => "执行失败 (需要 --force)",
-        CleanReason::InProgress => "执行中 (需要 --force)",
-        _ => "未知原因",
-    };
-
-    println!("  ⚠ {} ({})", candidate.dir_name, reason_text);
-}
-
 /// 请求用户确认
 fn confirm_clean(count: usize) -> Result<bool> {
-    print!("⚠️  确认删除 {} 个功能目录? [y/N] ", count);
+    print!("⚠️  确认删除 {} 个 worktree? [y/N] ", count);
     io::stdout().flush()?;
 
     let mut input = String::new();
@@ -321,18 +326,18 @@ fn confirm_clean(count: usize) -> Result<bool> {
     Ok(input.trim().eq_ignore_ascii_case("y"))
 }
 
-/// 执行清理
+/// 执行清理：仅删除 .trees/ 中的 worktree，绝不触碰 specs/
 fn perform_clean(candidates: &[CleanCandidate]) -> Result<usize> {
     let mut cleaned = 0;
 
-    for candidate in candidates {
-        match fs::remove_dir_all(&candidate.path) {
+    for c in candidates {
+        match fs::remove_dir_all(&c.worktree_path) {
             Ok(()) => {
-                println!("  ✓ 已删除: {}", candidate.dir_name);
+                println!("  ✓ 已删除 worktree: {}", c.dir_name);
                 cleaned += 1;
             }
             Err(e) => {
-                eprintln!("  ✗ 删除失败 {}: {}", candidate.dir_name, e);
+                eprintln!("  ✗ 删除失败 {}: {}", c.dir_name, e);
             }
         }
     }
@@ -340,46 +345,15 @@ fn perform_clean(candidates: &[CleanCandidate]) -> Result<usize> {
     Ok(cleaned)
 }
 
-impl Clone for CleanCandidate {
-    fn clone(&self) -> Self {
-        Self {
-            dir_name: self.dir_name.clone(),
-            path: self.path.clone(),
-            slug: self.slug.clone(),
-            reason: self.reason.clone(),
-        }
-    }
-}
-
-#[cfg(test)]
+ #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_categorize_candidates() {
-        let candidates = vec![
-            CleanCandidate {
-                dir_name: "001-merged".to_string(),
-                path: PathBuf::from("/tmp/001"),
-                slug: "merged".to_string(),
-                reason: CleanReason::PrMerged(123),
-            },
-            CleanCandidate {
-                dir_name: "002-in-progress".to_string(),
-                path: PathBuf::from("/tmp/002"),
-                slug: "in-progress".to_string(),
-                reason: CleanReason::InProgress,
-            },
-        ];
-
-        // 不带 force
-        let (can_clean, need_force) = categorize_candidates(&candidates, false);
-        assert_eq!(can_clean.len(), 1);
-        assert_eq!(need_force.len(), 1);
-
-        // 带 force
-        let (can_clean, need_force) = categorize_candidates(&candidates, true);
-        assert_eq!(can_clean.len(), 2);
-        assert_eq!(need_force.len(), 0);
+    fn test_clean_reason_display() {
+        let merged = CleanReason::PrMerged(123);
+        let closed = CleanReason::PrClosed(456);
+        assert!(matches!(merged, CleanReason::PrMerged(123)));
+        assert!(matches!(closed, CleanReason::PrClosed(456)));
     }
 }

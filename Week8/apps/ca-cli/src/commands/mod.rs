@@ -43,9 +43,6 @@ pub enum Command {
     Templates {
         verbose: bool,
     },
-    Tui {
-        repo: Option<String>,
-    },
     List {
         all: bool,
         status: Option<String>,
@@ -55,7 +52,7 @@ pub enum Command {
     },
     Clean {
         dry_run: bool,
-        force: bool,
+        all: bool,
     },
 }
 
@@ -71,15 +68,14 @@ pub async fn execute_command(command: Command, config: &AppConfig) -> anyhow::Re
             execute_run(feature_slug, phase, resume, dry_run, skip_review, skip_test, repo, config).await
         }
         Command::Templates { verbose } => execute_templates(verbose, config).await,
-        Command::Tui { repo } => execute_tui(repo, config).await,
         Command::List { all, status } => {
             execute_list(all, status, config).await
         }
         Command::Status { feature_slug } => {
             execute_status(feature_slug, config).await
         }
-        Command::Clean { dry_run, force } => {
-            execute_clean(dry_run, force, config).await
+        Command::Clean { dry_run, all } => {
+            execute_clean(dry_run, all, config).await
         }
     }
 }
@@ -124,24 +120,6 @@ async fn execute_templates(verbose: bool, config: &AppConfig) -> anyhow::Result<
     }
 
     println!("\n📂 模板目录: {}", config.prompt.template_dir.display());
-
-    Ok(())
-}
-
-async fn execute_tui(repo: Option<String>, config: &AppConfig) -> anyhow::Result<()> {
-    println!("🖥️  启动 TUI 模式...");
-
-    // 确定工作目录
-    let repo_path = if let Some(path) = repo {
-        PathBuf::from(path)
-    } else if let Some(default) = &config.default_repo {
-        default.clone()
-    } else {
-        std::env::current_dir()?
-    };
-
-    // 启动 TUI
-    crate::ui::run_tui(&repo_path, config).await?;
 
     Ok(())
 }

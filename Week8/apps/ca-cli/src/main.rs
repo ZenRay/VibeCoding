@@ -113,13 +113,6 @@ enum Commands {
         verbose: bool,
     },
 
-    /// 交互式 TUI 模式
-    Tui {
-        /// 工作目录
-        #[arg(short, long)]
-        repo: Option<String>,
-    },
-
     /// 列出所有功能及状态
     List {
         /// 显示所有功能 (包括已完成的)
@@ -137,15 +130,15 @@ enum Commands {
         feature_slug: String,
     },
 
-    /// 清理已完成的功能
+    /// 清理已完成功能的 worktree (仅 .trees/，specs/ 永久保留)
     Clean {
         /// 试运行,不实际删除
         #[arg(long)]
         dry_run: bool,
 
-        /// 强制清理所有功能 (危险操作)
+        /// 显示所有功能 (包括跳过的)
         #[arg(short, long)]
-        force: bool,
+        all: bool,
     },
 }
 
@@ -189,17 +182,14 @@ async fn main() -> anyhow::Result<()> {
         Commands::Templates { verbose } => {
             execute_command(Command::Templates { verbose }, &config).await?;
         }
-        Commands::Tui { repo } => {
-            execute_command(Command::Tui { repo }, &config).await?;
-        }
         Commands::List { all, status } => {
             execute_command(Command::List { all, status }, &config).await?;
         }
         Commands::Status { feature_slug } => {
             execute_command(Command::Status { feature_slug }, &config).await?;
         }
-        Commands::Clean { dry_run, force } => {
-            execute_command(Command::Clean { dry_run, force }, &config).await?;
+        Commands::Clean { dry_run, all } => {
+            execute_command(Command::Clean { dry_run, all }, &config).await?;
         }
     }
 

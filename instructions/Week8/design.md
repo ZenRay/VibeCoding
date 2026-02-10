@@ -651,7 +651,7 @@ Result:
 
 ##### 6. `code-agent feature clean`
 
-清理已完成的功能
+优雅清理已完成功能的 git worktree 和非必要文件
 
 ```bash
 # 试运行 (显示将删除的内容)
@@ -660,39 +660,65 @@ code-agent feature clean --dry-run
 # 实际清理
 code-agent feature clean
 
-# 强制清理所有 (包括进行中的)
-code-agent feature clean --force
+# 清理 worktree 和临时文件
+code-agent feature clean --all
 
 # 选项
 --dry-run           # 试运行,不实际删除
---force             # 强制清理所有功能 (危险操作)
+--all               # 清理所有可清理项 (worktree + 临时文件)
 ```
 
-**清理规则**:
-- ✅ 已完成且已合并的 PR
-- ✅ 已关闭的 PR
-- ❌ 进行中的功能 (需要 --force)
-- ❌ 无 PR 的功能 (需要 --force 并确认)
+**清理内容**:
+1. **Git Worktree** (`.trees/<feature>/`) - 主要清理目标
+   - 已合并的 PR 对应的 worktree
+   - 已关闭的 PR 对应的 worktree
+   
+2. **临时文件** (可选，使用 `--all`)
+   - 构建产物 (`target/`, `dist/`, `build/`)
+   - 日志文件 (`.log` 文件)
+   - 缓存文件
+
+3. **不清理** ❌
+   - `specs/` 目录 - **永久存档，不删除**
+   - 这是功能开发的历史记录，供查询和统计使用
+
+**清理条件**:
+- ✅ PR 已合并的 worktree
+- ✅ PR 已关闭的 worktree
+- ✅ 孤立的 worktree (无对应 branch)
+- ❌ 进行中功能的 worktree (安全保护)
 
 **输出示例**:
 ```bash
 $ code-agent feature clean --dry-run
 
-将清理以下功能:
+将清理以下 worktree:
 
 ✓ 001-add-user-auth (PR #123 已合并)
-  - specs/001-add-user-auth/
+  - .trees/001-add-user-auth/     # 删除 worktree
+  - specs/001-add-user-auth/      # 保留存档 ✓
   
 ✓ 002-fix-login-bug (PR #124 已关闭)
-  - specs/002-fix-login-bug/
+  - .trees/002-fix-login-bug/     # 删除 worktree
+  - specs/002-fix-login-bug/      # 保留存档 ✓
 
-跳过以下功能:
+跳过以下 worktree:
 
-⚠ 003-new-dashboard (进行中)
+⚠ 003-new-dashboard (进行中，安全保护)
+  - .trees/003-new-dashboard/     # 保留
 
-总计: 2 个功能将被清理
+总计: 2 个 worktree 将被清理
 运行 'code-agent feature clean' 执行清理
+
+注意: specs/ 目录作为功能历史存档，永久保留
 ```
+
+**设计理由**:
+- `specs/` 是项目的功能开发历史和文档，应该提交到 git 仓库
+- `.trees/` 是临时工作目录，可以随时删除和重建
+- 清理 worktree 可以释放磁盘空间，但保留完整的功能记录
+
+**参考**: GBA 的 worktree 清理策略 + 功能存档最佳实践
 
 ##### 7. `code-agent templates`
 
