@@ -2,7 +2,7 @@
 //!
 //! 验证环境变量配置和 Agent 连接测试 (零配置文件方案)
 
-use ca_core::{AgentConfig, AgentFactory, AgentType};
+use ca_core::{AgentConfig, AgentFactory, AgentType, Config};
 use std::io::{self, Write};
 
 /// 执行 init 命令 (零配置文件方案 - 仅验证环境变量)
@@ -44,16 +44,22 @@ pub async fn execute_init(
         get_default_model(&agent_type)
     };
 
+    // 获取 API URL (用于 OpenRouter 等第三方服务)
+    let api_url = get_api_url_from_env(&agent_type);
+
     println!();
     println!("📋 检测到的配置:");
     println!("  Agent 类型: {:?}", agent_type);
     println!("  模型: {}", model);
     println!("  API Key: {}***", &api_key_to_test[..4.min(api_key_to_test.len())]);
+    if let Some(ref url) = api_url {
+        println!("  API URL: {}", url);
+    }
     println!();
 
     // 测试连接
     println!("🔌 测试 Agent 连接...");
-    match test_connection(&agent_type, &api_key_to_test, &model).await {
+    match test_connection(&agent_type, &api_key_to_test, &model, api_url.as_deref()).await {
         Ok(true) => {
             println!("✅ 连接成功!");
         }
@@ -221,14 +227,25 @@ fn detect_agent_type_from_env() -> AgentType {
 
 /// 从环境变量获取 API Key
 fn get_api_key_from_env(agent_type: &AgentType) -> anyhow::Result<String> {
-    let env_var = agent_type.primary_env_var();
-    std::env::var(env_var).map_err(|_| {
-        anyhow::anyhow!(
-            "未设置环境变量 {}. 请运行: export {}='your-key'",
-            env_var,
-            env_var
-        )
-    })
+    // 使用 Config 的完整优先级逻辑
+    Config::load_api_key(agent_type).map_err(|e| anyhow::anyhow!("{}", e))
+}
+
+/// 从环境变量获取 API URL
+fn get_api_url_from_env(agent_type: &AgentType) -> Option<String> {
+    match agent_type {
+        AgentType::Claude => {
+            std::env::var("ANTHROPIC_BASE_URL").ok()
+                .or_else(|| std::env::var("CLAUDE_BASE_URL").ok())
+                .or_else(|| std::env::var("OPENROUTER_BASE_URL").ok())
+        }
+        AgentType::Copilot => {
+            std::env::var("COPILOT_BASE_URL").ok()
+        }
+        AgentType::Cursor => {
+            std::env::var("CURSOR_BASE_URL").ok()
+        }
+    }
 }
 
 /// 获取默认模型
@@ -248,12 +265,12 @@ fn get_default_model(agent_type: &AgentType) -> String {
 }
 
 /// 测试 Agent 连接
-async fn test_connection(agent_type: &AgentType, api_key: &str, model: &str) -> anyhow::Result<bool> {
+async fn test_connection(agent_type: &AgentType, api_key: &str, model: &str, api_url: Option<&str>) -> anyhow::Result<bool> {
     let config = AgentConfig {
         agent_type: *agent_type,
         api_key: api_key.to_string(),
         model: Some(model.to_string()),
-        api_url: None,
+        api_url: api_url.map(|s| s.to_string()),
     };
 
     let agent = AgentFactory::create(config)?;

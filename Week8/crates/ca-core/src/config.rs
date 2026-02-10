@@ -117,13 +117,15 @@ impl Config {
     }
 
     /// 加载 API Key (按优先级尝试多个环境变量)
-    fn load_api_key(agent_type: &AgentType) -> Result<String> {
+    pub fn load_api_key(agent_type: &AgentType) -> Result<String> {
         match agent_type {
             AgentType::Claude => std::env::var("ANTHROPIC_API_KEY")
-                .or_else(|_| std::env::var("CLAUDE_API_KEY"))
-                .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
-                .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
-                .map_err(|_| {
+                .ok()
+                .filter(|s| !s.is_empty())
+                .or_else(|| std::env::var("CLAUDE_API_KEY").ok().filter(|s| !s.is_empty()))
+                .or_else(|| std::env::var("ANTHROPIC_AUTH_TOKEN").ok().filter(|s| !s.is_empty()))
+                .or_else(|| std::env::var("OPENROUTER_API_KEY").ok().filter(|s| !s.is_empty()))
+                .ok_or_else(|| {
                     CoreError::Config(
                         "API key not found. Set one of:\n  \
                          export ANTHROPIC_API_KEY='sk-ant-xxx'            # Anthropic official\n  \
@@ -134,20 +136,25 @@ impl Config {
                 }),
 
             AgentType::Copilot => std::env::var("COPILOT_GITHUB_TOKEN")
-                .or_else(|_| std::env::var("GH_TOKEN"))
-                .or_else(|_| std::env::var("GITHUB_TOKEN"))
-                .map_err(|_| {
+                .ok()
+                .filter(|s| !s.is_empty())
+                .or_else(|| std::env::var("GH_TOKEN").ok().filter(|s| !s.is_empty()))
+                .or_else(|| std::env::var("GITHUB_TOKEN").ok().filter(|s| !s.is_empty()))
+                .ok_or_else(|| {
                     CoreError::Config(
                         "GitHub token not found. Set COPILOT_GITHUB_TOKEN:\n  export COPILOT_GITHUB_TOKEN='ghp_xxx'".to_string(),
                     )
                 }),
 
-            AgentType::Cursor => std::env::var("CURSOR_API_KEY").map_err(|_| {
-                CoreError::Config(
-                    "API key not found. Set CURSOR_API_KEY:\n  export CURSOR_API_KEY='cursor_xxx'"
-                        .to_string(),
-                )
-            }),
+            AgentType::Cursor => std::env::var("CURSOR_API_KEY")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .ok_or_else(|| {
+                    CoreError::Config(
+                        "API key not found. Set CURSOR_API_KEY:\n  export CURSOR_API_KEY='cursor_xxx'"
+                            .to_string(),
+                    )
+                }),
         }
     }
 
@@ -360,20 +367,16 @@ mod tests {
 
     #[test]
     fn test_load_api_key_openrouter_auth_token() {
-        // 设置 OpenRouter token (无需清除其他变量，测试优先级)
+        // 清理所有更高优先级的环境变量
         // SAFETY: 在测试中修改环境变量是安全的
         unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+            std::env::remove_var("CLAUDE_API_KEY");
             std::env::set_var("ANTHROPIC_AUTH_TOKEN", "sk-or-v1-test-token");
         }
 
         let key = Config::load_api_key(&AgentType::Claude).unwrap();
-        // 如果 ANTHROPIC_API_KEY 或 CLAUDE_API_KEY 存在，它们会有更高优先级
-        // 否则应该使用 ANTHROPIC_AUTH_TOKEN
-        assert!(
-            key == "sk-or-v1-test-token" || key.starts_with("sk-ant-") || key.starts_with("sk-or-"),
-            "Expected OpenRouter token or existing API key, got: {}",
-            key
-        );
+        assert_eq!(key, "sk-or-v1-test-token");
 
         // 清理
         // SAFETY: 在测试中清理环境变量是安全的
@@ -384,19 +387,17 @@ mod tests {
 
     #[test]
     fn test_load_api_key_openrouter_api_key() {
-        // 设置 OpenRouter API key
+        // 清理所有更高优先级的环境变量
         // SAFETY: 在测试中修改环境变量是安全的
         unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+            std::env::remove_var("CLAUDE_API_KEY");
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
             std::env::set_var("OPENROUTER_API_KEY", "sk-or-v1-test-api");
         }
 
         let key = Config::load_api_key(&AgentType::Claude).unwrap();
-        // 如果更高优先级的变量存在，它们会被使用
-        assert!(
-            key == "sk-or-v1-test-api" || key.starts_with("sk-ant-") || key.starts_with("sk-or-"),
-            "Expected OpenRouter API key or existing key, got: {}",
-            key
-        );
+        assert_eq!(key, "sk-or-v1-test-api");
 
         // 清理
         // SAFETY: 在测试中清理环境变量是安全的
