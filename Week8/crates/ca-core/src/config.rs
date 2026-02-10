@@ -78,13 +78,14 @@ impl Config {
     pub fn from_env() -> Result<Self> {
         let agent_type = Self::detect_agent_type();
         let api_key = Self::load_api_key(&agent_type)?;
+        let api_url = Self::load_api_url(&agent_type);
 
         Ok(Self {
             agent: AgentConfig {
                 agent_type,
                 api_key,
                 model: Self::load_model(&agent_type),
-                api_url: None,
+                api_url,
             },
             project: ProjectConfig::default(),
             execution: ExecutionConfig::default(),
@@ -151,6 +152,23 @@ impl Config {
         }
     }
 
+    /// 加载 API URL (支持 OpenRouter 等第三方服务)
+    fn load_api_url(agent_type: &AgentType) -> Option<String> {
+        match agent_type {
+            AgentType::Claude => {
+                std::env::var("ANTHROPIC_BASE_URL").ok()
+                    .or_else(|| std::env::var("CLAUDE_BASE_URL").ok())
+                    .or_else(|| std::env::var("OPENROUTER_BASE_URL").ok())
+            }
+            AgentType::Copilot => {
+                std::env::var("COPILOT_BASE_URL").ok()
+            }
+            AgentType::Cursor => {
+                std::env::var("CURSOR_BASE_URL").ok()
+            }
+        }
+    }
+
     /// 验证配置
     pub fn validate(&self) -> Result<()> {
         if self.agent.api_key.is_empty() {
@@ -173,6 +191,7 @@ impl Config {
         agent_type: Option<AgentType>,
         api_key: Option<String>,
         model: Option<String>,
+        api_url: Option<String>,
     ) {
         if let Some(api_key) = api_key {
             self.agent.api_key = api_key;
@@ -188,6 +207,10 @@ impl Config {
 
         if let Some(model) = model {
             self.agent.model = Some(model);
+        }
+
+        if let Some(api_url) = api_url {
+            self.agent.api_url = Some(api_url);
         }
     }
 
@@ -213,6 +236,12 @@ impl Config {
             output.push_str(&format!("Model: {}\n", model));
         } else {
             output.push_str("Model: (using default)\n");
+        }
+
+        if let Some(ref api_url) = self.agent.api_url {
+            output.push_str(&format!("API URL: {}\n", api_url));
+        } else {
+            output.push_str("API URL: (using default)\n");
         }
 
         output.push_str("\n📝 Environment Variables:\n");
@@ -259,5 +288,63 @@ mod tests {
         assert!(config.auto_backup);
         assert!(config.enable_resume);
         assert_eq!(config.checkpoint_interval, 5);
+    }
+
+    #[test]
+    fn test_config_with_custom_api_url() {
+        // 保存原始环境变量
+        let original_key = std::env::var("ANTHROPIC_API_KEY").ok();
+        let original_url = std::env::var("ANTHROPIC_BASE_URL").ok();
+
+        // 设置测试环境变量
+        // SAFETY: 在测试中修改环境变量是安全的，因为我们会恢复原始值
+        unsafe {
+            std::env::set_var("ANTHROPIC_API_KEY", "test-key");
+            std::env::set_var("ANTHROPIC_BASE_URL", "https://openrouter.ai/api/v1");
+        }
+
+        let config = Config::from_env().unwrap();
+        assert_eq!(
+            config.agent.api_url,
+            Some("https://openrouter.ai/api/v1".to_string())
+        );
+
+        // 恢复原始环境变量
+        // SAFETY: 在测试中恢复环境变量是安全的
+        unsafe {
+            if let Some(key) = original_key {
+                std::env::set_var("ANTHROPIC_API_KEY", key);
+            } else {
+                std::env::remove_var("ANTHROPIC_API_KEY");
+            }
+            if let Some(url) = original_url {
+                std::env::set_var("ANTHROPIC_BASE_URL", url);
+            } else {
+                std::env::remove_var("ANTHROPIC_BASE_URL");
+            }
+        }
+    }
+
+    #[test]
+    fn test_merge_with_api_url() {
+        // 设置测试环境变量
+        // SAFETY: 在测试中修改环境变量是安全的
+        unsafe {
+            std::env::set_var("ANTHROPIC_API_KEY", "test-key");
+        }
+
+        let mut config = Config::from_env().unwrap();
+        config.merge_with_cli_args(None, None, None, Some("https://custom.api.com".to_string()));
+
+        assert_eq!(
+            config.agent.api_url,
+            Some("https://custom.api.com".to_string())
+        );
+
+        // 清理
+        // SAFETY: 在测试中清理环境变量是安全的
+        unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+        }
     }
 }

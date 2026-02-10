@@ -216,7 +216,7 @@ impl AgentFactory {
                 let model = config
                     .model
                     .unwrap_or_else(|| "claude-3-5-sonnet-20241022".to_string());
-                let agent = ClaudeAgent::new(config.api_key, model)?;
+                let agent = ClaudeAgent::new(config.api_key, model, config.api_url)?;
                 Ok(Arc::new(agent))
             }
             AgentType::Cursor => Err(crate::error::CoreError::Agent(

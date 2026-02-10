@@ -87,3 +87,8 @@ Real Prompt
 构建一个新的 git worktree (branch from main)，放在 .trees 下，仔细阅读 @specs/design.md，根据其要求，使用 sub agent 分阶段完成其功能。每次完成一个阶段后提交代码，并确保 precommit hooks 通过。完成所有阶段后，启动一个新的 sub agent 调用 codex code review skill 对照 design spec 来 review 代码，然后根据 review 结果仔细思考，对合理的问题进行修改，并提交代码。最后，保证所有的测试通过，并确保所有的功能都符合 design spec 的要求后，生成一个 pull request，提供详细的 PR description。
 
 构建一个新的 git worktree (branch from main)，放在 .trees 下，仔细阅读 design.md，根据其要求，使用 sub agent 分阶段完成其功能。每次完成一个阶段后提交代码，并确保 precommit hooks 通过。完成所有阶段后，启动一个新的 sub agent 调用 codex code review skill 对照 design spec 来 review 代码，然后根据 review 结果仔细思考，对合理的问题进行修改，并提交代码。最后，保证所有的测试通过，并确保所有的功能都符合 design spec 的要求后，生成一个 pull request，提供详细的 PR description。
+
+
+
+## 更新设计
+在 Init 阶段完成后，应该创建好 status.md。这个文档是需要在每个阶段完成后更新该文档，它的作用是整合当前 feature 的进度状态、待解决的问题项等相关的内容，使用中文的方式描述——主要是用于开发人员阅读文档了解项目进度、问题等

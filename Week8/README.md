@@ -60,28 +60,95 @@ cargo build --release
 
 ## 快速开始
 
-### 1. 初始化配置
+### 1. 配置环境变量
+
+Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供:
 
 ```bash
-code-agent init --api-key YOUR_CLAUDE_API_KEY
+# Claude Agent (官方 Anthropic API)
+export ANTHROPIC_API_KEY='sk-ant-xxx'
+
+# 可选: 指定模型
+export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
 ```
 
-配置文件会保存到 `~/.code-agent/config.toml`
-
-### 2. 执行任务
+### 2. 规划功能
 
 ```bash
-# 在当前目录执行任务
-code-agent run "添加一个新的 README 文件"
+# 创建功能规划
+code-agent plan my-feature --description "添加用户认证功能"
 
-# 指定工作目录
-code-agent run "重构 main.rs" --repo /path/to/repo
-
-# 指定相关文件
-code-agent run "优化性能" --files src/main.rs --files src/lib.rs
+# 或使用交互模式
+code-agent plan my-feature --interactive
 ```
 
-### 3. 查看可用模板
+### 3. 执行功能开发
+
+```bash
+# 执行完整的 7 个阶段
+code-agent run my-feature
+
+# 执行特定阶段
+code-agent run my-feature --phase 3
+
+# 从中断处恢复
+code-agent run my-feature --resume
+```
+
+### 4. 使用 OpenRouter 等第三方服务
+
+Code Agent 支持使用 OpenRouter、Azure OpenAI、AWS Bedrock 等第三方 API 服务。
+
+#### 方法 1: 环境变量
+
+```bash
+# 设置 OpenRouter API Key
+export ANTHROPIC_API_KEY='sk-or-v1-xxx'
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 运行命令
+code-agent plan my-feature
+```
+
+#### 方法 2: CLI 参数
+
+```bash
+# 使用 --api-url 参数
+code-agent plan my-feature \
+  --api-url https://openrouter.ai/api/v1 \
+  --api-key sk-or-v1-xxx
+```
+
+#### 支持的第三方服务
+
+| 服务 | Base URL | 说明 |
+|------|----------|------|
+| **OpenRouter** | `https://openrouter.ai/api/v1` | 支持多种模型,按使用付费 |
+| **Azure OpenAI** | `https://{resource}.openai.azure.com` | 企业级 API |
+| **AWS Bedrock** | 需要额外配置 | 通过 AWS SDK |
+
+#### OpenRouter 完整示例
+
+```bash
+# 1. 获取 OpenRouter API Key
+# 访问 https://openrouter.ai/ 注册并获取 API Key
+
+# 2. 设置环境变量
+export ANTHROPIC_API_KEY='sk-or-v1-xxxxxxxxxxxxx'
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 3. (可选) 指定模型
+export CLAUDE_MODEL='anthropic/claude-3.5-sonnet'
+
+# 4. 初始化验证
+code-agent init --interactive
+
+# 5. 使用
+code-agent plan my-feature --description "实现用户登录"
+code-agent run my-feature
+```
+
+### 5. 查看可用模板
 
 ```bash
 # 列出所有模板
@@ -91,7 +158,7 @@ code-agent templates
 code-agent templates --verbose
 ```
 
-### 4. 启动交互式 TUI
+### 6. 启动交互式 TUI (计划中)
 
 ```bash
 # 在当前目录启动 TUI
@@ -103,20 +170,68 @@ code-agent tui --repo /path/to/repo
 
 ## 配置
 
-配置文件位于 `~/.code-agent/config.toml`:
+Code Agent 使用**零配置文件**方案,所有配置通过环境变量提供。
 
-```toml
-[agent]
-agent_type = "claude"
-api_key = "your-api-key"
-model = "claude-3-5-sonnet-20241022"
+### 必需的环境变量
 
-[prompt]
-template_dir = "/home/user/.code-agent/templates"
-default_template = "default"
+```bash
+# Claude Agent (默认)
+export ANTHROPIC_API_KEY='sk-ant-xxx'
+```
 
-# 可选: 默认工作目录
-default_repo = "/path/to/your/repo"
+### 可选的环境变量
+
+```bash
+# 指定模型
+export CLAUDE_MODEL='claude-3-5-sonnet-20241022'
+
+# 使用自定义 API endpoint (OpenRouter, Azure, etc.)
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+
+# 其他支持的环境变量
+export CLAUDE_BASE_URL='...'        # 等同于 ANTHROPIC_BASE_URL
+export OPENROUTER_BASE_URL='...'   # 自动检测
+```
+
+### 配置优先级
+
+配置按以下优先级加载:
+
+1. **CLI 参数** (最高优先级)
+   ```bash
+   code-agent plan my-feature --api-url https://custom.api.com --model custom-model
+   ```
+
+2. **环境变量**
+   ```bash
+   export ANTHROPIC_BASE_URL='https://openrouter.ai/api/v1'
+   ```
+
+3. **配置文件** (可选,位于 `~/.code-agent/config.toml`)
+   ```toml
+   [agent]
+   agent_type = "claude"
+   api_key = "your-api-key"
+   api_url = "https://openrouter.ai/api/v1"
+   model = "claude-3-5-sonnet-20241022"
+   
+   [prompt]
+   template_dir = "/home/user/.code-agent/templates"
+   default_template = "default"
+   ```
+
+### 环境变量持久化
+
+将环境变量添加到 shell 配置文件:
+
+```bash
+# Bash
+echo 'export ANTHROPIC_API_KEY="sk-ant-xxx"' >> ~/.bashrc
+source ~/.bashrc
+
+# Zsh
+echo 'export ANTHROPIC_API_KEY="sk-ant-xxx"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 ## Prompt 模板
@@ -223,16 +338,30 @@ Prompt Manager,提供:
 
 ## 路线图
 
+### 已完成 ✅
+
 - [x] 核心架构和 Workspace 设置
 - [x] Claude Agent 集成
 - [x] Prompt 模板系统
-- [x] 基础 CLI 命令
-- [x] TUI 界面
+- [x] 基础 CLI 命令 (init, plan, run, templates)
+- [x] 零配置文件方案 (环境变量优先)
+- [x] OpenRouter 和第三方 API endpoint 支持
+- [x] 状态管理和恢复功能
+
+### 进行中 🚧
+
+- [ ] TUI 界面完善
+- [ ] 完整的 7 个执行阶段实现
+- [ ] 集成测试套件
+
+### 计划中 📋
+
 - [ ] GitHub Copilot Agent 支持
 - [ ] Cursor Agent 支持
 - [ ] 任务历史记录
-- [ ] 配置向导
 - [ ] 插件系统
+- [ ] 多语言 Prompt 模板
+- [ ] Web 界面 (可选)
 
 ## 许可证
 

@@ -22,6 +22,19 @@ struct Cli {
     /// 详细日志
     #[arg(short, long)]
     verbose: bool,
+
+    /// API base URL (用于 OpenRouter, Azure, 等第三方服务)
+    /// 示例: https://openrouter.ai/api/v1
+    #[arg(long, global = true)]
+    api_url: Option<String>,
+
+    /// 模型名称 (覆盖默认模型)
+    #[arg(long, global = true)]
+    model: Option<String>,
+
+    /// API 密钥 (覆盖环境变量)
+    #[arg(long, global = true)]
+    api_key: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -112,11 +125,23 @@ async fn main() -> anyhow::Result<()> {
     init_logging(cli.verbose);
 
     // 加载配置
-    let config = if let Some(config_path) = cli.config {
+    let mut config = if let Some(config_path) = cli.config {
         AppConfig::load_from_file(&config_path)?
     } else {
         AppConfig::load_default()?
     };
+
+    // 将命令行参数合并到配置 (CLI 参数优先级更高)
+    // 如果 CLI 未提供 api_url,从环境变量获取
+    if let Some(api_url) = cli.api_url.or_else(|| std::env::var("ANTHROPIC_BASE_URL").ok()) {
+        config.agent.api_url = Some(api_url);
+    }
+    if let Some(model) = cli.model {
+        config.agent.model = model;
+    }
+    if let Some(api_key) = cli.api_key {
+        config.agent.api_key = api_key;
+    }
 
     // 执行命令
     match cli.command {

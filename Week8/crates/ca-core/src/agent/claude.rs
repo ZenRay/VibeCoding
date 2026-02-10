@@ -35,11 +35,12 @@ impl ClaudeAgent {
     ///
     /// * `api_key` - Anthropic API Key
     /// * `model` - 模型名称 (默认: claude-3-5-sonnet-20241022)
+    /// * `api_url` - 自定义 API endpoint (可选,支持 OpenRouter 等)
     ///
     /// # Errors
     ///
     /// 如果 API Key 为空,返回错误
-    pub fn new(api_key: String, model: String) -> Result<Self> {
+    pub fn new(api_key: String, model: String, api_url: Option<String>) -> Result<Self> {
         if api_key.is_empty() {
             return Err(CoreError::Config("API key cannot be empty".to_string()));
         }
@@ -49,6 +50,14 @@ impl ClaudeAgent {
         // SDK 会在后续调用中读取这个值
         unsafe {
             std::env::set_var("ANTHROPIC_API_KEY", &api_key);
+        }
+
+        // 如果提供了自定义 API URL,设置环境变量
+        if let Some(ref url) = api_url {
+            unsafe {
+                std::env::set_var("ANTHROPIC_BASE_URL", url);
+            }
+            tracing::info!("Using custom API endpoint: {}", url);
         }
 
         // 创建默认选项
@@ -67,7 +76,7 @@ impl ClaudeAgent {
 
     /// 使用默认选项创建 Agent
     pub fn with_default_options(api_key: String) -> Result<Self> {
-        Self::new(api_key, "claude-3-5-sonnet-20241022".to_string())
+        Self::new(api_key, "claude-3-5-sonnet-20241022".to_string(), None)
     }
 
     /// 配置 Agent 选项
@@ -346,7 +355,7 @@ mod tests {
 
     #[test]
     fn test_new_agent_with_empty_key() {
-        let result = ClaudeAgent::new(String::new(), "claude-3-5-sonnet-20241022".to_string());
+        let result = ClaudeAgent::new(String::new(), "claude-3-5-sonnet-20241022".to_string(), None);
         assert!(result.is_err());
     }
 
@@ -355,6 +364,7 @@ mod tests {
         let agent = ClaudeAgent::new(
             "test-key".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
+            None,
         )
         .unwrap();
         assert_eq!(agent.agent_type(), AgentType::Claude);
@@ -365,6 +375,7 @@ mod tests {
         let agent = ClaudeAgent::new(
             "test-key".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
+            None,
         )
         .unwrap();
         let caps = agent.capabilities();
@@ -377,6 +388,7 @@ mod tests {
         let agent = ClaudeAgent::new(
             "test-key".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
+            None,
         )
         .unwrap();
         let metadata = agent.metadata();
@@ -390,6 +402,7 @@ mod tests {
         let agent = ClaudeAgent::new(
             "test-key".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
+            None,
         )
         .unwrap();
         let result = agent.validate().await;
@@ -402,6 +415,7 @@ mod tests {
         let mut agent = ClaudeAgent::new(
             "test-key".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
+            None,
         )
         .unwrap();
 
@@ -414,5 +428,20 @@ mod tests {
         );
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_agent_with_custom_api_url() {
+        let agent = ClaudeAgent::new(
+            "test-key".to_string(),
+            "claude-3-5-sonnet-20241022".to_string(),
+            Some("https://openrouter.ai/api/v1".to_string()),
+        )
+        .unwrap();
+
+        // 验证环境变量已设置
+        let env_url = std::env::var("ANTHROPIC_BASE_URL").ok();
+        assert_eq!(env_url, Some("https://openrouter.ai/api/v1".to_string()));
+        assert_eq!(agent.agent_type(), AgentType::Claude);
     }
 }

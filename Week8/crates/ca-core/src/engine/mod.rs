@@ -108,7 +108,7 @@ pub struct ExecutionResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agent::{AgentType, ClaudeAgent};
+    use crate::agent::ClaudeAgent;
 
     #[tokio::test]
     async fn test_execution_engine_creation() {
@@ -116,6 +116,7 @@ mod tests {
             ClaudeAgent::new(
                 "test_key".to_string(),
                 "claude-3-5-sonnet-20241022".to_string(),
+                None,
             )
             .unwrap(),
         );
