@@ -101,6 +101,10 @@ enum Commands {
         #[arg(long)]
         skip_test: bool,
 
+        /// 交互式 TUI 模式
+        #[arg(short, long)]
+        interactive: bool,
+
         /// 工作目录
         #[arg(short, long)]
         repo: Option<std::path::PathBuf>,
@@ -146,8 +150,17 @@ enum Commands {
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // 初始化日志
-    init_logging(cli.verbose);
+    // 检查是否是交互模式（决定是否初始化日志）
+    let is_interactive = match &cli.command {
+        Commands::Plan { interactive, .. } => *interactive,
+        Commands::Run { interactive, .. } => *interactive,
+        _ => false,
+    };
+
+    // 只在非交互模式下初始化日志（TUI 模式不需要日志输出）
+    if !is_interactive {
+        init_logging(cli.verbose);
+    }
 
     // 加载配置
     let mut config = if let Some(config_path) = cli.config {
@@ -157,27 +170,91 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // 将命令行参数合并到配置 (CLI 参数优先级更高)
-    // 如果 CLI 未提供 api_url,从环境变量获取
-    if let Some(api_url) = cli.api_url.or_else(|| std::env::var("ANTHROPIC_BASE_URL").ok()) {
-        config.agent.api_url = Some(api_url);
-    }
-    if let Some(model) = cli.model {
-        config.agent.model = model;
-    }
+    // 优先级: CLI 参数 > 环境变量 > 配置文件默认值
+    
+    // API Key: CLI 参数 > 环境变量
     if let Some(api_key) = cli.api_key {
         config.agent.api_key = api_key;
+    } else if config.agent.api_key.is_empty() {
+        // 配置文件中没有 API key，从环境变量加载
+        if let Ok(key) = ca_core::Config::load_api_key(&ca_core::AgentType::Claude) {
+            config.agent.api_key = key;
+        }
+    }
+    
+    // API URL: CLI 参数 > 环境变量
+    if let Some(api_url) = cli
+        .api_url
+        .or_else(|| std::env::var("ANTHROPIC_BASE_URL").ok())
+    {
+        config.agent.api_url = Some(api_url);
+    }
+    
+    // Model: CLI 参数 > 环境变量
+    if let Some(model) = cli.model {
+        config.agent.model = model;
     }
 
     // 执行命令
     match cli.command {
-        Commands::Init { api_key, agent, interactive, force } => {
-            execute_command(Command::Init { api_key, agent, interactive, force }, &config).await?;
+        Commands::Init {
+            api_key,
+            agent,
+            interactive,
+            force,
+        } => {
+            execute_command(
+                Command::Init {
+                    api_key,
+                    agent,
+                    interactive,
+                    force,
+                },
+                &config,
+            )
+            .await?;
         }
-        Commands::Plan { feature_slug, description, interactive, repo } => {
-            execute_command(Command::Plan { feature_slug, description, interactive, repo }, &config).await?;
+        Commands::Plan {
+            feature_slug,
+            description,
+            interactive,
+            repo,
+        } => {
+            execute_command(
+                Command::Plan {
+                    feature_slug,
+                    description,
+                    interactive,
+                    repo,
+                },
+                &config,
+            )
+            .await?;
         }
-        Commands::Run { feature_slug, phase, resume, dry_run, skip_review, skip_test, repo } => {
-            execute_command(Command::Run { feature_slug, phase, resume, dry_run, skip_review, skip_test, repo }, &config).await?;
+        Commands::Run {
+            feature_slug,
+            phase,
+            resume,
+            dry_run,
+            skip_review,
+            skip_test,
+            interactive,
+            repo,
+        } => {
+            execute_command(
+                Command::Run {
+                    feature_slug,
+                    phase,
+                    resume,
+                    dry_run,
+                    skip_review,
+                    skip_test,
+                    interactive,
+                    repo,
+                },
+                &config,
+            )
+            .await?;
         }
         Commands::Templates { verbose } => {
             execute_command(Command::Templates { verbose }, &config).await?;

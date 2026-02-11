@@ -1,12 +1,17 @@
-pub mod types;
+//! 状态管理模块
+//!
+//! 提供功能执行状态持久化、断点恢复、Phase 和 Task 跟踪。
+//! 状态保存在 `specs/{feature-slug}/state.yml`。
+
 pub mod hooks;
+pub mod types;
 
 use chrono::Utc;
 use std::path::{Path, PathBuf};
 
 use crate::error::Result;
-pub use types::*;
 pub use hooks::{HookRegistry, StateHook, StatusDocumentHook};
+pub use types::*;
 
 /// State Manager - 管理功能执行状态
 pub struct StateManager {
@@ -75,7 +80,7 @@ impl StateManager {
     pub fn state_mut(&mut self) -> &mut FeatureState {
         &mut self.state
     }
-    
+
     /// 添加 Hook
     pub fn add_hook(&mut self, hook: std::sync::Arc<dyn StateHook>) {
         self.hooks.add(hook);
@@ -121,10 +126,10 @@ impl StateManager {
 
         self.state.phases.push(phase_state);
         self.save()?;
-        
+
         // 触发 hooks
         self.hooks.trigger_phase_start(&self.state, phase_number);
-        
+
         Ok(())
     }
 
@@ -163,10 +168,10 @@ impl StateManager {
         }
 
         self.save()?;
-        
+
         // 触发 hooks
         self.hooks.trigger_phase_complete(&self.state, phase_number);
-        
+
         Ok(())
     }
 
@@ -187,12 +192,12 @@ impl StateManager {
         }
 
         self.save()?;
-        
+
         // 如果任务完成，触发 hook
         if was_completed {
             self.hooks.trigger_task_complete(&self.state, task_id);
         }
-        
+
         Ok(())
     }
 
@@ -239,10 +244,10 @@ impl StateManager {
         self.state.feature.updated_at = Utc::now();
         self.state.errors.push(error);
         self.save()?;
-        
+
         // 触发 hooks
         self.hooks.trigger_error_recorded(&self.state);
-        
+
         Ok(())
     }
 
@@ -286,16 +291,17 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_state_manager_creation() {
+    fn test_should_create_state_manager_for_new_feature() {
         let temp_dir = TempDir::new().unwrap();
         let manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
 
         assert_eq!(manager.state().feature.slug, "test-feature");
         assert_eq!(manager.state().status.overall_status, Status::Pending);
+        assert_eq!(manager.state().status.current_phase, 0);
     }
 
     #[test]
-    fn test_save_and_load_state() {
+    fn test_should_save_and_load_state() {
         let temp_dir = TempDir::new().unwrap();
 
         {
@@ -303,9 +309,198 @@ mod tests {
             manager.start_phase(1, "Test Phase".to_string()).unwrap();
         }
 
-        // 重新加载
         let manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
         assert_eq!(manager.state().phases.len(), 1);
         assert_eq!(manager.state().phases[0].name, "Test Phase");
+        assert_eq!(manager.state().phases[0].status, Status::InProgress);
+    }
+
+    #[test]
+    fn test_should_update_phase_status() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+        manager
+            .start_phase(1, "Build Observer".to_string())
+            .unwrap();
+
+        manager.update_phase_status(1, Status::Completed).unwrap();
+
+        let phase = manager
+            .state()
+            .phases
+            .iter()
+            .find(|p| p.phase == 1)
+            .unwrap();
+        assert_eq!(phase.status, Status::Completed);
+        assert!(phase.completed_at.is_some());
+    }
+
+    #[test]
+    fn test_should_complete_phase_with_result() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+        manager
+            .start_phase(1, "Build Observer".to_string())
+            .unwrap();
+
+        let result = PhaseResult {
+            success: true,
+            output_file: Some("output.md".to_string()),
+            extra: std::collections::HashMap::new(),
+        };
+        manager.complete_phase(1, result).unwrap();
+
+        let phase = manager
+            .state()
+            .phases
+            .iter()
+            .find(|p| p.phase == 1)
+            .unwrap();
+        assert_eq!(phase.status, Status::Completed);
+        assert!(phase.result.as_ref().unwrap().success);
+    }
+
+    #[test]
+    fn test_should_add_and_update_task() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+
+        let task = TaskState {
+            id: "task-1".to_string(),
+            kind: TaskKind::Implementation,
+            description: "Implement feature".to_string(),
+            status: Status::Pending,
+            assigned_phase: 1,
+            files: vec!["src/main.rs".to_string()],
+        };
+        manager.add_task(task).unwrap();
+        assert_eq!(manager.state().tasks.len(), 1);
+
+        manager
+            .update_task_status("task-1", Status::Completed)
+            .unwrap();
+        assert_eq!(manager.state().tasks[0].status, Status::Completed);
+    }
+
+    #[test]
+    fn test_should_create_checkpoint_and_enable_resume() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+        manager
+            .start_phase(1, "Build Observer".to_string())
+            .unwrap();
+
+        manager
+            .checkpoint("after_observer", "Context for resume".to_string())
+            .unwrap();
+
+        assert!(manager.can_resume());
+        assert_eq!(manager.state().resume.last_checkpoint, "after_observer");
+        assert_eq!(
+            manager.state().resume.resume_prompt_context,
+            "Context for resume"
+        );
+    }
+
+    #[test]
+    fn test_should_record_file_change() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+
+        let modification = FileModification {
+            path: "src/lib.rs".to_string(),
+            status: "modified".to_string(),
+            phase: 1,
+            size_bytes: 1024,
+            backup: Some("src/lib.rs.bak".to_string()),
+        };
+        manager.record_file_change(modification).unwrap();
+
+        assert_eq!(manager.state().files_modified.len(), 1);
+        assert_eq!(manager.state().files_modified[0].path, "src/lib.rs");
+    }
+
+    #[test]
+    fn test_should_add_cost_and_update_summary() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+        manager
+            .start_phase(1, "Build Observer".to_string())
+            .unwrap();
+
+        let cost = PhaseCost {
+            tokens_input: 1000,
+            tokens_output: 500,
+            cost_usd: 0.05,
+        };
+        manager.add_cost(1, cost).unwrap();
+
+        assert_eq!(manager.state().cost_summary.total_tokens_input, 1000);
+        assert_eq!(manager.state().cost_summary.total_tokens_output, 500);
+        assert!((manager.state().cost_summary.total_cost_usd - 0.05).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_should_record_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+
+        let error = ExecutionError {
+            phase: 1,
+            task: "task-1".to_string(),
+            timestamp: chrono::Utc::now(),
+            error_type: "Timeout".to_string(),
+            message: "Request timed out".to_string(),
+            resolved: false,
+            resolution: None,
+        };
+        manager.record_error(error).unwrap();
+
+        assert_eq!(manager.state().errors.len(), 1);
+        assert_eq!(manager.state().errors[0].error_type, "Timeout");
+    }
+
+    #[test]
+    fn test_should_set_pr_info() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+
+        manager
+            .set_pr_info("https://github.com/repo/pull/1".to_string(), 1)
+            .unwrap();
+
+        assert_eq!(
+            manager.state().delivery.pr_url,
+            Some("https://github.com/repo/pull/1".to_string())
+        );
+        assert_eq!(manager.state().delivery.pr_number, Some(1));
+    }
+
+    #[test]
+    fn test_should_generate_resume_context() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+        manager
+            .start_phase(1, "Build Observer".to_string())
+            .unwrap();
+        manager
+            .checkpoint("checkpoint", "context".to_string())
+            .unwrap();
+
+        let context = manager.generate_resume_context();
+        assert!(context.contains("checkpoint"));
+        assert!(context.contains("phase 1"));
+    }
+
+    #[test]
+    fn test_should_use_start_phase_with_default_name() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut manager = StateManager::new("test-feature", temp_dir.path()).unwrap();
+
+        manager.start_phase_with_default_name(1).unwrap();
+        assert_eq!(manager.state().phases[0].name, "Build Observer");
+
+        manager.start_phase_with_default_name(7).unwrap();
+        assert_eq!(manager.state().phases[1].name, "Verification");
     }
 }

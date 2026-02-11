@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use ca_pm::{PromptConfig, PromptManager};
+use std::path::Path;
 
 use crate::config::AppConfig;
 
@@ -73,7 +71,7 @@ pub async fn execute_templates(verbose: bool, config: &AppConfig) -> anyhow::Res
 }
 
 /// 列出所有模板目录 (3 文件结构)
-fn list_template_dirs(template_dir: &PathBuf) -> anyhow::Result<Vec<String>> {
+fn list_template_dirs(template_dir: &Path) -> anyhow::Result<Vec<String>> {
     let mut templates = Vec::new();
 
     // 遍历 init/, plan/, run/ 目录
@@ -91,10 +89,10 @@ fn list_template_dirs(template_dir: &PathBuf) -> anyhow::Result<Vec<String>> {
             if path.is_dir() {
                 // 检查是否有 user.jinja (必需文件)
                 let user_jinja = path.join("user.jinja");
-                if user_jinja.exists() {
-                    if let Some(name) = path.file_name() {
-                        templates.push(format!("{}/{}", category, name.to_string_lossy()));
-                    }
+                if user_jinja.exists()
+                    && let Some(name) = path.file_name()
+                {
+                    templates.push(format!("{}/{}", category, name.to_string_lossy()));
                 }
             }
         }
@@ -107,7 +105,7 @@ fn list_template_dirs(template_dir: &PathBuf) -> anyhow::Result<Vec<String>> {
 }
 
 /// 显示模板详细信息
-fn show_template_info(template_dir: &PathBuf, template_name: &str) -> anyhow::Result<()> {
+fn show_template_info(template_dir: &Path, template_name: &str) -> anyhow::Result<()> {
     let template_path = template_dir.join(template_name);
     let config_path = template_path.join("config.yml");
 
@@ -117,25 +115,25 @@ fn show_template_info(template_dir: &PathBuf, template_name: &str) -> anyhow::Re
 
         let mut info = Vec::new();
 
-        if let Some(preset) = config.get("preset") {
-            if let Some(preset_bool) = preset.as_bool() {
-                info.push(format!("Preset: {}", preset_bool));
-            }
+        if let Some(preset) = config.get("preset")
+            && let Some(preset_bool) = preset.as_bool()
+        {
+            info.push(format!("Preset: {}", preset_bool));
         }
-        if let Some(max_turns) = config.get("max_turns") {
-            if let Some(turns) = max_turns.as_u64() {
-                info.push(format!("Max Turns: {}", turns));
-            }
+        if let Some(max_turns) = config.get("max_turns")
+            && let Some(turns) = max_turns.as_u64()
+        {
+            info.push(format!("Max Turns: {}", turns));
         }
-        if let Some(budget) = config.get("max_budget_usd") {
-            if let Some(budget_f64) = budget.as_f64() {
-                info.push(format!("Budget: ${}", budget_f64));
-            }
+        if let Some(budget) = config.get("max_budget_usd")
+            && let Some(budget_f64) = budget.as_f64()
+        {
+            info.push(format!("Budget: ${}", budget_f64));
         }
-        if let Some(permission_mode) = config.get("permission_mode") {
-            if let Some(mode_str) = permission_mode.as_str() {
-                info.push(format!("Permission: {}", mode_str));
-            }
+        if let Some(permission_mode) = config.get("permission_mode")
+            && let Some(mode_str) = permission_mode.as_str()
+        {
+            info.push(format!("Permission: {}", mode_str));
         }
 
         if !info.is_empty() {

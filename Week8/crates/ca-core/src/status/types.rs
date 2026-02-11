@@ -27,10 +27,10 @@ pub struct StatusDocument {
 /// 项目状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProjectStatus {
-    InProgress,  // 🟢 进行中
-    Paused,      // 🟡 暂停
-    Blocked,     // 🔴 阻塞
-    Completed,   // ✅ 完成
+    InProgress, // 🟢 进行中
+    Paused,     // 🟡 暂停
+    Blocked,    // 🔴 阻塞
+    Completed,  // ✅ 完成
 }
 
 /// 阶段进度
@@ -68,10 +68,10 @@ impl PhaseProgress {
 /// 阶段状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhaseStatus {
-    Pending,     // ⏳ 待开始
-    InProgress,  // 🟢 进行中
-    Completed,   // ✅ 完成
-    Failed,      // 🔴 失败
+    Pending,    // ⏳ 待开始
+    InProgress, // 🟢 进行中
+    Completed,  // ✅ 完成
+    Failed,     // 🔴 失败
 }
 
 /// 任务进度
@@ -123,10 +123,10 @@ pub enum TaskKind {
 /// 任务状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskStatus {
-    Pending,     // ⏳ 待开始
-    InProgress,  // 🟢 进行中
-    Completed,   // ✅ 完成
-    Failed,      // 🔴 失败
+    Pending,    // ⏳ 待开始
+    InProgress, // 🟢 进行中
+    Completed,  // ✅ 完成
+    Failed,     // 🔴 失败
 }
 
 /// 技术实施摘要
@@ -153,7 +153,7 @@ impl TechSummary {
                 )
             })
             .collect();
-        
+
         let code_changes = state
             .files_modified
             .iter()
@@ -164,7 +164,7 @@ impl TechSummary {
                 description: String::new(),
             })
             .collect();
-        
+
         Self {
             completed_work,
             code_changes,
@@ -220,7 +220,10 @@ impl Issue {
             title: format!("Phase {} 错误", error.phase),
             description: error.message.clone(),
             impact: "可能阻塞后续任务执行".to_string(),
-            plan: error.resolution.clone().unwrap_or_else(|| "待评估".to_string()),
+            plan: error
+                .resolution
+                .clone()
+                .unwrap_or_else(|| "待评估".to_string()),
             status: if error.resolved {
                 IssueStatus::Resolved
             } else {
@@ -234,19 +237,19 @@ impl Issue {
 /// 问题严重程度
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IssueSeverity {
-    Critical,  // 🔴 阻塞
-    High,      // 🟠 高优先级
-    Medium,    // 🟡 中优先级
-    Low,       // 🟢 低优先级
+    Critical, // 🔴 阻塞
+    High,     // 🟠 高优先级
+    Medium,   // 🟡 中优先级
+    Low,      // 🟢 低优先级
 }
 
 /// 问题状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IssueStatus {
-    Pending,     // ⏳ 待处理
-    InProgress,  // 🟡 处理中
-    Resolved,    // ✅ 已解决
-    Wontfix,     // ⚠️  不修复
+    Pending,    // ⏳ 待处理
+    InProgress, // 🟡 处理中
+    Resolved,   // ✅ 已解决
+    Wontfix,    // ⚠️  不修复
 }
 
 /// 变更记录条目
@@ -268,20 +271,21 @@ impl NextSteps {
     pub fn from_feature_state(state: &crate::state::FeatureState) -> Self {
         let mut immediate = Vec::new();
         let mut short_term = Vec::new();
-        
+
         // 当前阶段的下一步
         if state.status.current_phase > 0 && state.status.current_phase <= 7 {
             let current_phase = state.status.current_phase;
             immediate.push(format!("完成 Phase {} 的剩余任务", current_phase));
-            
+
             if current_phase < 7 {
-                short_term.push(format!("开始 Phase {} - {}", 
-                    current_phase + 1, 
+                short_term.push(format!(
+                    "开始 Phase {} - {}",
+                    current_phase + 1,
                     crate::status::get_phase_name(current_phase + 1)
                 ));
             }
         }
-        
+
         // 未完成的任务
         let pending_tasks: Vec<_> = state
             .tasks
@@ -289,18 +293,18 @@ impl NextSteps {
             .filter(|t| t.status != crate::state::Status::Completed)
             .take(3)
             .collect();
-        
+
         for task in pending_tasks {
             immediate.push(format!("{}: {}", task.id, task.description));
         }
-        
+
         // 长期目标
         let long_term = vec![
             "完成所有 7 个阶段".to_string(),
             "生成 Pull Request".to_string(),
             "合并到主分支".to_string(),
         ];
-        
+
         Self {
             immediate,
             short_term,

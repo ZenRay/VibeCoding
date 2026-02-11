@@ -1,9 +1,15 @@
 //! 集成测试
 //!
-//! 这些测试需要实际的 API 密钥,默认被忽略。
-//! 运行方式: `cargo test --test integration_test -- --ignored`
+//! 包含两类测试:
+//! - 完整流程测试: 无需 API 密钥,验证多个模块协同工作
+//! - API 测试: 需要 ANTHROPIC_API_KEY,默认被忽略
+//!   运行方式: `cargo test --test integration_test -- --ignored`
 
-use ca_core::{Agent, AgentRequest, ClaudeAgent};
+use ca_core::{
+    Agent, AgentConfig, AgentFactory, AgentRequest, ClaudeAgent, Config, ExecutionEngine,
+    KeywordMatcher, Repository, StateManager,
+};
+use std::sync::Arc;
 
 /// 从环境变量获取 API key
 fn get_api_key() -> Option<String> {
@@ -36,14 +42,11 @@ async fn test_claude_agent_simple_query() {
         "What is 2 + 2? Answer with just the number.".to_string(),
     );
 
-    let response = agent
-        .execute(request)
-        .await
-        .expect("Agent 执行失败");
+    let response = agent.execute(request).await.expect("Agent 执行失败");
 
     assert!(!response.content.is_empty(), "响应内容不应为空");
     assert!(response.content.contains('4'), "响应应包含 4");
-    
+
     println!("响应: {}", response.content);
     println!("Token 使用: {:?}", response.tokens_used);
     println!("耗时: {}ms", response.metadata.duration_ms);
@@ -72,20 +75,14 @@ async fn test_claude_agent_with_system_prompt() {
         )
         .expect("配置失败");
 
-    let request = AgentRequest::new(
-        "test-2".to_string(),
-        "What is 5 * 6?".to_string(),
-    );
+    let request = AgentRequest::new("test-2".to_string(), "What is 5 * 6?".to_string());
 
-    let response = agent
-        .execute(request)
-        .await
-        .expect("Agent 执行失败");
+    let response = agent.execute(request).await.expect("Agent 执行失败");
 
     assert!(!response.content.is_empty(), "响应内容不应为空");
     // 由于要求解释推理,响应应该比单纯的数字更长
     assert!(response.content.len() > 10, "响应应包含解释");
-    
+
     println!("响应: {}", response.content);
 }
 
@@ -108,8 +105,12 @@ async fn test_claude_agent_validation() {
 
 #[tokio::test]
 async fn test_claude_agent_invalid_key() {
-    let agent = ClaudeAgent::new("invalid-key".to_string(), "claude-3-5-sonnet-20241022".to_string(), None)
-        .expect("创建 Agent 不应失败 (只有在执行时才验证 key)");
+    let agent = ClaudeAgent::new(
+        "invalid-key".to_string(),
+        "claude-3-5-sonnet-20241022".to_string(),
+        None,
+    )
+    .expect("创建 Agent 不应失败 (只有在执行时才验证 key)");
 
     // validate 应该返回 true (因为只检查 key 不为空)
     let result = agent.validate().await;
@@ -155,6 +156,67 @@ fn test_agent_capabilities() {
     assert!(caps.supports_multimodal);
 }
 
+/// 完整流程 1: Config 加载 -> Agent 创建 -> 执行引擎初始化
+#[tokio::test]
+async fn test_flow_config_to_engine_initialization() {
+    let original_key = std::env::var("ANTHROPIC_API_KEY").ok();
+    unsafe {
+        std::env::set_var("ANTHROPIC_API_KEY", "test-key-for-integration");
+    }
+
+    let config = Config::from_env().expect("应能加载配置");
+    assert!(config.validate().is_ok());
+
+    let agent_config = AgentConfig {
+        agent_type: config.agent.agent_type,
+        api_key: config.agent.api_key,
+        model: config.agent.model,
+        api_url: config.agent.api_url,
+    };
+    let agent = AgentFactory::create(agent_config).expect("应能创建 Agent");
+    let temp_dir = tempfile::TempDir::new().unwrap();
+    let repo = Arc::new(Repository::new(temp_dir.path()).expect("应能创建 Repository"));
+
+    let engine = ExecutionEngine::new(agent, repo);
+    assert!(engine.validate().await.expect("验证不应失败"));
+
+    unsafe {
+        if let Some(key) = original_key {
+            std::env::set_var("ANTHROPIC_API_KEY", key);
+        } else {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+        }
+    }
+}
+
+/// 完整流程 2: StateManager -> 多阶段执行 -> Review 匹配
+#[test]
+fn test_flow_state_and_review_workflow() {
+    let temp_dir = tempfile::TempDir::new().unwrap();
+    let repo_path = temp_dir.path();
+
+    let mut manager =
+        StateManager::new("001-add-feature", repo_path).expect("应能创建 StateManager");
+
+    manager
+        .start_phase(1, "Build Observer".to_string())
+        .unwrap();
+    manager.start_phase(2, "Build Plan".to_string()).unwrap();
+    manager
+        .checkpoint("after_planning", "Plan completed".to_string())
+        .unwrap();
+
+    assert!(manager.can_resume());
+    assert_eq!(manager.state().phases.len(), 2);
+
+    let matcher = KeywordMatcher::for_review();
+    let approved_output = "Code review complete.\n\n**APPROVED**";
+    let needs_changes_output = "Issues found.\n\nVerdict: NEEDS_CHANGES";
+
+    assert_eq!(matcher.check(approved_output), Some(true));
+    assert_eq!(matcher.check(needs_changes_output), Some(false));
+}
+
 #[tokio::test]
 #[ignore = "需要 ANTHROPIC_API_KEY 环境变量 + 预算控制测试"]
 async fn test_claude_agent_with_budget() {
@@ -172,9 +234,9 @@ async fn test_claude_agent_with_budget() {
         .configure(
             None,
             None,
-            Some(3), // 最多 3 轮
+            Some(3),    // 最多 3 轮
             Some(0.10), // 最多 $0.10
-            None, // permission_mode
+            None,       // permission_mode
         )
         .expect("配置失败");
 
@@ -183,13 +245,10 @@ async fn test_claude_agent_with_budget() {
         "Tell me a short joke.".to_string(),
     );
 
-    let response = agent
-        .execute(request)
-        .await
-        .expect("Agent 执行失败");
+    let response = agent.execute(request).await.expect("Agent 执行失败");
 
     assert!(!response.content.is_empty(), "响应内容不应为空");
-    
+
     println!("响应: {}", response.content);
     println!("预算测试完成");
 }

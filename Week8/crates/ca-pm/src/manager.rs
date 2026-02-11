@@ -342,13 +342,9 @@ Please provide:
     ) -> Result<(Option<String>, String)> {
         // 渲染 system prompt (如果有)
         let system = if let Some(ref tmpl) = task.system_template {
-            Some(
-                self.renderer
-                    .render_str(tmpl, context)
-                    .map_err(|e| {
-                        PromptError::Template(format!("Failed to render system.jinja: {}", e))
-                    })?,
-            )
+            Some(self.renderer.render_str(tmpl, context).map_err(|e| {
+                PromptError::Template(format!("Failed to render system.jinja: {}", e))
+            })?)
         } else {
             None
         };
@@ -538,10 +534,12 @@ max_budget_usd: 3.5
 
         // 应该返回错误
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("user.jinja not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("user.jinja not found")
+        );
     }
 
     #[test]

@@ -1,3 +1,8 @@
+//! Agent 抽象层
+//!
+//! 定义统一的 Agent trait,支持 Claude、Copilot、Cursor 等多 SDK。
+//! 提供 AgentFactory 根据配置创建实例。
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -21,10 +26,10 @@ impl AgentType {
     pub fn env_var_names(&self) -> Vec<&'static str> {
         match self {
             Self::Claude => vec![
-                "ANTHROPIC_API_KEY",       // 官方标准
-                "CLAUDE_API_KEY",          // 常见别名
-                "ANTHROPIC_AUTH_TOKEN",    // OpenRouter
-                "OPENROUTER_API_KEY",      // OpenRouter 别名
+                "ANTHROPIC_API_KEY",    // 官方标准
+                "CLAUDE_API_KEY",       // 常见别名
+                "ANTHROPIC_AUTH_TOKEN", // OpenRouter
+                "OPENROUTER_API_KEY",   // OpenRouter 别名
             ],
             Self::Copilot => vec!["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
             Self::Cursor => vec!["CURSOR_API_KEY"],
@@ -247,7 +252,7 @@ pub use claude::ClaudeAgent;
 pub struct AgentFactory;
 
 impl AgentFactory {
-    /// 创建 Agent 实例 (返回 Arc<dyn Agent> 用于共享所有权)
+    /// 创建 Agent 实例 (返回 `Arc<dyn Agent>` 用于共享所有权)
     pub fn create(config: AgentConfig) -> Result<Arc<dyn Agent>> {
         match config.agent_type {
             AgentType::Claude => {

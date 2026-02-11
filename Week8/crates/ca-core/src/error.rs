@@ -28,6 +28,9 @@ pub enum CoreError {
 
     #[error("Other error: {0}")]
     Other(#[from] anyhow::Error),
+
+    #[error("Worktree error: {0}")]
+    Worktree(String),
 }
 
 pub type Result<T> = std::result::Result<T, CoreError>;

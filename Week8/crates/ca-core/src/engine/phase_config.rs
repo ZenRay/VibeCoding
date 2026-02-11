@@ -60,10 +60,10 @@ impl Phase {
         match self {
             // 只读阶段: Plan (相当于 ReadOnly)
             Self::Observer | Self::Planning | Self::Review | Self::Verification => "Plan",
-            
+
             // 执行阶段: AcceptEdits (自动接受编辑)
             Self::ExecutePhase3 | Self::ExecutePhase4 | Self::Fix => "AcceptEdits",
-            
+
             // 初始化和规划阶段: AcceptEdits
             Self::Init | Self::Plan => "AcceptEdits",
         }
@@ -207,7 +207,7 @@ impl SystemPromptComponent {
     /// 获取模板目录路径
     fn get_template_dir() -> Result<std::path::PathBuf> {
         // 尝试多种方式查找模板目录
-        
+
         // 1. 环境变量 CA_TEMPLATE_DIR
         if let Ok(template_dir) = std::env::var("CA_TEMPLATE_DIR") {
             let path = std::path::PathBuf::from(template_dir);
@@ -233,8 +233,8 @@ impl SystemPromptComponent {
         }
 
         // 4. 使用编译时的路径 (仅用于开发)
-        let compile_time_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../ca-pm/templates");
+        let compile_time_path =
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../ca-pm/templates");
         if compile_time_path.exists() {
             return Ok(compile_time_path);
         }

@@ -11,13 +11,13 @@ use std::sync::Arc;
 pub trait StateHook: Send + Sync {
     /// Phase 开始时调用
     fn on_phase_start(&self, state: &FeatureState, phase: u8) -> Result<()>;
-    
+
     /// Phase 完成时调用
     fn on_phase_complete(&self, state: &FeatureState, phase: u8) -> Result<()>;
-    
+
     /// 任务完成时调用
     fn on_task_complete(&self, state: &FeatureState, task_id: &str) -> Result<()>;
-    
+
     /// 错误记录时调用
     fn on_error_recorded(&self, state: &FeatureState) -> Result<()>;
 }
@@ -36,7 +36,7 @@ impl StatusDocumentHook {
             spec_content,
         }
     }
-    
+
     /// 获取 status.md 文件路径
     fn get_status_path(&self, feature_slug: &str) -> PathBuf {
         self.specs_dir.join(feature_slug).join("status.md")
@@ -46,66 +46,66 @@ impl StatusDocumentHook {
 impl StateHook for StatusDocumentHook {
     fn on_phase_start(&self, state: &FeatureState, phase: u8) -> Result<()> {
         let status_path = self.get_status_path(&state.feature.slug);
-        
+
         // 加载或创建 status.md
         let mut doc = StatusDocument::load_or_create(&status_path, state, &self.spec_content)?;
-        
+
         // 更新当前阶段信息
         let phase_name = get_phase_name(phase);
         doc.update_current_phase(phase, &phase_name);
-        
+
         // 添加变更记录
         doc.add_change_log(ChangeLogEntry {
             timestamp: Utc::now(),
             message: format!("开始 Phase {} - {}", phase, phase_name),
         });
-        
+
         // 保存
         doc.save(&status_path)?;
-        
+
         tracing::debug!("Status hook: phase {} started", phase);
         Ok(())
     }
-    
+
     fn on_phase_complete(&self, state: &FeatureState, phase: u8) -> Result<()> {
         let status_path = self.get_status_path(&state.feature.slug);
-        
+
         // 加载或创建 status.md
         let mut doc = StatusDocument::load_or_create(&status_path, state, &self.spec_content)?;
-        
+
         // 查找对应的 phase state
         if let Some(phase_state) = state.phases.iter().find(|p| p.phase == phase) {
             // 更新阶段完成状态
             doc.update_phase_status(phase, phase_state);
         }
-        
+
         // 更新成本统计
         doc.update_cost_summary(&state.cost_summary);
-        
+
         // 更新进度百分比
         let progress = calculate_progress(state);
         doc.update_overall_progress(progress);
-        
+
         // 添加变更记录
         let phase_name = get_phase_name(phase);
         doc.add_change_log(ChangeLogEntry {
             timestamp: Utc::now(),
             message: format!("完成 Phase {} - {}", phase, phase_name),
         });
-        
+
         // 保存
         doc.save(&status_path)?;
-        
+
         tracing::debug!("Status hook: phase {} completed", phase);
         Ok(())
     }
-    
+
     fn on_task_complete(&self, state: &FeatureState, task_id: &str) -> Result<()> {
         let status_path = self.get_status_path(&state.feature.slug);
-        
+
         // 加载或创建 status.md
         let mut doc = StatusDocument::load_or_create(&status_path, state, &self.spec_content)?;
-        
+
         // 查找任务
         if let Some(task) = state.tasks.iter().find(|t| t.id == task_id) {
             // 添加变更记录
@@ -113,41 +113,41 @@ impl StateHook for StatusDocumentHook {
                 timestamp: Utc::now(),
                 message: format!("完成任务: {} - {}", task_id, task.description),
             });
-            
+
             // 更新进度
             let progress = calculate_progress(state);
             doc.update_overall_progress(progress);
         }
-        
+
         // 保存
         doc.save(&status_path)?;
-        
+
         tracing::debug!("Status hook: task {} completed", task_id);
         Ok(())
     }
-    
+
     fn on_error_recorded(&self, state: &FeatureState) -> Result<()> {
         let status_path = self.get_status_path(&state.feature.slug);
-        
+
         // 加载或创建 status.md
         let mut doc = StatusDocument::load_or_create(&status_path, state, &self.spec_content)?;
-        
+
         // 获取最新的错误
         if let Some(error) = state.errors.last() {
             // 转换为 Issue 并添加
             let issue = crate::status::Issue::from_execution_error(error);
             doc.add_issue(issue);
-            
+
             // 添加变更记录
             doc.add_change_log(ChangeLogEntry {
                 timestamp: Utc::now(),
                 message: format!("记录错误: {} (Phase {})", error.error_type, error.phase),
             });
         }
-        
+
         // 保存
         doc.save(&status_path)?;
-        
+
         tracing::debug!("Status hook: error recorded");
         Ok(())
     }
@@ -156,7 +156,7 @@ impl StateHook for StatusDocumentHook {
 /// 计算整体进度百分比
 fn calculate_progress(state: &FeatureState) -> u8 {
     use crate::state::Status;
-    
+
     // 基于阶段完成情况计算
     let total_phases = 7u32;
     let completed_phases = state
@@ -164,7 +164,7 @@ fn calculate_progress(state: &FeatureState) -> u8 {
         .iter()
         .filter(|p| p.status == Status::Completed)
         .count() as u32;
-    
+
     // 基于任务完成情况计算
     let total_tasks = state.tasks.len() as u32;
     let completed_tasks = state
@@ -172,20 +172,20 @@ fn calculate_progress(state: &FeatureState) -> u8 {
         .iter()
         .filter(|t| t.status == Status::Completed)
         .count() as u32;
-    
+
     // 综合计算 (70% 来自阶段, 30% 来自任务)
     let phase_progress = if total_phases > 0 {
         (completed_phases * 100 / total_phases) as u8
     } else {
         0
     };
-    
+
     let task_progress = if total_tasks > 0 {
         (completed_tasks * 100 / total_tasks) as u8
     } else {
         0
     };
-    
+
     ((phase_progress as u32 * 70 + task_progress as u32 * 30) / 100) as u8
 }
 
@@ -214,12 +214,12 @@ impl HookRegistry {
     pub fn new() -> Self {
         Self { hooks: Vec::new() }
     }
-    
+
     /// 添加 Hook
     pub fn add(&mut self, hook: Arc<dyn StateHook>) {
         self.hooks.push(hook);
     }
-    
+
     /// 触发所有 hooks: phase start
     pub fn trigger_phase_start(&self, state: &FeatureState, phase: u8) {
         for hook in &self.hooks {
@@ -228,7 +228,7 @@ impl HookRegistry {
             }
         }
     }
-    
+
     /// 触发所有 hooks: phase complete
     pub fn trigger_phase_complete(&self, state: &FeatureState, phase: u8) {
         for hook in &self.hooks {
@@ -237,7 +237,7 @@ impl HookRegistry {
             }
         }
     }
-    
+
     /// 触发所有 hooks: task complete
     pub fn trigger_task_complete(&self, state: &FeatureState, task_id: &str) {
         for hook in &self.hooks {
@@ -246,7 +246,7 @@ impl HookRegistry {
             }
         }
     }
-    
+
     /// 触发所有 hooks: error recorded
     pub fn trigger_error_recorded(&self, state: &FeatureState) {
         for hook in &self.hooks {
@@ -268,25 +268,22 @@ mod tests {
     use super::*;
     use crate::state::{FeatureState, PhaseState, Status};
     use tempfile::TempDir;
-    
+
     #[test]
     fn test_status_document_hook() {
         let temp_dir = TempDir::new().unwrap();
         let specs_dir = temp_dir.path().join("specs");
         std::fs::create_dir_all(&specs_dir).unwrap();
-        
-        let hook = StatusDocumentHook::new(
-            specs_dir.clone(),
-            "## 概述\n测试功能".to_string(),
-        );
-        
+
+        let hook = StatusDocumentHook::new(specs_dir.clone(), "## 概述\n测试功能".to_string());
+
         let mut state = FeatureState::new(
             "test-feature".to_string(),
             "Test Feature".to_string(),
             "Claude".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
         );
-        
+
         // 模拟 phase start
         state.phases.push(PhaseState {
             phase: 1,
@@ -298,18 +295,18 @@ mod tests {
             cost: None,
             result: None,
         });
-        
+
         hook.on_phase_start(&state, 1).unwrap();
-        
+
         // 检查 status.md 是否创建
         let status_path = specs_dir.join("test-feature").join("status.md");
         assert!(status_path.exists());
-        
+
         let content = std::fs::read_to_string(status_path).unwrap();
         assert!(content.contains("功能开发状态"));
         assert!(content.contains("test-feature"));
     }
-    
+
     #[test]
     fn test_progress_calculation() {
         let mut state = FeatureState::new(
@@ -318,10 +315,10 @@ mod tests {
             "Claude".to_string(),
             "claude-3-5-sonnet-20241022".to_string(),
         );
-        
+
         // 无阶段和任务
         assert_eq!(calculate_progress(&state), 0);
-        
+
         // 添加完成的阶段
         state.phases.push(PhaseState {
             phase: 1,
@@ -333,7 +330,7 @@ mod tests {
             cost: None,
             result: None,
         });
-        
+
         // 1/7 完成 ≈ 10% (70% 权重)
         let progress = calculate_progress(&state);
         assert!(progress >= 9 && progress <= 11);

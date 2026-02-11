@@ -1,3 +1,8 @@
+//! 仓库文件操作模块
+//!
+//! 提供文件列举、过滤、读写能力,遵循 .gitignore 规则。
+//! 使用 `ignore` crate 实现 gitignore 兼容。
+
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -280,17 +285,19 @@ impl Repository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
 
     #[test]
-    fn test_glob_match() {
+    fn test_should_glob_match_patterns() {
         assert!(glob_match("*.rs", "test.rs"));
         assert!(glob_match("test_*.rs", "test_foo.rs"));
         assert!(glob_match("*test*", "my_test_file"));
         assert!(!glob_match("*.rs", "test.txt"));
+        assert!(glob_match("exact", "exact"));
     }
 
     #[test]
-    fn test_file_filter() {
+    fn test_should_filter_by_extension_and_size() {
         let filter = FileFilter::new()
             .with_extensions(vec!["rs".to_string()])
             .with_size_range(Some(100), Some(10000));
@@ -301,7 +308,104 @@ mod tests {
             is_dir: false,
             extension: Some("rs".to_string()),
         };
-
         assert!(filter.matches(&file));
+
+        let small_file = FileInfo {
+            path: PathBuf::from("test.rs"),
+            size: 50,
+            is_dir: false,
+            extension: Some("rs".to_string()),
+        };
+        assert!(!filter.matches(&small_file));
+    }
+
+    #[test]
+    fn test_should_reject_directory_for_repo() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = Repository::new(temp_dir.path());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_should_reject_nonexistent_path() {
+        let result = Repository::new("/nonexistent/path/12345");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_should_list_files_respecting_gitignore() {
+        let temp_dir = TempDir::new().unwrap();
+        std::fs::write(temp_dir.path().join("main.rs"), "fn main() {}").unwrap();
+        std::fs::write(temp_dir.path().join("lib.rs"), "pub fn foo() {}").unwrap();
+        std::fs::create_dir(temp_dir.path().join("target")).unwrap();
+        std::fs::write(temp_dir.path().join(".gitignore"), "target/\n*.swp").unwrap();
+
+        let repo = Repository::new(temp_dir.path()).unwrap();
+        let files = repo.list_files().unwrap();
+        let paths: Vec<_> = files.iter().map(|f| f.path.to_string_lossy()).collect();
+        assert!(
+            paths.iter().any(|p| p.contains("main.rs")),
+            "Should include main.rs, got: {:?}",
+            paths
+        );
+        assert!(
+            !paths.iter().any(|p| p.contains("target/") || p == "target"),
+            "Should exclude target via .gitignore, got: {:?}",
+            paths
+        );
+    }
+
+    #[test]
+    fn test_should_filter_by_extension() {
+        let temp_dir = TempDir::new().unwrap();
+        std::fs::write(temp_dir.path().join("main.rs"), "fn main() {}").unwrap();
+        std::fs::write(temp_dir.path().join("readme.md"), "# Readme").unwrap();
+
+        let repo = Repository::new(temp_dir.path()).unwrap();
+        let rs_files = repo.files_by_extension("rs").unwrap();
+        assert!(
+            rs_files
+                .iter()
+                .any(|f| f.path.to_string_lossy().contains("main.rs")),
+            "Should include rs files"
+        );
+        assert!(
+            !rs_files
+                .iter()
+                .any(|f| f.path.to_string_lossy().contains("readme")),
+            "Should exclude md files"
+        );
+    }
+
+    #[test]
+    fn test_should_read_and_write_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo = Repository::new(temp_dir.path()).unwrap();
+
+        repo.write_file("test.txt", "hello world").unwrap();
+        let content = repo.read_file("test.txt").unwrap();
+        assert_eq!(content, "hello world");
+    }
+
+    #[test]
+    fn test_should_check_file_exists() {
+        let temp_dir = TempDir::new().unwrap();
+        std::fs::write(temp_dir.path().join("exists.txt"), "").unwrap();
+        let repo = Repository::new(temp_dir.path()).unwrap();
+
+        assert!(repo.file_exists("exists.txt"));
+        assert!(!repo.file_exists("nonexistent.txt"));
+    }
+
+    #[test]
+    fn test_should_exclude_directories_from_filter_matches() {
+        let filter = FileFilter::new().with_extensions(vec!["rs".to_string()]);
+        let dir_info = FileInfo {
+            path: PathBuf::from("src"),
+            size: 0,
+            is_dir: true,
+            extension: None,
+        };
+        assert!(!filter.matches(&dir_info));
     }
 }

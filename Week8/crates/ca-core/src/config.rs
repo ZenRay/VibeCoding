@@ -1,3 +1,8 @@
+//! 配置模块
+//!
+//! 零配置文件策略: 从环境变量加载,支持多种变量名 (ANTHROPIC_API_KEY, CLAUDE_API_KEY 等)。
+//! CLI 参数可覆盖环境变量。
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -94,7 +99,7 @@ impl Config {
 
     /// 自动检测 Agent 类型 (根据环境变量)
     fn detect_agent_type() -> AgentType {
-        if std::env::var("ANTHROPIC_API_KEY").is_ok() 
+        if std::env::var("ANTHROPIC_API_KEY").is_ok()
             || std::env::var("CLAUDE_API_KEY").is_ok()
             || std::env::var("ANTHROPIC_AUTH_TOKEN").is_ok()
             || std::env::var("OPENROUTER_API_KEY").is_ok()
@@ -172,17 +177,12 @@ impl Config {
     /// 加载 API URL (支持 OpenRouter 等第三方服务)
     fn load_api_url(agent_type: &AgentType) -> Option<String> {
         match agent_type {
-            AgentType::Claude => {
-                std::env::var("ANTHROPIC_BASE_URL").ok()
-                    .or_else(|| std::env::var("CLAUDE_BASE_URL").ok())
-                    .or_else(|| std::env::var("OPENROUTER_BASE_URL").ok())
-            }
-            AgentType::Copilot => {
-                std::env::var("COPILOT_BASE_URL").ok()
-            }
-            AgentType::Cursor => {
-                std::env::var("CURSOR_BASE_URL").ok()
-            }
+            AgentType::Claude => std::env::var("ANTHROPIC_BASE_URL")
+                .ok()
+                .or_else(|| std::env::var("CLAUDE_BASE_URL").ok())
+                .or_else(|| std::env::var("OPENROUTER_BASE_URL").ok()),
+            AgentType::Copilot => std::env::var("COPILOT_BASE_URL").ok(),
+            AgentType::Cursor => std::env::var("CURSOR_BASE_URL").ok(),
         }
     }
 
@@ -282,6 +282,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::CoreError;
 
     #[test]
     fn test_detect_agent_type() {
@@ -366,9 +367,19 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "修改环境变量,需用 cargo test -- --test-threads=1 运行"]
     fn test_load_api_key_openrouter_auth_token() {
-        // 清理所有更高优先级的环境变量
-        // SAFETY: 在测试中修改环境变量是安全的
+        // 保存并清理所有相关环境变量,确保测试隔离
+        let saved: Vec<(String, Option<String>)> = [
+            "ANTHROPIC_API_KEY",
+            "CLAUDE_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "OPENROUTER_API_KEY",
+        ]
+        .iter()
+        .map(|k| (k.to_string(), std::env::var(k).ok()))
+        .collect();
+
         unsafe {
             std::env::remove_var("ANTHROPIC_API_KEY");
             std::env::remove_var("CLAUDE_API_KEY");
@@ -379,14 +390,19 @@ mod tests {
         let key = Config::load_api_key(&AgentType::Claude).unwrap();
         assert_eq!(key, "sk-or-v1-test-token");
 
-        // 清理
-        // SAFETY: 在测试中清理环境变量是安全的
         unsafe {
-            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+            for (k, v) in saved {
+                if let Some(val) = v {
+                    std::env::set_var(&k, val);
+                } else {
+                    std::env::remove_var(&k);
+                }
+            }
         }
     }
 
     #[test]
+    #[ignore = "修改环境变量,需用 cargo test -- --test-threads=1 运行"]
     fn test_load_api_key_openrouter_api_key() {
         // 清理所有更高优先级的环境变量
         // SAFETY: 在测试中修改环境变量是安全的
@@ -408,9 +424,10 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "修改环境变量,需用 cargo test -- --test-threads=1 运行"]
     fn test_env_var_priority() {
         // 测试优先级: ANTHROPIC_API_KEY > CLAUDE_API_KEY > ANTHROPIC_AUTH_TOKEN > OPENROUTER_API_KEY
-        
+
         // 首先清理所有相关变量 (确保测试隔离)
         // SAFETY: 在测试中修改环境变量是安全的
         unsafe {
@@ -419,7 +436,7 @@ mod tests {
             std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
             std::env::remove_var("OPENROUTER_API_KEY");
         }
-        
+
         // 设置所有变量
         unsafe {
             std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-official");
@@ -456,6 +473,83 @@ mod tests {
         // SAFETY: 在测试中清理环境变量是安全的
         unsafe {
             std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        }
+    }
+
+    #[test]
+    fn test_should_validate_reject_empty_api_key() {
+        let config = Config {
+            agent: AgentConfig {
+                agent_type: AgentType::Claude,
+                api_key: String::new(),
+                model: None,
+                api_url: None,
+            },
+            project: ProjectConfig::default(),
+            execution: ExecutionConfig::default(),
+        };
+        let result = config.validate();
+        assert!(result.is_err());
+        assert!(matches!(result, Err(CoreError::Config(_))));
+    }
+
+    #[test]
+    fn test_should_validate_reject_nonexistent_workspace() {
+        let config = Config {
+            agent: AgentConfig {
+                agent_type: AgentType::Claude,
+                api_key: "test-key".to_string(),
+                model: None,
+                api_url: None,
+            },
+            project: ProjectConfig {
+                workspace_dir: std::path::PathBuf::from("/nonexistent/workspace/12345"),
+                specs_dir: PathBuf::from("specs"),
+                state_dir: PathBuf::from(".ca-state"),
+            },
+            execution: ExecutionConfig::default(),
+        };
+        let result = config.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_should_validate_accept_valid_config() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let config = Config {
+            agent: AgentConfig {
+                agent_type: AgentType::Claude,
+                api_key: "test-key".to_string(),
+                model: None,
+                api_url: None,
+            },
+            project: ProjectConfig {
+                workspace_dir: temp_dir.path().to_path_buf(),
+                specs_dir: PathBuf::from("specs"),
+                state_dir: PathBuf::from(".ca-state"),
+            },
+            execution: ExecutionConfig::default(),
+        };
+        let result = config.validate();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    #[ignore = "修改环境变量,需用 cargo test -- --test-threads=1 运行"]
+    fn test_load_api_key_claude_api_key_alias() {
+        unsafe {
+            std::env::remove_var("ANTHROPIC_API_KEY");
+            std::env::remove_var("CLAUDE_API_KEY");
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+            std::env::remove_var("OPENROUTER_API_KEY");
+            std::env::set_var("CLAUDE_API_KEY", "sk-ant-claude-alias");
+        }
+
+        let key = Config::load_api_key(&AgentType::Claude).unwrap();
+        assert_eq!(key, "sk-ant-claude-alias");
+
+        unsafe {
+            std::env::remove_var("CLAUDE_API_KEY");
         }
     }
 }

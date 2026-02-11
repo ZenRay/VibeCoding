@@ -108,10 +108,13 @@ pub enum TuiEvent {
     /// 完成
     Complete,
     /// 统计更新 (轮次、成本等)
-    StatsUpdate {
-        turns: u32,
-        cost_usd: f64,
-    },
+    StatsUpdate { turns: u32, cost_usd: f64 },
+    /// Phase 开始 (phase_num, name) - 用于 Run TUI
+    PhaseStart(u8, String),
+    /// Phase 完成
+    PhaseComplete(u8),
+    /// Phase 失败 (phase_num, error)
+    PhaseFailed(u8, String),
 }
 
 /// TUI 事件处理器
@@ -211,7 +214,7 @@ mod tests {
     #[test]
     fn test_event_handler_trait_object() {
         let handler: Box<dyn EventHandler> = Box::new(CliEventHandler::new());
-        
+
         // 测试 trait object 可以正常使用
         let _ = handler;
     }
