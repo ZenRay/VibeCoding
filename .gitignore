@@ -110,6 +110,18 @@ coverage.xml
 *.tmp
 *.temp
 .cache/
+
+# Rust
+**/target/
+**/Cargo.lock
+**/*.rs.bk
+**/.cargo/
+
+# Tauri
+**/**/gen/
+**/WixTools/
+
+# Code Agent
 .cursor/plans/监控系统配置_70b34b18.plan.md
 Week2/frontend/test-results/*
 archive/*

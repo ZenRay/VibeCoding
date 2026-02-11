@@ -22,7 +22,7 @@ VibeCoding/
 │   ├── frontend/               # React + Vite
 │   └── README.md
 │
-├── Week3/                      # Week3: ScribeFlow 语音听写系统 🔥
+├── Week3/                      # Week3: ScribeFlow 语音听写系统
 │   ├── .specify/               # 项目工具和模板
 │   │   ├── memory/constitution.md
 │   │   ├── scripts/
@@ -33,6 +33,22 @@ VibeCoding/
 │   ├── src/                    # React 前端
 │   ├── CLAUDE.md               # Week3 本地 Agent 配置
 │   ├── PROJECT_STRUCTURE.md    # 详细路径指南
+│   └── README.md
+│
+├── Week5/                      # Week5: PostgreSQL MCP Server
+│   ├── src/postgres_mcp/       # Python 主包
+│   ├── tests/                  # 测试套件
+│   ├── config/                 # 配置文件
+│   └── README.md
+│
+├── Week8/                      # Week8: Code Agent 🔥 NEW
+│   ├── crates/                 # Rust Workspace
+│   │   ├── ca-core/            # 核心执行引擎
+│   │   └── ca-pm/              # Prompt 管理器
+│   ├── apps/                   # CLI 应用
+│   │   └── ca-cli/             # 命令行界面
+│   ├── docs/                   # 文档
+│   ├── CONTRIBUTING.md         # 贡献指南
 │   └── README.md
 │
 ├── specs/                      # 所有功能的规范文档
@@ -61,10 +77,50 @@ VibeCoding/
 | **[Week2](./Week2)** | FastAPI + React + MySQL | ✅ 完成 | 数据库查询工具 (支持 MySQL + 导出功能) |
 | **[Week3](./Week3)** | Rust + Tauri v2 + React | ✅ 完成 | ScribeFlow 桌面实时语音听写系统 |
 | **[Week5](./Week5)** | Python + FastMCP + PostgreSQL | ✅ 完成 | PostgreSQL MCP Server - 自然语言查询数据库 |
+| **[Week8](./Week8)** | Rust 2024 + Claude SDK | 🔥 **NEW** | Code Agent - AI 辅助编程工具 |
 
 ## 快速开始
 
-### Week5 - PostgreSQL MCP Server (最新) 🔥
+### Week8 - Code Agent (最新) 🔥
+
+**AI 辅助编程工具** - 统一的 AI Agent SDK 封装工具，让 AI 帮你写代码。
+
+```bash
+cd Week8
+
+# 构建
+cargo build --release
+
+# 安装到系统
+cargo install --path apps/ca-cli
+
+# 初始化项目
+code-agent init
+
+# 交互式规划功能
+code-agent plan add-user-auth --interactive
+
+# 执行开发
+code-agent run add-user-auth
+
+# 查看状态
+code-agent status add-user-auth
+```
+
+**核心特性**:
+- 🤖 多 Agent 支持 (Claude, Cursor, Copilot)
+- 🎨 交互式 TUI (Plan & Run 命令)
+- 🌳 Git Worktree 自动隔离
+- 🔄 断点续传支持
+- 📊 自动状态追踪
+- 🔍 智能 Review 循环
+- 📝 13 个内置 Prompt 模板
+
+**文档**: 见 [Week8/README.md](./Week8/README.md) 和 [Week8/CONTRIBUTING.md](./Week8/CONTRIBUTING.md)
+
+---
+
+### Week5 - PostgreSQL MCP Server
 
 **自然语言到 SQL 查询服务器** - 通过 Model Context Protocol (MCP) 使用中英文自然语言查询 PostgreSQL 数据库。
 
