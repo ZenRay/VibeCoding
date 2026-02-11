@@ -1,0 +1,228 @@
+# {PROJECT_NAME} - AI Development Documentation
+
+> **Managed by Code Agent** | Last updated: {DATE}
+
+---
+
+## What is this file?
+
+This is a CLAUDE.md file that provides Claude with project-specific context. It helps AI assistants understand your codebase structure, conventions, and workflows without needing to repeat this information in every conversation.
+
+**Reference**: [Claude Code Best Practices](https://docs.anthropic.com/en/docs/claude-code/best-practices)
+
+---
+
+## Project Overview
+
+**Purpose**: [Brief description of what this project does]
+
+**Tech Stack**:
+- Language: [e.g., Rust, Python, TypeScript]
+- Framework: [e.g., Tokio, FastAPI, React]
+- Database: [e.g., PostgreSQL, Redis]
+- Key Dependencies: [List major dependencies]
+
+**Target Users**: [Who uses this project?]
+
+---
+
+## Project Structure
+
+```
+project-root/
+├── src/              # Source code
+│   ├── main/         # Main application logic
+│   ├── lib/          # Library code
+│   └── tests/        # Test files
+├── specs/            # Code Agent feature specifications (auto-generated)
+│   └── 001-*/        # Individual feature directories
+├── docs/             # Documentation
+├── config/           # Configuration files
+└── CLAUDE.md         # This file
+```
+
+### Key Directories
+
+- **`src/`**: [Explanation of source code organization]
+- **`specs/`**: Feature specifications managed by Code Agent (DO NOT manually edit)
+- **`tests/`**: [Test organization and conventions]
+- **`docs/`**: [Documentation structure]
+
+---
+
+## Development Workflows
+
+### Getting Started
+
+```bash
+# Setup environment
+[installation commands]
+
+# Run the project
+[run commands]
+
+# Run tests
+[test commands]
+```
+
+### Common Commands
+
+```bash
+# Development
+[dev commands]
+
+# Build
+[build commands]
+
+# Test
+[test commands with important flags]
+
+# Lint
+[lint commands]
+```
+
+### How to Verify Changes
+
+1. [Step-by-step verification process]
+2. [Important checks before committing]
+3. [How to run integration tests]
+
+---
+
+## Coding Standards
+
+### Code Style
+
+- **Naming Conventions**: [e.g., snake_case for functions, PascalCase for types]
+- **File Organization**: [How to organize new files]
+- **Import Order**: [Conventions for imports/use statements]
+- **Documentation**: [When and how to write comments/docstrings]
+
+### Best Practices
+
+- [Key practice 1]
+- [Key practice 2]
+- [Key practice 3]
+
+### Common Patterns
+
+**Pattern**: [Common code pattern in this codebase]
+```
+[Code example showing the pattern]
+```
+
+---
+
+## Testing Requirements
+
+- **Unit Tests**: [Requirements and conventions]
+- **Integration Tests**: [Requirements and location]
+- **Test Coverage**: [Expected coverage thresholds]
+- **Test Data**: [How to manage test fixtures/data]
+
+---
+
+## Git Workflow
+
+### Branch Naming
+
+- Feature branches: `feature/<id>-<slug>`
+- Bug fixes: `fix/<issue-id>-<description>`
+- Hotfixes: `hotfix/<issue-id>-<description>`
+
+### Commit Messages
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types**: feat, fix, docs, style, refactor, test, chore
+
+### PR Requirements
+
+- [ ] All tests passing
+- [ ] Code review approved
+- [ ] Documentation updated
+- [ ] Changelog updated (if applicable)
+
+---
+
+## Code Agent Integration
+
+This project uses **Code Agent** for AI-assisted feature development.
+
+### Active Features
+
+_Features managed by Code Agent will be listed here automatically_
+
+### Completed Features
+
+_Completed features will be archived here_
+
+### Usage
+
+```bash
+# Plan a new feature
+code-agent plan <feature-name>
+
+# Execute feature development
+code-agent run <feature-name>
+
+# Check feature status
+code-agent feature status <feature-name>
+
+# List all features
+code-agent feature list
+```
+
+---
+
+## Project-Specific Notes
+
+### Important Constraints
+
+- [Critical constraint 1]
+- [Critical constraint 2]
+
+### Known Issues
+
+- [Known issue 1 and workaround]
+- [Known issue 2 and workaround]
+
+### External Dependencies
+
+- [External service 1]: [What it does, how to access]
+- [External service 2]: [What it does, how to access]
+
+---
+
+## Architecture Decisions
+
+### Key Design Choices
+
+1. **[Decision topic]**: [Why this approach was chosen]
+2. **[Decision topic]**: [Why this approach was chosen]
+
+### Performance Considerations
+
+- [Key performance requirement 1]
+- [Key performance requirement 2]
+
+---
+
+## Resources
+
+- **Documentation**: [Link to main docs]
+- **API Reference**: [Link if applicable]
+- **Design Documents**: [Link to design specs]
+- **Issue Tracker**: [Link to GitHub/JIRA]
+
+---
+
+**Last Updated**: {DATE}  
+**Code Agent Version**: [Version]  
+**Maintainers**: [Team/Person responsible]

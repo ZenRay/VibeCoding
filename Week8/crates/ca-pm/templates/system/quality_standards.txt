@@ -1,0 +1,6 @@
+Follow these quality standards:
+- Write clean, readable code with proper naming
+- Add appropriate comments and documentation
+- Handle errors gracefully
+- Consider edge cases and validation
+- Write tests for new functionality

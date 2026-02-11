@@ -1,0 +1,25 @@
+# Example configuration file for Code Agent
+# Copy this to ~/.code-agent/config.toml and edit as needed
+
+[agent]
+# Agent type: "claude", "copilot", or "cursor"
+agent_type = "claude"
+
+# Your API key (required)
+api_key = ""
+
+# Optional: Custom API URL
+# api_url = "https://api.anthropic.com/v1"
+
+# Model to use
+model = "claude-3-5-sonnet-20241022"
+
+[prompt]
+# Directory containing prompt templates
+template_dir = "~/.code-agent/templates"
+
+# Default template name (without .jinja extension)
+default_template = "default"
+
+# Optional: Default repository path
+# default_repo = "/path/to/your/repo"

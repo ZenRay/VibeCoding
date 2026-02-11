@@ -1,0 +1,55 @@
+# Task: Execute Implementation - Phase 3
+
+## Context
+{% if is_resume -%}
+⚠️ **RESUMING FROM INTERRUPTION**
+
+{{ resume_context }}
+
+**Continue from where we left off.**
+{% else -%}
+Starting Phase 3 implementation.
+{% endif %}
+
+## Implementation Plan
+{{ plan }}
+
+## Tasks for Phase 3
+{{ tasks }}
+
+## Your Task
+Implement the Phase 3 tasks according to the plan.
+
+### Implementation Requirements
+1. **Code Quality** - Follow project standards, add comments
+2. **Testing** - Add unit tests for new functionality
+3. **Documentation** - Update inline docs
+4. **Compatibility** - Maintain backward compatibility
+
+## Output Format
+
+### Implementation Summary
+- What was implemented
+- Key decisions made
+- Deviations from plan (if any)
+
+### Code Changes
+For each file:
+- File path
+- Change type: create/modify/delete
+- Complete content
+- Explanation
+
+### Tests Added
+- Test file path
+- What is tested
+- Coverage
+
+## Guidelines
+- Implement exactly as planned
+- Write production-quality code
+- Include error handling
+- Add tests for all functionality
+{% if is_resume -%}
+- Continue seamlessly from previous state
+{% endif %}

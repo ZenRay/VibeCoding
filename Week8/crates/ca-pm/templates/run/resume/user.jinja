@@ -1,0 +1,42 @@
+# Task: Resume Interrupted Execution
+
+## Interruption Information
+- **Feature**: {{ feature_name }}
+- **Last Checkpoint**: {{ last_checkpoint }}
+- **Phase**: {{ current_phase }}
+
+## Resume Context
+{{ resume_context }}
+
+## Completed Phases
+{% for phase in completed_phases -%}
+- ✅ Phase {{ phase.number }}: {{ phase.name }}
+{% endfor %}
+
+## Completed Tasks
+{% for task in completed_tasks -%}
+- ✅ {{ task.id }}: {{ task.description }}
+{% endfor %}
+
+## Current Progress
+- Phase: {{ current_phase }}/7
+- Overall: {{ progress_percentage }}%
+
+## Next Steps
+{{ next_steps }}
+
+## Your Task
+**Resume execution seamlessly from where it was interrupted.**
+
+### Resume Requirements
+1. **Context Awareness** - Understand completed work
+2. **Continuity** - Same style and patterns
+3. **State Management** - Update state as you progress
+4. **Quality** - Maintain same standards
+
+## Guidelines
+- Continue from interruption point
+- Maintain consistency
+- Don't repeat completed work
+- Update state regularly
+- Provide progress indicators

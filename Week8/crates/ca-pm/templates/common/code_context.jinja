@@ -1,0 +1,34 @@
+# Code Context Template
+
+## File Information
+{% if file_path -%}
+**File**: `{{ file_path }}`
+{% endif %}
+{% if file_type -%}
+**Type**: {{ file_type }}
+{% endif %}
+
+## Code Content
+```{{ language | default("plaintext") }}
+{{ code_content }}
+```
+
+## Relevant Context
+{% if related_files -%}
+### Related Files
+{% for file in related_files %}
+- `{{ file }}`
+{% endfor %}
+{% endif %}
+
+{% if dependencies -%}
+### Dependencies
+{% for dep in dependencies %}
+- {{ dep }}
+{% endfor %}
+{% endif %}
+
+{% if notes -%}
+### Notes
+{{ notes }}
+{% endif %}

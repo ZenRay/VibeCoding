@@ -1,0 +1,25 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# User configuration
+.code-agent/
+config.toml
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.tmp

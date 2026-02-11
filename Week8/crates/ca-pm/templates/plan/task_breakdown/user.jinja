@@ -1,0 +1,70 @@
+# Task Breakdown Template
+
+## Feature Overview
+{{ feature_description }}
+
+## Project Context
+- **Project**: {{ project_info.name }}
+- **Language**: {{ project_info.primary_language }}
+{% if project_info.framework -%}
+- **Framework**: {{ project_info.framework }}
+{% endif %}
+
+## Task Breakdown Requirements
+
+Break down the feature into concrete, actionable tasks following these guidelines:
+
+### 1. Analysis Phase
+- Understand requirements
+- Identify dependencies
+- List affected components
+- Note constraints
+
+### 2. Design Phase
+- Define data models
+- Design API interfaces
+- Plan module structure
+- Document decisions
+
+### 3. Implementation Phases
+Break implementation into 2 phases:
+
+**Phase 3 (First Implementation):**
+- Core functionality
+- Basic structure
+- Essential features
+
+**Phase 4 (Second Implementation):**
+- Advanced features
+- Polish and refinement
+- Performance optimization
+- Edge case handling
+
+### 4. Testing & Validation
+- Unit tests
+- Integration tests
+- Manual testing steps
+- Validation criteria
+
+### 5. Documentation
+- Code documentation
+- API documentation
+- User documentation
+- Update existing docs
+
+## Output Format
+
+Provide a structured breakdown with:
+- Task ID
+- Task name
+- Phase assignment (3 or 4)
+- Estimated complexity (Low/Medium/High)
+- Dependencies
+- Acceptance criteria
+
+## Guidelines
+- Keep tasks focused and specific
+- Each task should be completable in one session
+- Order tasks by dependencies
+- Include testing tasks
+- Consider error handling in tasks

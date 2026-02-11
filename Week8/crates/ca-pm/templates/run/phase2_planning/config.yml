@@ -1,0 +1,9 @@
+# Phase 2: Planning Phase Configuration
+# 规划阶段配置
+
+preset: true
+tools: []
+disallowed_tools: []
+permission_mode: default
+max_turns: 20
+max_budget_usd: 4.0

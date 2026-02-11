@@ -1,0 +1,217 @@
+# Task: Feature Analysis and Planning
+
+You are analyzing a software project to create a detailed feature specification and implementation plan.
+
+## Project Information
+
+**Repository**: {{ project.repo_path }}
+**Project Name**: {{ project.name }}
+{% if project.primary_language -%}
+**Primary Language**: {{ project.primary_language }}
+{% endif -%}
+{% if project.framework -%}
+**Framework**: {{ project.framework }}
+{% endif %}
+
+## Feature Request
+
+**Feature Slug**: {{ feature_slug }}
+
+**Description**:
+{{ feature_description }}
+
+## Your Task
+
+Analyze the codebase and create comprehensive specifications for this feature.
+
+### Analysis Requirements
+
+1. **Understand Current Architecture**
+   - Review existing code structure
+   - Identify relevant modules and files
+   - Understand current patterns and conventions
+   - Identify dependencies
+
+2. **Define Feature Scope**
+   - Break down the feature into clear components
+   - Identify what's in scope and out of scope
+   - List acceptance criteria
+   - Define success metrics
+
+3. **Design Approach**
+   - Propose technical design
+   - Identify design patterns to use
+   - Consider scalability and maintainability
+   - Address potential edge cases
+
+4. **Implementation Plan**
+   - Break down into implementable tasks
+   - Identify task dependencies
+   - Estimate complexity for each task
+   - Suggest implementation order
+
+## Required Output
+
+Please create the following documents in the `specs/{{ feature_slug }}/` directory:
+
+### 1. spec.md - Feature Specification
+
+```markdown
+# Feature: [Feature Name]
+
+## Overview
+[Brief description of the feature and its purpose]
+
+## Goals
+- [Goal 1]
+- [Goal 2]
+
+## Non-Goals
+- [What this feature explicitly does NOT include]
+
+## Requirements
+
+### Functional Requirements
+1. [Requirement 1]
+2. [Requirement 2]
+
+### Non-Functional Requirements
+- Performance: [Requirements]
+- Security: [Requirements]
+- Usability: [Requirements]
+
+## Acceptance Criteria
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+
+## Success Metrics
+- [How we measure success]
+
+## Constraints and Assumptions
+- [Any constraints or assumptions]
+```
+
+### 2. design.md - Technical Design
+
+```markdown
+# Design Document: [Feature Name]
+
+## Architecture Overview
+[High-level architecture description]
+
+## Components
+
+### Component 1: [Name]
+**Purpose**: [What it does]
+**Interfaces**: [API/functions it exposes]
+**Dependencies**: [What it depends on]
+
+### Component 2: [Name]
+[Same structure]
+
+## Data Model
+[Data structures, database schema if applicable]
+
+## API Design
+[Function signatures, REST endpoints, etc.]
+
+## Security Considerations
+[Security implications and mitigations]
+
+## Performance Considerations
+[Performance implications and optimizations]
+
+## Error Handling
+[Error scenarios and handling strategy]
+
+## Testing Strategy
+[How we'll test this feature]
+```
+
+### 3. plan.md - Implementation Plan
+
+```markdown
+# Implementation Plan: [Feature Name]
+
+## Phase 1: Foundation
+**Objective**: [What Phase 1 achieves]
+
+**Tasks**:
+1. [Task 1] - Complexity: Low/Medium/High
+2. [Task 2] - Complexity: Low/Medium/High
+
+**Deliverables**: [What gets delivered]
+
+## Phase 2: Core Implementation
+[Same structure]
+
+## Phase 3: Integration & Testing
+[Same structure]
+
+## Dependencies
+- Phase 2 depends on Phase 1 completion
+- [Other dependencies]
+
+## Risk Mitigation
+- **Risk 1**: [Description] - Mitigation: [Strategy]
+- **Risk 2**: [Description] - Mitigation: [Strategy]
+
+## Rollback Plan
+[How to safely rollback if needed]
+```
+
+### 4. tasks.md - Task Breakdown
+
+```markdown
+# Task List: [Feature Name]
+
+## Phase 1 Tasks
+
+### TASK-001: [Task Name]
+**Type**: implementation | refactoring | testing | documentation
+**Priority**: P0 (Critical) | P1 (High) | P2 (Medium) | P3 (Low)
+**Complexity**: Low | Medium | High
+**Estimated Effort**: [Hours or Story Points]
+
+**Description**: [Detailed task description]
+
+**Files to Modify**:
+- `path/to/file1.rs`
+- `path/to/file2.rs`
+
+**Dependencies**: None | TASK-XXX
+
+**Acceptance Criteria**:
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+
+**Testing Requirements**:
+- Unit tests for [component]
+- Integration tests for [scenario]
+
+---
+
+### TASK-002: [Task Name]
+[Same structure]
+
+## Phase 2 Tasks
+[Same structure]
+```
+
+## Guidelines
+
+1. **Be Thorough**: Don't skip important details
+2. **Be Realistic**: Consider actual implementation complexity
+3. **Be Specific**: Provide concrete, actionable information
+4. **Consider Edge Cases**: Think about error scenarios
+5. **Follow Best Practices**: Suggest industry-standard approaches
+6. **Maintain Consistency**: Use project's existing patterns
+
+## Tools Available
+
+You have access to:
+- `Read`: Read file contents
+- `ListFiles`: List files in directories
+- `Write`: Create the specification documents
+
+Please use these tools to explore the codebase and create comprehensive specifications.
