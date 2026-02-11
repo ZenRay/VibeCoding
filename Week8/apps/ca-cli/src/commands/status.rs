@@ -19,10 +19,7 @@ pub async fn execute_status(feature_slug: String, config: &AppConfig) -> Result<
 
     // 确定工作目录
     let current_dir = std::env::current_dir()?;
-    let repo_path = config
-        .default_repo
-        .as_ref()
-        .unwrap_or(&current_dir);
+    let repo_path = config.default_repo.as_ref().unwrap_or(&current_dir);
 
     let specs_dir = repo_path.join("specs");
     if !specs_dir.exists() {
@@ -30,15 +27,12 @@ pub async fn execute_status(feature_slug: String, config: &AppConfig) -> Result<
     }
 
     // 查找 feature 目录
-    let feature_dir = find_feature_dir(&specs_dir, &feature_slug)?;
+    let feature_dir = crate::commands::find_feature_dir(&specs_dir, &feature_slug)?;
 
     // 加载状态
     let state_file = feature_dir.join("state.yml");
     if !state_file.exists() {
-        anyhow::bail!(
-            "❌ 功能 '{}' 没有 state.yml 文件",
-            feature_slug
-        );
+        anyhow::bail!("❌ 功能 '{}' 没有 state.yml 文件", feature_slug);
     }
 
     let state = load_feature_state(&state_file)?;
@@ -53,32 +47,6 @@ pub async fn execute_status(feature_slug: String, config: &AppConfig) -> Result<
     print_delivery_info(&state).await;
 
     Ok(())
-}
-
-/// 查找 feature 目录
-fn find_feature_dir(specs_dir: &Path, feature_slug: &str) -> Result<std::path::PathBuf> {
-    let entries = fs::read_dir(specs_dir)
-        .with_context(|| format!("无法读取目录: {}", specs_dir.display()))?;
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-
-        let dir_name = match path.file_name().and_then(|n| n.to_str()) {
-            Some(name) => name,
-            None => continue,
-        };
-
-        // 检查目录名是否包含 feature_slug
-        // 支持 "001-feature-slug" 或 "feature-slug" 格式
-        if dir_name == feature_slug || dir_name.ends_with(&format!("-{}", feature_slug)) {
-            return Ok(path);
-        }
-    }
-
-    anyhow::bail!("❌ 未找到功能: {}", feature_slug)
 }
 
 /// 加载 feature state
@@ -104,11 +72,17 @@ fn print_feature_info(state: &FeatureState, feature_dir: &Path) {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!();
     println!("名称:      {}", state.feature.name);
-    println!("状态:      {}", format_status_with_emoji(&state.status.overall_status));
+    println!(
+        "状态:      {}",
+        format_status_with_emoji(&state.status.overall_status)
+    );
     println!("进度:      {}%", state.status.completion_percentage);
     println!("创建时间:  {}", format_datetime(&state.feature.created_at));
     println!("更新时间:  {}", format_datetime(&state.feature.updated_at));
-    println!("Agent:     {} ({})", state.agent.agent_type, state.agent.model);
+    println!(
+        "Agent:     {} ({})",
+        state.agent.agent_type, state.agent.model
+    );
     println!("分支:      {}", state.metadata.target_branch);
 }
 
@@ -121,8 +95,7 @@ fn print_phases_table(state: &FeatureState) {
     table.set_header(vec!["#", "名称", "状态", "耗时", "成本"]);
 
     for phase in &state.phases {
-        let status_cell = Cell::new(format_status(&phase.status))
-            .fg(status_color(&phase.status));
+        let status_cell = Cell::new(format_status(&phase.status)).fg(status_color(&phase.status));
 
         let duration = if let Some(seconds) = phase.duration_seconds {
             format_duration(seconds)
@@ -152,19 +125,34 @@ fn print_phases_table(state: &FeatureState) {
 fn print_total_stats(state: &FeatureState) {
     println!("总体统计:");
     println!();
-    
+
     // 计算总 turns (从 phases 中累加)
-    let _total_turns: u32 = state.phases.iter()
+    let _total_turns: u32 = state
+        .phases
+        .iter()
         .filter_map(|p| p.cost.as_ref())
         .map(|c| c.tokens_input + c.tokens_output)
-        .sum::<u32>() / 1000; // 粗略估算
+        .sum::<u32>()
+        / 1000; // 粗略估算
 
-    println!("  • 输入 tokens:  {:>12}", format_number(state.cost_summary.total_tokens_input));
-    println!("  • 输出 tokens:  {:>12}", format_number(state.cost_summary.total_tokens_output));
-    println!("  • 总成本:       {:>12}", format!("${:.2}", state.cost_summary.total_cost_usd));
-    
+    println!(
+        "  • 输入 tokens:  {:>12}",
+        format_number(state.cost_summary.total_tokens_input)
+    );
+    println!(
+        "  • 输出 tokens:  {:>12}",
+        format_number(state.cost_summary.total_tokens_output)
+    );
+    println!(
+        "  • 总成本:       {:>12}",
+        format!("${:.2}", state.cost_summary.total_cost_usd)
+    );
+
     if state.cost_summary.estimated_remaining_cost_usd > 0.0 {
-        println!("  • 预计剩余成本: {:>12}", format!("${:.2}", state.cost_summary.estimated_remaining_cost_usd));
+        println!(
+            "  • 预计剩余成本: {:>12}",
+            format!("${:.2}", state.cost_summary.estimated_remaining_cost_usd)
+        );
     }
 
     // 文件修改统计
@@ -188,7 +176,7 @@ async fn print_delivery_info(state: &FeatureState) {
 
     if let Some(ref pr_url) = state.delivery.pr_url {
         println!("  • PR URL:  {}", pr_url);
-        
+
         // 尝试获取 PR 状态
         if let Some(pr_number) = state.delivery.pr_number {
             match get_pr_status(pr_number).await {
@@ -220,7 +208,15 @@ async fn print_delivery_info(state: &FeatureState) {
 /// 获取 PR 状态 (使用 gh CLI)
 async fn get_pr_status(pr_number: u32) -> Result<String> {
     let output = tokio::process::Command::new("gh")
-        .args(["pr", "view", &pr_number.to_string(), "--json", "state", "-q", ".state"])
+        .args([
+            "pr",
+            "view",
+            &pr_number.to_string(),
+            "--json",
+            "state",
+            "-q",
+            ".state",
+        ])
         .output()
         .await
         .context("执行 gh 命令失败")?;

@@ -7,43 +7,10 @@ use std::sync::Arc;
 
 use ca_core::{
     CliEventHandler, ExecutionEngine, KeywordMatcher, Phase, Repository, StateManager, Status,
-    WorktreeManager,
 };
 use ca_pm::{ContextBuilder, PromptConfig, PromptManager};
 
 use crate::config::AppConfig;
-
-/// 获取模板基础目录
-/// 优先使用项目内置模板，如果不存在则使用用户配置目录
-fn get_template_base_dir(config: &AppConfig) -> PathBuf {
-    // 尝试多个可能的内置模板位置
-    let possible_paths = [
-        // 1. 当前目录下（开发时）
-        PathBuf::from("crates/ca-pm/templates"),
-        // 2. 可执行文件所在目录的相对路径（已安装）
-        std::env::current_exe()
-            .ok()
-            .and_then(|exe| exe.parent().map(|p| p.to_path_buf()))
-            .map(|exe_dir| exe_dir.join("../../../crates/ca-pm/templates"))
-            .unwrap_or_default(),
-        // 3. 项目根目录（如果通过 cargo run 运行）
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .and_then(|p| p.parent())
-            .map(|root| root.join("crates/ca-pm/templates"))
-            .unwrap_or_default(),
-    ];
-
-    // 尝试每个路径
-    for path in &possible_paths {
-        if path.exists() && path.join("run/phase1_observer/user.jinja").exists() {
-            return path.clone();
-        }
-    }
-
-    // 如果都不存在，回退到用户配置目录
-    config.prompt.template_dir.clone()
-}
 
 /// 最大 Fix 迭代次数
 const MAX_FIX_ITERATIONS: usize = 3;
@@ -57,58 +24,26 @@ pub async fn execute_run(
     dry_run: bool,
     skip_review: bool,
     skip_test: bool,
-    interactive: bool,
     repo: Option<PathBuf>,
     config: &AppConfig,
 ) -> anyhow::Result<()> {
-    // 1. 确定工作目录
-    let repo_path = determine_repo_path(repo, &config.default_repo)?;
-
-    // 2. 交互式 TUI 模式
-    if interactive {
-        return crate::ui::execute_run_tui(
-            feature_slug,
-            repo_path,
-            config.clone(),
-            dry_run,
-            skip_review,
-            skip_test,
-        )
-        .await;
-    }
-
     println!("🚀 执行功能开发: {}", feature_slug);
     println!();
 
+    // 1. 确定工作目录
+    let repo_path = determine_repo_path(repo, &config.default_repo)?;
     println!("📂 工作目录: {}", repo_path.display());
 
-    // 3. 检查 specs 目录
+    // 2. 检查 specs 目录
     let feature_dir = find_feature_dir(&repo_path, &feature_slug)?;
-    let feature_dir_name = feature_dir
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(&feature_slug)
-        .to_string();
     println!("📁 Specs 目录: {}", feature_dir.display());
     println!();
 
-    // 3.5 检查是否有 worktree (git 仓库中优先使用 worktree)
-    let worktree_manager = WorktreeManager::new(&repo_path).map_err(|e| anyhow::anyhow!("{}", e))?;
-    let working_dir = if worktree_manager.is_git_repo()
-        && worktree_manager.worktree_exists(&feature_dir_name).unwrap_or(false)
-    {
-        let wt_path = worktree_manager.worktree_path(&feature_dir_name);
-        println!("🌳 使用 worktree: {}", wt_path.display());
-        wt_path
-    } else {
-        repo_path.clone()
-    };
-
-    // 4. 加载状态管理
-    let mut state_manager = StateManager::new(&feature_dir_name, &working_dir)?;
+    // 3. 加载状态管理
+    let mut state_manager = StateManager::new(&feature_slug, &repo_path)?;
 
     // 添加 Status Document Hook
-    let specs_dir = working_dir.join("specs");
+    let specs_dir = repo_path.join("specs");
     let spec_file = feature_dir.join("spec.md");
     let spec_content = if spec_file.exists() {
         std::fs::read_to_string(&spec_file).unwrap_or_default()
@@ -124,7 +59,7 @@ pub async fn execute_run(
         println!("🔄 检测到中断的执行，准备恢复...");
         return resume_execution(
             state_manager,
-            &working_dir,
+            &repo_path,
             &feature_dir,
             dry_run,
             skip_review,
@@ -135,15 +70,15 @@ pub async fn execute_run(
     }
 
     // 5. 创建 Repository 和 Agent
-    let repository = Arc::new(Repository::new(&working_dir)?);
+    let repository = Arc::new(Repository::new(&repo_path)?);
     let agent = create_agent(config)?;
 
     // 创建 EventHandler
     let event_handler = Box::new(CliEventHandler::new());
 
     // 创建 ExecutionEngine
-    let mut engine =
-        ExecutionEngine::new(agent, repository.clone()).with_event_handler(event_handler);
+    let mut engine = ExecutionEngine::new(agent, repository.clone())
+        .with_event_handler(event_handler);
 
     // 6. 验证连接
     println!("🔌 验证 Agent 连接...");
@@ -153,13 +88,12 @@ pub async fn execute_run(
     println!("✅ 连接成功");
     println!();
 
-    // 7. 创建 PromptManager (用于所有阶段的模板渲染)
-    let template_base = get_template_base_dir(config);
+    // 7. 创建 PromptManager
     let prompt_config = PromptConfig {
-        template_dir: template_base,
+        template_dir: config.prompt.template_dir.clone(),
         default_template: None,
     };
-    let mut prompt_manager = PromptManager::new(prompt_config)?;
+    let prompt_manager = PromptManager::new(prompt_config)?;
 
     // 8. 确定执行阶段
     let start_phase = phase.unwrap_or(1);
@@ -194,9 +128,9 @@ pub async fn execute_run(
                 execute_observer_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     dry_run,
                 )
                 .await?
@@ -205,9 +139,9 @@ pub async fn execute_run(
                 execute_planning_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     dry_run,
                 )
                 .await?
@@ -216,9 +150,9 @@ pub async fn execute_run(
                 execute_execute_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     phase_num,
                     dry_run,
                 )
@@ -228,11 +162,10 @@ pub async fn execute_run(
                 execute_review_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     dry_run,
-                    false,
                 )
                 .await?
             }
@@ -240,9 +173,9 @@ pub async fn execute_run(
                 execute_fix_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     dry_run,
                 )
                 .await?
@@ -251,9 +184,9 @@ pub async fn execute_run(
                 execute_verification_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     &feature_dir,
-                    &working_dir,
+                    &repo_path,
                     dry_run,
                 )
                 .await?
@@ -277,7 +210,7 @@ pub async fn execute_run(
     // 11. 生成 PR
     if !dry_run {
         println!("📋 准备创建 Pull Request...");
-        match generate_pr(&feature_slug, &feature_dir, &working_dir).await {
+        match generate_pr(&feature_slug, &feature_dir, &repo_path).await {
             Ok(pr_url) => {
                 println!("✅ PR 已创建: {}", pr_url);
 
@@ -298,10 +231,10 @@ pub async fn execute_run(
 }
 
 /// Phase 1: Observer - 项目分析
-pub async fn execute_observer_phase(
+async fn execute_observer_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
     repo_path: &Path,
     dry_run: bool,
@@ -345,22 +278,19 @@ pub async fn execute_observer_phase(
 
     // 6. 更新统计
     let state = state_manager.state_mut();
-    state.cost_summary.total_tokens_input = state
-        .cost_summary
-        .total_tokens_input
-        .saturating_add(result.tokens_used);
+    state.cost_summary.total_turns = state.cost_summary.total_turns.saturating_add(result.turns);
     state.cost_summary.total_cost_usd += result.cost_usd;
 
     Ok(())
 }
 
 /// Phase 2: Planning - 制定计划
-pub async fn execute_planning_phase(
+async fn execute_planning_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
-    _repo_path: &Path,
+    repo_path: &Path,
     dry_run: bool,
 ) -> anyhow::Result<()> {
     println!("📝 Phase 2: Planning - 制定计划");
@@ -406,22 +336,19 @@ pub async fn execute_planning_phase(
 
     // 7. 更新统计
     let state = state_manager.state_mut();
-    state.cost_summary.total_tokens_input = state
-        .cost_summary
-        .total_tokens_input
-        .saturating_add(result.tokens_used);
-    state.cost_summary.total_cost_usd += result.cost_usd;
+    state.total_stats.turns += result.turns;
+    state.total_stats.cost_usd += result.cost_usd;
 
     Ok(())
 }
 
 /// Phase 3/4: Execute - 执行实施
-pub async fn execute_execute_phase(
+async fn execute_execute_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
-    _repo_path: &Path,
+    repo_path: &Path,
     phase_num: u8,
     dry_run: bool,
 ) -> anyhow::Result<()> {
@@ -473,24 +400,20 @@ pub async fn execute_execute_phase(
 
     // 6. 更新统计
     let state = state_manager.state_mut();
-    state.cost_summary.total_tokens_input = state
-        .cost_summary
-        .total_tokens_input
-        .saturating_add(result.tokens_used);
+    state.cost_summary.total_turns = state.cost_summary.total_turns.saturating_add(result.turns);
     state.cost_summary.total_cost_usd += result.cost_usd;
 
     Ok(())
 }
 
 /// Phase 5: Review - 代码审查 (带 Fix 循环)
-pub async fn execute_review_phase(
+async fn execute_review_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
     repo_path: &Path,
     dry_run: bool,
-    tui_mode: bool,
 ) -> anyhow::Result<()> {
     println!("🔍 Phase 5: Code Review (带自动修复循环)");
 
@@ -539,15 +462,12 @@ pub async fn execute_review_phase(
         match matcher.check(&result.message) {
             Some(true) => {
                 println!("✅ 代码审查通过! (APPROVED)");
-
+                
                 // 更新统计
                 let state = state_manager.state_mut();
-                state.cost_summary.total_tokens_input = state
-                    .cost_summary
-                    .total_tokens_input
-                    .saturating_add(result.tokens_used);
-                state.cost_summary.total_cost_usd += result.cost_usd;
-
+                state.total_stats.turns += result.turns;
+                state.total_stats.cost_usd += result.cost_usd;
+                
                 return Ok(());
             }
             Some(false) => {
@@ -567,30 +487,25 @@ pub async fn execute_review_phase(
                     .await?;
                 } else {
                     println!("❌ 达到最大迭代次数 ({})", MAX_FIX_ITERATIONS);
-                    anyhow::bail!("Review 在 {} 次迭代后仍未通过", MAX_FIX_ITERATIONS);
+                    anyhow::bail!(
+                        "Review 在 {} 次迭代后仍未通过",
+                        MAX_FIX_ITERATIONS
+                    );
                 }
             }
             None => {
                 println!("⚠️  审查结果不明确 (未找到 APPROVED 或 NEEDS_CHANGES 关键词)");
-                println!(
-                    "   请检查输出: specs/{}/.ca-state/phase5_output.md",
-                    state_manager.state().feature.slug
-                );
-
-                if tui_mode {
-                    // TUI 模式: 自动继续
-                    return Ok(());
-                }
-
+                println!("   请检查输出: specs/{}/.ca-state/phase5_output.md", state_manager.state().feature.slug);
+                
                 // 询问用户
                 println!("\n是否继续? (y/n): ");
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input)?;
-
+                
                 if input.trim().to_lowercase() != "y" {
                     anyhow::bail!("用户取消");
                 }
-
+                
                 // 假设通过
                 return Ok(());
             }
@@ -601,10 +516,10 @@ pub async fn execute_review_phase(
 }
 
 /// Fix 迭代 (在 Review 循环内部调用)
-pub async fn execute_fix_phase_iteration(
+async fn execute_fix_phase_iteration(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
     review_output: &str,
     dry_run: bool,
@@ -629,12 +544,7 @@ pub async fn execute_fix_phase_iteration(
 
     // 4. 执行 Fix
     let result = engine
-        .execute_phase_with_config(
-            Phase::Fix,
-            &task_template.config,
-            system_prompt,
-            user_prompt,
-        )
+        .execute_phase_with_config(Phase::Fix, &task_template.config, system_prompt, user_prompt)
         .await?;
 
     // 5. 保存输出
@@ -642,11 +552,9 @@ pub async fn execute_fix_phase_iteration(
 
     // 6. 更新统计
     let state = state_manager.state_mut();
-    state.cost_summary.total_tokens_input = state
-        .cost_summary
-        .total_tokens_input
-        .saturating_add(result.tokens_used);
     state.cost_summary.total_cost_usd += result.cost_usd;
+    state.cost_summary.total_tokens_input += result.tokens_used;
+    state.cost_summary.total_tokens_output += result.tokens_used / 2; // 估算
 
     println!("  ✅ 修复完成");
 
@@ -654,10 +562,10 @@ pub async fn execute_fix_phase_iteration(
 }
 
 /// Phase 6: Fix - 应用修复 (独立调用)
-pub async fn execute_fix_phase(
+async fn execute_fix_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
     _repo_path: &Path,
     dry_run: bool,
@@ -679,10 +587,10 @@ pub async fn execute_fix_phase(
 }
 
 /// Phase 7: Verification - 验证测试
-pub async fn execute_verification_phase(
+async fn execute_verification_phase(
     engine: &mut ExecutionEngine,
     state_manager: &mut StateManager,
-    pm: &mut PromptManager,
+    pm: &PromptManager,
     feature_dir: &Path,
     repo_path: &Path,
     dry_run: bool,
@@ -740,11 +648,8 @@ pub async fn execute_verification_phase(
 
     // 7. 更新统计
     let state = state_manager.state_mut();
-    state.cost_summary.total_tokens_input = state
-        .cost_summary
-        .total_tokens_input
-        .saturating_add(result.tokens_used);
-    state.cost_summary.total_cost_usd += result.cost_usd;
+    state.total_stats.turns += result.turns;
+    state.total_stats.cost_usd += result.cost_usd;
 
     Ok(())
 }
@@ -777,15 +682,15 @@ async fn resume_execution(
     let repository = Arc::new(Repository::new(repo_path)?);
     let agent = create_agent(config)?;
     let event_handler = Box::new(CliEventHandler::new());
-    let mut engine = ExecutionEngine::new(agent, repository).with_event_handler(event_handler);
+    let mut engine = ExecutionEngine::new(agent, repository)
+        .with_event_handler(event_handler);
 
-    // 创建 PromptManager (用于恢复执行)
-    let template_base = get_template_base_dir(config);
+    // 创建 PromptManager
     let prompt_config = PromptConfig {
-        template_dir: template_base,
+        template_dir: config.prompt.template_dir.clone(),
         default_template: None,
     };
-    let mut prompt_manager = PromptManager::new(prompt_config)?;
+    let prompt_manager = PromptManager::new(prompt_config)?;
 
     // 从当前阶段继续执行 (递归调用主逻辑)
     // 简化版本:直接使用 execute_run 的逻辑
@@ -819,7 +724,7 @@ async fn resume_execution(
                 execute_observer_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     dry_run,
@@ -830,7 +735,7 @@ async fn resume_execution(
                 execute_planning_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     dry_run,
@@ -841,7 +746,7 @@ async fn resume_execution(
                 execute_execute_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     phase_num,
@@ -853,11 +758,10 @@ async fn resume_execution(
                 execute_review_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     dry_run,
-                    false,
                 )
                 .await?
             }
@@ -865,7 +769,7 @@ async fn resume_execution(
                 execute_fix_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     dry_run,
@@ -876,7 +780,7 @@ async fn resume_execution(
                 execute_verification_phase(
                     &mut engine,
                     &mut state_manager,
-                    &mut prompt_manager,
+                    &prompt_manager,
                     feature_dir,
                     repo_path,
                     dry_run,
@@ -958,8 +862,7 @@ See `specs/{}/` for detailed specifications.
 // 辅助函数
 //
 
-/// 确定工作目录 (供 RunWorker 等复用)
-pub fn determine_repo_path(
+fn determine_repo_path(
     repo: Option<PathBuf>,
     default_repo: &Option<PathBuf>,
 ) -> anyhow::Result<PathBuf> {
@@ -972,14 +875,27 @@ pub fn determine_repo_path(
     }
 }
 
-/// 查找功能目录（公开给 RunWorker 等使用）
-pub fn find_feature_dir(repo_path: &Path, feature_slug: &str) -> anyhow::Result<PathBuf> {
+fn find_feature_dir(repo_path: &Path, feature_slug: &str) -> anyhow::Result<PathBuf> {
     let specs_dir = repo_path.join("specs");
-    crate::commands::find_feature_dir(&specs_dir, feature_slug)
+
+    // 查找匹配的目录
+    for entry in std::fs::read_dir(&specs_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if name.ends_with(feature_slug) {
+                    return Ok(path);
+                }
+            }
+        }
+    }
+
+    anyhow::bail!("功能目录未找到: {}", feature_slug)
 }
 
-/// 获取 Phase 名称 (供 RunWorker 等复用)
-pub fn get_phase_name(phase_num: u8) -> &'static str {
+fn get_phase_name(phase_num: u8) -> &'static str {
     match phase_num {
         1 => "Observer - 项目分析",
         2 => "Planning - 制定计划",
@@ -992,8 +908,7 @@ pub fn get_phase_name(phase_num: u8) -> &'static str {
     }
 }
 
-/// 读取 spec 文件 (供 phase 执行函数复用)
-pub fn read_spec_file(feature_dir: &Path, filename: &str) -> anyhow::Result<String> {
+fn read_spec_file(feature_dir: &Path, filename: &str) -> anyhow::Result<String> {
     let path = feature_dir.join(filename);
     if path.exists() {
         std::fs::read_to_string(path).map_err(Into::into)
@@ -1002,8 +917,7 @@ pub fn read_spec_file(feature_dir: &Path, filename: &str) -> anyhow::Result<Stri
     }
 }
 
-/// 读取 Phase 输出 (供 phase 执行函数复用)
-pub fn read_phase_output(feature_dir: &Path, phase_num: u8) -> anyhow::Result<String> {
+fn read_phase_output(feature_dir: &Path, phase_num: u8) -> anyhow::Result<String> {
     let filename = format!("phase{}_output.md", phase_num);
     let state_dir = feature_dir.join(".ca-state");
     let path = state_dir.join(filename);
@@ -1015,8 +929,7 @@ pub fn read_phase_output(feature_dir: &Path, phase_num: u8) -> anyhow::Result<St
     }
 }
 
-/// 保存 Phase 输出 (供 phase 执行函数复用)
-pub fn save_phase_output(phase_num: u8, output: &str, feature_dir: &Path) -> anyhow::Result<()> {
+fn save_phase_output(phase_num: u8, output: &str, feature_dir: &Path) -> anyhow::Result<()> {
     let state_dir = feature_dir.join(".ca-state");
     std::fs::create_dir_all(&state_dir)?;
 
@@ -1027,8 +940,7 @@ pub fn save_phase_output(phase_num: u8, output: &str, feature_dir: &Path) -> any
     Ok(())
 }
 
-/// 收集代码变更 (供 Review 阶段使用)
-pub fn collect_code_changes(repo_path: &Path) -> anyhow::Result<String> {
+fn collect_code_changes(repo_path: &Path) -> anyhow::Result<String> {
     // 使用 git diff 收集变更
     let output = std::process::Command::new("git")
         .current_dir(repo_path)

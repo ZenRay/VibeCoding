@@ -4,7 +4,7 @@
 
 use anyhow::{Context, Result};
 use ca_core::state::{FeatureState, Status};
-use comfy_table::{modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL, Table};
+use comfy_table::{Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::debug;
@@ -182,10 +182,10 @@ fn collect_features(specs_dir: &Path) -> Result<Vec<FeatureInfo>> {
 fn load_feature_state(state_file: &Path) -> Result<FeatureState> {
     let content = fs::read_to_string(state_file)
         .with_context(|| format!("无法读取文件: {}", state_file.display()))?;
-    
+
     let state: FeatureState = serde_yaml::from_str(&content)
         .with_context(|| format!("无法解析 YAML: {}", state_file.display()))?;
-    
+
     Ok(state)
 }
 
@@ -207,7 +207,7 @@ fn extract_feature_info(state: FeatureState) -> FeatureInfo {
         .iter()
         .filter(|p| p.status == Status::Completed)
         .count();
-    
+
     let progress = if total_phases > 0 {
         format!("{}/{}", completed_phases, total_phases)
     } else {
@@ -258,13 +258,13 @@ fn format_status(status: &str) -> String {
 /// 查找仓库根目录
 fn find_repo_root() -> Result<PathBuf> {
     let current = std::env::current_dir().context("无法获取当前目录")?;
-    
+
     let mut path = current.as_path();
     loop {
         if path.join(".git").exists() {
             return Ok(path.to_path_buf());
         }
-        
+
         path = match path.parent() {
             Some(p) => p,
             None => anyhow::bail!("未找到 Git 仓库根目录"),
@@ -282,7 +282,7 @@ mod tests {
             parse_feature_dir_name("001-test-feature"),
             Some(("001".to_string(), "001-test-feature".to_string()))
         );
-        
+
         assert_eq!(parse_feature_dir_name("invalid"), None);
     }
 

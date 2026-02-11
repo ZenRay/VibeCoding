@@ -8,8 +8,8 @@ use std::time::Instant;
 use tokio::sync::Mutex;
 
 use crate::agent::{
-    Agent, AgentCapabilities, AgentLimits, AgentMetadata, AgentRequest, AgentResponse,
-    AgentType, FileChange, ResponseMetadata,
+    Agent, AgentCapabilities, AgentLimits, AgentMetadata, AgentRequest, AgentResponse, AgentType,
+    FileChange, ResponseMetadata,
 };
 use crate::error::{CoreError, Result};
 
@@ -106,7 +106,7 @@ impl ClaudeAgent {
                 return Err(CoreError::Config(format!(
                     "Invalid permission mode: {}. Valid values: Default, AcceptEdits, Plan, BypassPermissions",
                     other
-                )))
+                )));
             }
         };
 
@@ -164,10 +164,9 @@ impl ClaudeAgent {
                 base.allowed_tools(tools).max_budget_usd(budget).build()
             }
             (None, Some(tools), None, None) => base.allowed_tools(tools).build(),
-            (None, None, Some(turns), Some(budget)) => base
-                .max_turns(turns as u32)
-                .max_budget_usd(budget)
-                .build(),
+            (None, None, Some(turns), Some(budget)) => {
+                base.max_turns(turns as u32).max_budget_usd(budget).build()
+            }
             (None, None, Some(turns), None) => base.max_turns(turns as u32).build(),
             (None, None, None, Some(budget)) => base.max_budget_usd(budget).build(),
             (None, None, None, None) => base.build(),
@@ -239,8 +238,7 @@ impl ClaudeAgent {
         let tokens_used = 0u32;
 
         while let Some(result) = stream.next().await {
-            let message = result
-                .map_err(|e| CoreError::Agent(format!("Stream error: {}", e)))?;
+            let message = result.map_err(|e| CoreError::Agent(format!("Stream error: {}", e)))?;
 
             if let Message::Assistant(assistant_msg) = message {
                 for block in &assistant_msg.message.content {
@@ -325,14 +323,16 @@ impl Agent for ClaudeAgent {
 
             // 转换 PermissionMode
             let perm_mode = match phase_config.permission_mode {
-                crate::agent::PermissionMode::Default => 
-                    claude_agent_sdk_rs::PermissionMode::Default,
-                crate::agent::PermissionMode::AcceptEdits => 
-                    claude_agent_sdk_rs::PermissionMode::AcceptEdits,
-                crate::agent::PermissionMode::Plan => 
-                    claude_agent_sdk_rs::PermissionMode::Plan,
-                crate::agent::PermissionMode::BypassPermissions => 
-                    claude_agent_sdk_rs::PermissionMode::BypassPermissions,
+                crate::agent::PermissionMode::Default => {
+                    claude_agent_sdk_rs::PermissionMode::Default
+                }
+                crate::agent::PermissionMode::AcceptEdits => {
+                    claude_agent_sdk_rs::PermissionMode::AcceptEdits
+                }
+                crate::agent::PermissionMode::Plan => claude_agent_sdk_rs::PermissionMode::Plan,
+                crate::agent::PermissionMode::BypassPermissions => {
+                    claude_agent_sdk_rs::PermissionMode::BypassPermissions
+                }
             };
 
             // 构建选项 (一次性完成,不能分开 reassign)
@@ -508,10 +508,15 @@ impl Agent for ClaudeAgent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::CoreError;
 
     #[test]
     fn test_new_agent_with_empty_key() {
-        let result = ClaudeAgent::new(String::new(), "claude-3-5-sonnet-20241022".to_string(), None);
+        let result = ClaudeAgent::new(
+            String::new(),
+            "claude-3-5-sonnet-20241022".to_string(),
+            None,
+        );
         assert!(result.is_err());
     }
 
@@ -599,5 +604,73 @@ mod tests {
         let env_url = std::env::var("ANTHROPIC_BASE_URL").ok();
         assert_eq!(env_url, Some("https://openrouter.ai/api/v1".to_string()));
         assert_eq!(agent.agent_type(), AgentType::Claude);
+    }
+
+    #[test]
+    fn test_should_reject_empty_api_key() {
+        let result = ClaudeAgent::new(
+            String::new(),
+            "claude-3-5-sonnet-20241022".to_string(),
+            None,
+        );
+        assert!(result.is_err());
+        assert!(matches!(result, Err(CoreError::Config(_))));
+    }
+
+    #[test]
+    fn test_should_configure_with_invalid_permission_mode() {
+        let mut agent = ClaudeAgent::new(
+            "test-key".to_string(),
+            "claude-3-5-sonnet-20241022".to_string(),
+            None,
+        )
+        .unwrap();
+
+        let result = agent.configure(
+            Some("system".to_string()),
+            None,
+            None,
+            None,
+            Some("InvalidMode"),
+        );
+        assert!(result.is_err());
+        assert!(matches!(result, Err(CoreError::Config(_))));
+    }
+
+    #[test]
+    fn test_should_configure_with_all_valid_permission_modes() {
+        let modes = ["Default", "AcceptEdits", "Plan", "BypassPermissions"];
+        for mode in modes {
+            let mut agent = ClaudeAgent::new(
+                "test-key".to_string(),
+                "claude-3-5-sonnet-20241022".to_string(),
+                None,
+            )
+            .unwrap();
+            let result = agent.configure(None, None, None, None, Some(mode));
+            assert!(result.is_ok(), "Permission mode {} should be valid", mode);
+        }
+    }
+
+    #[test]
+    fn test_with_default_options() {
+        let agent = ClaudeAgent::with_default_options("test-key".to_string()).unwrap();
+        assert_eq!(agent.agent_type(), AgentType::Claude);
+        assert_eq!(agent.metadata().model, "claude-3-5-sonnet-20241022");
+    }
+
+    #[tokio::test]
+    async fn test_validate_with_empty_key_returns_false() {
+        // 注意: new() 会拒绝空 key,所以我们需要通过其他方式测试
+        // 这里测试 validate 对有效 key 返回 true
+        let agent = ClaudeAgent::new(
+            "test-key".to_string(),
+            "claude-3-5-sonnet-20241022".to_string(),
+            None,
+        )
+        .unwrap();
+        let result = agent.validate().await;
+        assert!(result.is_ok());
+        assert!(result.unwrap());
     }
 }

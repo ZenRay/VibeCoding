@@ -7,7 +7,7 @@
 /// 支持 4 种匹配模式:
 /// 1. 单独一行: 完整单词匹配 (如 "APPROVED")
 /// 2. 带前缀: "Verdict: APPROVED", "Result: VERIFIED"
-/// 3. 特殊格式: "[APPROVED]", "**VERIFIED**", "`FAILED`"
+/// 3. 特殊格式: `[APPROVED]`, `**VERIFIED**`, `` `FAILED` ``
 /// 4. 末尾匹配: 在输出的最后 100 字符内匹配
 pub struct KeywordMatcher {
     success_keywords: Vec<String>,
@@ -81,7 +81,7 @@ impl KeywordMatcher {
         self.match_line(output, keyword)        // 1. 单独一行
             || self.match_prefix(output, keyword)   // 2. 带前缀
             || self.match_special(output, keyword)  // 3. 特殊格式
-            || self.match_tail(output, keyword)     // 4. 末尾匹配
+            || self.match_tail(output, keyword) // 4. 末尾匹配
     }
 
     /// 模式 1: 完整单词匹配 (单独一行)
@@ -108,9 +108,9 @@ impl KeywordMatcher {
 
         output.lines().any(|line| {
             let line_lower = line.to_lowercase();
-            prefixes.iter().any(|prefix| {
-                line_lower.contains(prefix) && line_lower.contains(&keyword_lower)
-            })
+            prefixes
+                .iter()
+                .any(|prefix| line_lower.contains(prefix) && line_lower.contains(&keyword_lower))
         })
     }
 
@@ -270,24 +270,12 @@ mod tests {
         let matcher = KeywordMatcher::for_verification();
 
         // 验证通过场景
-        assert_eq!(
-            matcher.check("所有测试通过\n\nVERIFIED"),
-            Some(true)
-        );
-        assert_eq!(
-            matcher.check("Result: **VERIFIED** ✅"),
-            Some(true)
-        );
+        assert_eq!(matcher.check("所有测试通过\n\nVERIFIED"), Some(true));
+        assert_eq!(matcher.check("Result: **VERIFIED** ✅"), Some(true));
 
         // 验证失败场景
-        assert_eq!(
-            matcher.check("测试失败\n\nFAILED"),
-            Some(false)
-        );
-        assert_eq!(
-            matcher.check("Status: `FAILED`"),
-            Some(false)
-        );
+        assert_eq!(matcher.check("测试失败\n\nFAILED"), Some(false));
+        assert_eq!(matcher.check("Status: `FAILED`"), Some(false));
     }
 
     #[test]
@@ -298,11 +286,48 @@ mod tests {
         assert_eq!(matcher.check("approved"), Some(true));
         assert_eq!(matcher.check("Approved"), Some(true));
         assert_eq!(matcher.check("verdict: Approved"), Some(true));
-        
+
         // 特殊格式保持原样 (需要精确匹配)
         assert_eq!(matcher.check("[APPROVED]"), Some(true));
         // 注意: [approved] 不会被特殊格式匹配,但会被末尾匹配
         assert_eq!(matcher.check("[approved]"), Some(true)); // 末尾模式
+    }
+
+    /// 边界测试: 空 output 不超过 100 字符
+    #[test]
+    fn test_should_handle_empty_and_short_output() {
+        let matcher = KeywordMatcher::for_review();
+        assert_eq!(matcher.check(""), None);
+        assert_eq!(matcher.check("x"), None);
+        assert_eq!(matcher.check("A"), None);
+    }
+
+    /// 边界测试: 恰好 100 字符末尾匹配
+    #[test]
+    fn test_should_match_keyword_at_exactly_100_char_boundary() {
+        let matcher = KeywordMatcher::for_verification();
+        let padding = "x".repeat(90);
+        let output = format!("{}{}", padding, "VERIFIED");
+        assert_eq!(matcher.check(&output), Some(true));
+    }
+
+    /// 边界测试: 关键词仅在 100 字符窗口外 (不匹配其他模式)
+    #[test]
+    fn test_should_not_match_keyword_beyond_tail_window() {
+        let matcher = KeywordMatcher::for_review();
+        // APPROVED 在开头,最后 100 字符全是 x
+        let output = format!("Some text APPROVED more text{}", "x".repeat(500));
+        assert_eq!(matcher.check(&output), None);
+    }
+
+    /// 边界测试: 单行模式需完整单词匹配
+    #[test]
+    fn test_should_require_full_word_for_line_mode() {
+        let matcher = KeywordMatcher::for_review();
+        // "APPROVED" 单独一行才匹配 line 模式
+        assert_eq!(matcher.check("APPROVED"), Some(true));
+        // "APPROVED " 后跟空格,trim 后仍等于 "APPROVED"
+        assert_eq!(matcher.check("  APPROVED  "), Some(true));
     }
 
     #[test]

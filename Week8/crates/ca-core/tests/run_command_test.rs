@@ -1,7 +1,7 @@
 //! Run 命令集成测试
 
 use ca_core::{KeywordMatcher, Phase};
-use ca_pm::{ContextBuilder, PermissionMode, PromptConfig, PromptManager, TaskConfig};
+use ca_pm::{PermissionMode, TaskConfig};
 
 /// 测试 KeywordMatcher 与 Review Phase 集成
 #[test]

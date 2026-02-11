@@ -10,12 +10,12 @@ fn main() {
         "Claude".to_string(),
         "claude-3-5-sonnet-20241022".to_string(),
     );
-    
+
     // 模拟一些阶段
-    use ca_core::{PhaseState, Status, PhaseCost, PhaseResult};
+    use ca_core::{PhaseCost, PhaseResult, PhaseState, Status};
     use chrono::Utc;
     use std::collections::HashMap;
-    
+
     state.phases.push(PhaseState {
         phase: 1,
         name: "构建 Observer".to_string(),
@@ -34,7 +34,7 @@ fn main() {
             extra: HashMap::new(),
         }),
     });
-    
+
     state.phases.push(PhaseState {
         phase: 2,
         name: "制定计划".to_string(),
@@ -53,7 +53,7 @@ fn main() {
             extra: HashMap::new(),
         }),
     });
-    
+
     state.phases.push(PhaseState {
         phase: 3,
         name: "执行实施 1".to_string(),
@@ -68,20 +68,20 @@ fn main() {
         }),
         result: None,
     });
-    
+
     // 更新成本汇总
     state.cost_summary.total_tokens_input = 7500;
     state.cost_summary.total_tokens_output = 4100;
     state.cost_summary.total_cost_usd = 0.16;
     state.cost_summary.estimated_remaining_cost_usd = 0.24;
-    
+
     // 更新进度
     state.status.current_phase = 3;
     state.status.completion_percentage = 45;
-    
+
     // 添加一些任务
-    use ca_core::{TaskState, TaskKind};
-    
+    use ca_core::{TaskKind, TaskState};
+
     state.tasks.push(TaskState {
         id: "task-1".to_string(),
         kind: TaskKind::Implementation,
@@ -90,7 +90,7 @@ fn main() {
         assigned_phase: 3,
         files: vec!["src/auth.rs".to_string()],
     });
-    
+
     state.tasks.push(TaskState {
         id: "task-2".to_string(),
         kind: TaskKind::Implementation,
@@ -99,7 +99,7 @@ fn main() {
         assigned_phase: 3,
         files: vec!["src/jwt.rs".to_string()],
     });
-    
+
     state.tasks.push(TaskState {
         id: "task-3".to_string(),
         kind: TaskKind::Testing,
@@ -108,10 +108,10 @@ fn main() {
         assigned_phase: 3,
         files: vec!["tests/test_auth.rs".to_string()],
     });
-    
+
     // 添加文件修改记录
     use ca_core::FileModification;
-    
+
     state.files_modified.push(FileModification {
         path: "src/auth.rs".to_string(),
         status: "added".to_string(),
@@ -119,7 +119,7 @@ fn main() {
         size_bytes: 1250,
         backup: None,
     });
-    
+
     state.files_modified.push(FileModification {
         path: "src/jwt.rs".to_string(),
         status: "added".to_string(),
@@ -127,7 +127,7 @@ fn main() {
         size_bytes: 800,
         backup: None,
     });
-    
+
     // Spec 内容
     let spec_content = r#"
 ## 概述
@@ -148,11 +148,11 @@ fn main() {
 - JWT (jsonwebtoken)
 - Bcrypt (密码加密)
 "#;
-    
+
     // 生成 status.md
     let doc = StatusDocument::from_feature_state(&state, spec_content);
     let markdown = doc.render_to_markdown();
-    
+
     // 输出到控制台
     println!("{}", markdown);
 }

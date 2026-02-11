@@ -1,7 +1,6 @@
 /// 示例: 演示如何使用新的 3 文件模板结构
 ///
 /// 运行: cargo run --package ca-pm --example task_template
-
 use ca_pm::{PromptConfig, PromptManager, TemplateContext};
 use std::path::PathBuf;
 
@@ -37,16 +36,23 @@ fn main() -> anyhow::Result<()> {
     println!("\n📝 Rendering templates...");
     let (system, user) = manager.render_task(&task, &context)?;
 
-    println!("\n✅ System Prompt: {}", if system.is_some() { "Present" } else { "None" });
+    println!(
+        "\n✅ System Prompt: {}",
+        if system.is_some() { "Present" } else { "None" }
+    );
     println!("✅ User Prompt (first 100 chars):");
     println!("   {}", &user.chars().take(100).collect::<String>());
 
     // 6. 验证关键配置
     println!("\n🔍 Validating key configurations:");
-    
+
     // Phase 5 应该禁止写入工具
     assert!(task.config.disallowed_tools.contains(&"Write".to_string()));
-    assert!(task.config.disallowed_tools.contains(&"StrReplace".to_string()));
+    assert!(
+        task.config
+            .disallowed_tools
+            .contains(&"StrReplace".to_string())
+    );
     println!("   ✓ Phase 5 correctly disallows file modifications");
 
     // Phase 5 应该有较低的预算
@@ -55,20 +61,31 @@ fn main() -> anyhow::Result<()> {
 
     // 7. 对比其他阶段
     println!("\n📊 Comparing with other phases:");
-    
-    let phase3_task = manager.load_task_dir(&PathBuf::from(
-        "crates/ca-pm/templates/run/phase3_execute"
-    ))?;
+
+    let phase3_task =
+        manager.load_task_dir(&PathBuf::from("crates/ca-pm/templates/run/phase3_execute"))?;
     println!("   Phase 3 (Execute):");
-    println!("     - Disallowed Tools: {} (full access)", phase3_task.config.disallowed_tools.len());
-    println!("     - Max Budget: ${:.2}", phase3_task.config.max_budget_usd);
-    
+    println!(
+        "     - Disallowed Tools: {} (full access)",
+        phase3_task.config.disallowed_tools.len()
+    );
+    println!(
+        "     - Max Budget: ${:.2}",
+        phase3_task.config.max_budget_usd
+    );
+
     let phase7_task = manager.load_task_dir(&PathBuf::from(
-        "crates/ca-pm/templates/run/phase7_verification"
+        "crates/ca-pm/templates/run/phase7_verification",
     ))?;
     println!("   Phase 7 (Verification):");
-    println!("     - Disallowed Tools: {} (read-only)", phase7_task.config.disallowed_tools.len());
-    println!("     - Max Budget: ${:.2}", phase7_task.config.max_budget_usd);
+    println!(
+        "     - Disallowed Tools: {} (read-only)",
+        phase7_task.config.disallowed_tools.len()
+    );
+    println!(
+        "     - Max Budget: ${:.2}",
+        phase7_task.config.max_budget_usd
+    );
 
     println!("\n✨ All validations passed!");
     println!("\n🎉 Prompt template refactoring successful!");
